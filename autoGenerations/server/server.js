@@ -39,6 +39,32 @@ const clientID = 'wix41uv8dhpnbi9n7gaq948s';
 const clientVerifier = 'o2qYNZeg1ZZFaPQq6bdBeoGsJw3WBF9-OHerUF6vf7w';
 const redirectUri = 'http://localhost:3003/oauth/redirect';
 
+app.get('/refresh_token', async (req, res) => {
+    const tokenUrl = 'https://api.etsy.com/v3/public/oauth/token';
+    const requestOptions = {
+        method: 'POST',
+        body: JSON.stringify({
+            grant_type: 'refresh_token',
+            client_id: clientID,
+            refresh_token: '695701628.B3fUHRa8rRsWaSkpHoPr7dGSEdJ_o_gvsPOTbtnX9SKfUwG9G_2wJYKBsRqpW6GbJnyHNCxPEpSuFBSjgr1xojXufa'
+        }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+
+    const response = await fetch(tokenUrl, requestOptions);
+
+    // Extract the access token from the response access_token data field
+    if (response.ok) {
+        const tokenData = await response.json();
+        res.send(tokenData);
+    } else {
+        res.send(response.json());
+    }
+
+})
+
 app.get("/oauth/redirect", async (req, res) => {
     // The req.query object has the query params that Etsy authentication sends
     // to this route. The authorization code is in the `code` param
@@ -66,12 +92,12 @@ app.get("/oauth/redirect", async (req, res) => {
     const response = await fetch(tokenUrl, requestOptions);
 
     // Extract the access token from the response access_token data field
-   // if (response.ok) {
+    if (response.ok) {
         const tokenData = await response.json();
         res.send(tokenData);
-//    } else {
-//        res.send(response.json());
-//    }
+    } else {
+        res.send(response.json());
+    }
 });
 
 // Start the server on port 3003
