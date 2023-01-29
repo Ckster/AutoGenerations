@@ -5,15 +5,15 @@ from typing import Dict
 
 from enums import Carrier
 
-PROJECT_DIR = os.path.dirname(__file__)
+PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 class Secrets:
 
     def __init__(self):
-        self._secrets_path = os.path.join(PROJECT_DIR, 'secrets.json')
+        self._secrets_path = os.path.join(PROJECT_DIR, 'etsy_secrets.json')
         if not os.path.exists(self._secrets_path):
-            raise FileNotFoundError('Could not find secrets.json file in project')
+            raise FileNotFoundError('Could not find etsy_secrets.json file in project')
 
         self._store_id = None
         self._shared_secret = None
