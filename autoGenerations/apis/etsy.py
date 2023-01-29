@@ -3,7 +3,7 @@ import json
 import requests
 from typing import Dict
 
-from enums import Carrier
+from apis.enums import Carrier
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -136,7 +136,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def update_receipt(self, receipt_id: str, body: Dict[str]):
+    def update_receipt(self, receipt_id: str, body: Dict[str, str]):
         """
 
         :return:
