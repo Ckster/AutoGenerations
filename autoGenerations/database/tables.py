@@ -2,7 +2,7 @@ from database.utils import Base, make_engine
 from database.enums import Etsy
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum
 
 
 class EtsyReceipt(Base):
@@ -13,7 +13,7 @@ class EtsyReceipt(Base):
     id = Column(Integer, primary_key=True)
     receipt_id = Column(Integer)
     receipt_type = Column(Integer)
-    status = Column(Etsy.OrderStatus)
+    status = Column(Enum(Etsy.OrderStatus))
     payment_method = Column(String)
     message_from_seller = Column(String)
     message_from_buyer = Column(String)
@@ -34,9 +34,13 @@ class EtsyReceipt(Base):
     vat_cost = Column(Float)
     discount = Column(Float)
 
+    address_id = Column(Integer, ForeignKey('address.id'))
     address = relationship("Address", uselist=False, back_populates='receipts')
+    buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
     buyer = relationship("EtsyBuyer", uselist=False, back_populates='receipts')
+    seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
+
     transactions = relationship("Transactions", back_populates='receipts')
 
 
@@ -73,7 +77,7 @@ class Address(Base):
     country = Column(String)
     formatted = Column(String)
 
-    receipts = relationship('EtsyReceipt', uselist=False, back_populates='address')
+    receipts = relationship('EtsyReceipt', back_populates='address')
 
 
 class EtsyTransaction(Base):
@@ -97,10 +101,15 @@ class EtsyTransaction(Base):
     buyer_coupon = Column(Integer)
     shop_coupon = Column(Integer)
 
+    receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='transactions')
+    buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
     buyer = relationship('EtsyBuyer', uselist=False, back_populates='transactions')
+    seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship('EtsySeller', uselist=False, back_populates='transactions')
+    product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship('EtsyProduct', uselist=False, back_populates='transactions')
+    shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship('EtsyShippingProfile', uselist=False, back_populates='transactions')
 
 
