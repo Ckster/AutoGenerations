@@ -1,6 +1,9 @@
 import os
 import json
 import requests
+from typing import Dict
+
+from enums import Carrier
 
 PROJECT_DIR = os.path.dirname(__file__)
 
@@ -50,6 +53,11 @@ class API(Secrets):
         super(API, self).__init__()
 
     def _ping(self):
+        """
+        This just requests data from the api ping endpoint so connection can be tested. If the ping is not successful
+        then the error message can be used to determine how to correct the connection, i.e. refresh the token, wait a
+        period of time, or email a human.
+        """
         url = 'https://api.etsy.com/v3/application/openapi-ping'
         headers = {
                 'x-api-key': self._keystring,
@@ -62,7 +70,15 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
+    # TODO: Authentication errors return a 401 code. When the scoped request class is made add that in to
+    #  get_new_access_token
+
     def _get_new_access_token(self):
+        """
+        Requests a new access token and refresh token and updates the secrets.json file with them. Each access token is
+        valid for 1 hour, but the refresh token that comes with it can be used to generate a new access token. Refresh
+        tokens are valid for 90 days, and you get a new refresh token with each new access token.
+        """
         url = 'https://api.etsy.com/v3/public/oauth/token'
         headers = {
             'Content-Type': 'application/json'
@@ -96,12 +112,16 @@ class API(Secrets):
             raise LookupError(response.json())
 
     def get_receipts(self):
+        """
+
+        :return:
+        """
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts')
 
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "x-api-key": self.keystring,
-            "Authorization": f"Bearer {self._refresh_token}"
+            "Authorization": f"Bearer {self._access_token}"
         }
 
         params = {
@@ -110,6 +130,50 @@ class API(Secrets):
         }
 
         response = requests.get(url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def update_receipt(self, receipt_id: str, body: Dict[str]):
+        """
+
+        :return:
+        """
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', receipt_id)
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "x-api-key": self.keystring,
+            "Authorization": f"Bearer {self._access_token}"
+        }
+
+        response = requests.put(url, headers=headers, json=body)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def update_order_tracking(self, order_id: str, carrier: Carrier, tracking_code: str, note_to_buyer: str,
+                              send_bcc: bool = True):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', order_id, 'tracking')
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "x-api-key": self.keystring,
+            "Authorization": f"Bearer {self._access_token}"
+        }
+
+        body = {
+            "carrier_name": carrier.name,
+            "tracking_code": tracking_code,
+            "send_bcc": send_bcc,
+            "note_to_buyer": note_to_buyer
+        }
+
+        response = requests.post(url, headers=headers, json=body)
 
         if response.status_code == 200:
             return response.json()
