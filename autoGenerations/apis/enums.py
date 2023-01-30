@@ -9,3 +9,4 @@ class Carrier(enum.Enum):
     FEDEX = 'fedex'
     UPS = 'ups'
     USPS = 'usps'
+    FOO = 'foo'
