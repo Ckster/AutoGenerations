@@ -43,7 +43,7 @@ class EtsyReceipt(Base):
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
 
     transactions = relationship("Transactions", back_populates='receipt')
-    shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
+    receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
 
 
 class EtsySeller(Base):
