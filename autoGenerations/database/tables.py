@@ -2,7 +2,7 @@ from database.utils import Base, make_engine
 from database.enums import Etsy
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, ARRAY
 
 
 class EtsyReceipt(Base):
@@ -11,7 +11,7 @@ class EtsyReceipt(Base):
     """
     __tablename__ = 'etsy_receipt'
     id = Column(Integer, primary_key=True)
-    receipt_id = Column(Integer)
+    receipt_id = Column(BigInteger, unique=True)
     receipt_type = Column(Integer)
     status = Column(Enum(Etsy.OrderStatus))
     payment_method = Column(String)
@@ -33,6 +33,7 @@ class EtsyReceipt(Base):
     tax_cost = Column(Float)
     vat_cost = Column(Float)
     discount = Column(Float)
+    gift_wrap_price = Column(Float)
 
     address_id = Column(Integer, ForeignKey('address.id'))
     address = relationship("Address", uselist=False, back_populates='receipts')
@@ -41,13 +42,14 @@ class EtsyReceipt(Base):
     seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
 
-    transactions = relationship("Transactions", back_populates='receipts')
+    transactions = relationship("Transactions", back_populates='receipt')
+    shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
 
 
 class EtsySeller(Base):
     __tablename__ = 'etsy_seller'
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, unique=True)
+    seller_id = Column(Integer, unique=True)
     email = Column(String)
     name = Column(String)
 
@@ -58,7 +60,7 @@ class EtsySeller(Base):
 class EtsyBuyer(Base):
     __tablename__ = 'etsy_buyer'
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, primary_key=True)
+    buyer_id = Column(Integer, unique=True)
     email = Column(String)
     name = Column(String)
 
@@ -83,6 +85,7 @@ class Address(Base):
 class EtsyTransaction(Base):
     __tablename__ = 'etsy_transaction'
     id = Column(Integer, primary_key=True)
+    transaction_id = Column(BigInteger, unique=True)
     title = Column(String)
     description = Column(String)
     create_timestamp = Column(BigInteger)
@@ -100,6 +103,7 @@ class EtsyTransaction(Base):
     expected_ship_date = Column(BigInteger)
     buyer_coupon = Column(Integer)
     shop_coupon = Column(Integer)
+    shipping_profile_id = Column(BigInteger)
 
     receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='transactions')
@@ -109,14 +113,12 @@ class EtsyTransaction(Base):
     seller = relationship('EtsySeller', uselist=False, back_populates='transactions')
     product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship('EtsyProduct', uselist=False, back_populates='transactions')
-    shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
-    shipping_profile = relationship('EtsyShippingProfile', uselist=False, back_populates='transactions')
 
 
 class EtsyProduct(Base):
     __tablename__ = 'etsy_product'
     id = Column(Integer, primary_key=True)
-    product_id = Column(Integer)
+    product_id = Column(Integer, unique=True)
     sku = Column(Integer)
     price = Column(Float)
 
@@ -126,9 +128,40 @@ class EtsyProduct(Base):
 class EtsyShippingProfile(Base):
     __tablename__ = 'etsy_shipping_profile'
     id = Column(Integer, primary_key=True)
+    shipping_profile_id = Column(Integer, unique=True)
     name = Column(String)
 
     transactions = relationship("EtsyTransaction", back_populates='shipping_profile')
+
+
+class EtsyReceiptShipment(Base):
+    __tablename__ = 'etsy_shipment'
+    id = Column(Integer, primary_key=True)
+    receipt_shipping_id = Column(BigInteger, unique=True)
+    shipment_notification_timestamp = Column(BigInteger)
+    carrier_name = Column(String)
+    tracking_code = Column(String)
+
+    receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
+    receipt = relationship('EtsyReceipt', uselist=False, back_populates='shipments')
+
+
+class EtsyVariation(Base):
+    __tablename__ = 'etsy_variation'
+    id = Column(Integer, primary_key=True)
+    property_id = Column(Integer, unique=True)
+    formatted_name = Column(String)
+    formatted_value = Column(String)
+
+
+class EtsyProductData(Base):
+    __tablename__ = 'EtsyProductData'
+    property_id = Column(BigInteger, unique=True)
+    property_name = Column(String)
+    scale_id = Column(BigInteger)
+    scale_name = Column(String)
+    value_ids = Column(ARRAY(BigInteger))
+    values = Column(ARRAY(String))
 
 
 def create_database():

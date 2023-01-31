@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from typing import Dict
+from typing import Dict, Union
 
 from apis.enums import Carrier
 
@@ -111,7 +111,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def get_receipts(self):
+    def get_receipts(self, min_created: Union[int, str] = None):
         """
 
         :return:
@@ -124,10 +124,9 @@ class API(Secrets):
             "Authorization": f"Bearer {self._access_token}"
         }
 
-        params = {
-            "was_paid": "true",
-            "min_last_modified": "1674166698"
-        }
+        params = {}
+        if min_created is not None:
+            params['min_created'] = str(min_created)
 
         response = requests.get(url, headers=headers, params=params)
 
