@@ -1,45 +1,47 @@
 from typing import Dict
 
 
-class ReceiptSpace:
+class EtsyReceiptSpace:
     def __init__(self, receipt: Dict):
-        self.receipt_id = receipt['receipt_id'],
-        self.receipt_type = receipt['receipt_type'],
-        self.status = receipt['status'],
-        self.payment_method = receipt['payment_method'],
-        self.message_from_seller = receipt['message_from_seller'],
-        self.message_from_buyer = receipt['message_from_buyer'],
-        self.message_from_payment = receipt['message_from_payment'],
-        self.is_paid = receipt['is_paid'],
-        self.is_shipped = receipt['is_shipped'],
-        self.create_timestamp = receipt['create_timestamp'],
-        self.created_timestamp = receipt['created_timestamp'],
-        self.update_timestamp = receipt['update_timestamp'],
-        self.updated_timestamp = receipt['updated_timestamp'],
-        self.is_gift = receipt['is_gift'],
-        self.gift_message = receipt['gift_message'],
-        self.grand_total = receipt['grandtotal']['amount'],
-        self.sub_total = receipt['subtotal']['amount'],
-        self.total_price = receipt['total_price']['amount'],
-        self.shipping_cost = receipt['total_shipping_cost']['amount'],
-        self.tax_cost = receipt['total_tax_cost']['amount'],
-        self.vat_cost = receipt['total_vat_cost']['amount'],
-        self.discount = receipt['discount_amt']['amount'],
+        self.receipt_id = receipt['receipt_id']
+        self.receipt_type = receipt['receipt_type']
+        self.buyer_user_id = receipt['buyer_user_id']
+        self.buyer_email = receipt['buyer_email']
+        self.seller_user_id = receipt['seller_user_id']
+        self.seller_email = receipt['seller_email']
+        self.status = receipt['status']
+        self.payment_method = receipt['payment_method']
+        self.message_from_seller = receipt['message_from_seller']
+        self.message_from_buyer = receipt['message_from_buyer']
+        self.message_from_payment = receipt['message_from_payment']
+        self.is_paid = receipt['is_paid']
+        self.is_shipped = receipt['is_shipped']
+        self.create_timestamp = receipt['create_timestamp']
+        self.created_timestamp = receipt['created_timestamp']
+        self.update_timestamp = receipt['update_timestamp']
+        self.updated_timestamp = receipt['updated_timestamp']
+        self.is_gift = receipt['is_gift']
+        self.gift_message = receipt['gift_message']
+        self.grand_total = receipt['grandtotal']['amount']
+        self.sub_total = receipt['subtotal']['amount']
+        self.total_price = receipt['total_price']['amount']
+        self.shipping_cost = receipt['total_shipping_cost']['amount']
+        self.tax_cost = receipt['total_tax_cost']['amount']
+        self.vat_cost = receipt['total_vat_cost']['amount']
+        self.discount = receipt['discount_amt']['amount']
         self.gift_wrap_price = receipt['gift_wrap_price']['amount']
 
 
-class BuyerSpace:
+class EtsyBuyerSpace:
     def __init__(self, receipt: Dict):
-        self.buyer_id = receipt['buyer_id']
+        self.buyer_id = receipt['buyer_user_id']
         self.email = receipt['buyer_email']
-        self.name = receipt['buyer_name']
 
 
-class SellerSpace:
+class EtsySellerSpace:
     def __init__(self, receipt: Dict):
-        self.seller_id = receipt['seller_id']
+        self.seller_id = receipt['seller_user_id']
         self.email = receipt['seller_email']
-        self.name = receipt['seller_name']
 
 
 class AddressSpace:
@@ -50,9 +52,10 @@ class AddressSpace:
         self.country = receipt['country']
         self.first_line = receipt['first_line']
         self.second_line = receipt['second_line']
+        self.formattd = receipt['formatted']
 
 
-class TransactionSpace:
+class EtsyTransactionSpace:
     def __init__(self, transaction: Dict):
         self.transaction_id = transaction['transaction_id']
         self.title = transaction['title']
@@ -75,7 +78,7 @@ class TransactionSpace:
         self.price = transaction['price']['amount']
         self.shipping_cost = transaction['shipping_cost']['amount']
         self.variations = transaction['variations']
-        self.product_data = transaction['product_data']
+        self.product_property_data = transaction['product_data']
         self.shipping_profile_id = transaction['shipping_profile_id']
         self.min_processing_days = transaction['min_processing_days']
         self.max_processing_days = transaction['max_processing_days']
@@ -92,3 +95,20 @@ class EtsyReceiptShipmentSpace:
         self.shipment_notification_timestamp = receipt_shipment['shipment_notification_timestamp']
         self.carrier_name = receipt_shipment['carrier_name']
         self.tracking_code = receipt_shipment['tracking_code']
+
+
+class EtsyProductSpace:
+    def __init__(self, product: Dict):
+        self.product_id = product['product_id']
+        self.sku = product['sku']
+        self.price = product['price']
+
+
+class EtsyProductPropertySpace:
+    def __init__(self, product_data: Dict):
+        self.property_id = product_data['property_id']
+        self.property_name = product_data['property_name']
+        self.scale_id = product_data['scale_id']
+        self.scale_name = product_data['scale_name']
+        self.value_ids = product_data['value_ids']
+        self.values = product_data['values']
