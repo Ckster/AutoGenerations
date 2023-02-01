@@ -12,8 +12,8 @@ from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, Fore
 transaction_product_data_association_table = Table(
     "transaction_product_data_association_table",
     Base.metadata,
-    Column("transaction_id", ForeignKey("EtsyTransaction.id"), primary_key=True),
-    Column("product_data_id", ForeignKey("EtsyProductData.id"), primary_key=True)
+    Column("transaction_id", ForeignKey("etsy_transaction.id"), primary_key=True),
+    Column("product_data_id", ForeignKey("etsy_product_property.id"), primary_key=True)
 )
 
 
@@ -37,7 +37,7 @@ class EtsyReceipt(Base):
     update_timestamp = Column(BigInteger)
     updated_timestamp = Column(BigInteger)
     is_gift = Column(Boolean)
-    gift_messsage = Column(String)
+    gift_message = Column(String)
     grand_total = Column(Float)
     sub_total = Column(Float)
     total_price = Column(Float)
@@ -54,7 +54,7 @@ class EtsyReceipt(Base):
     seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
 
-    transactions = relationship("Transactions", back_populates='receipt')
+    transactions = relationship("EtsyTransaction", back_populates='receipt')
     receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
 
     @classmethod
@@ -90,10 +90,15 @@ class EtsyReceipt(Base):
             gift_wrap_price=receipt_data.gift_wrap_price,
             address=address,
             buyer=buyer,
-            seller=seller,
-            transactions=transactions,
-            receipt_shipments=receipt_shipments
+            seller=seller
         )
+
+        if transactions:
+            print(transactions)
+            receipt.transactions = transactions
+        if receipt_shipments:
+            receipt.receipt_shipments = receipt_shipments
+
         return receipt
 
     @staticmethod
@@ -144,7 +149,7 @@ class EtsySeller(Base):
     @staticmethod
     def get_existing(session, seller_id: int):
         return session.query(EtsySeller).filter(
-            EtsySeller.transaction_id == seller_id
+            EtsySeller.seller_id == seller_id
         ).first()
 
 
@@ -154,7 +159,7 @@ class EtsyBuyer(Base):
     buyer_id = Column(Integer, unique=True)
     email = Column(String)
 
-    receipts = relationship('EtsyReceipt', back_populates='seller')
+    receipts = relationship('EtsyReceipt', back_populates='buyer')
     transactions = relationship("EtsyTransaction", back_populates='buyer')
 
     @classmethod
@@ -184,7 +189,7 @@ class EtsyBuyer(Base):
     @staticmethod
     def get_existing(session, buyer_id: int):
         return session.query(EtsyBuyer).filter(
-            EtsyBuyer.transaction_id == buyer_id
+            EtsyBuyer.buyer_id == buyer_id
         ).first()
 
 
@@ -214,7 +219,7 @@ class Address(Base):
             state=address_data.state,
             zip=address_data.zip,
             country=address_data.country,
-            formatted=address_data.formatted
+            formatted=address_data.formatted_address
         )
 
         if receipts is not None:
@@ -254,6 +259,7 @@ class EtsyTransaction(Base):
     is_digital = Column(Boolean)
     file_data = Column(String)
     transaction_type = Column(String)
+    price = Column(Float)
     shipping_cost = Column(Float)
     min_processing_days = Column(Integer)
     max_processing_days = Column(Integer)
@@ -262,9 +268,10 @@ class EtsyTransaction(Base):
     expected_ship_date = Column(BigInteger)
     buyer_coupon = Column(Integer)
     shop_coupon = Column(Integer)
-    shipping_profile_id = Column(BigInteger)
     etsy_product_id = Column(BigInteger)
 
+    shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
+    shipping_profile = relationship('EtsyShippingProfile', uselist=False, back_populates='transactions')
     receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='transactions')
     buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
@@ -275,13 +282,13 @@ class EtsyTransaction(Base):
     product = relationship('EtsyProduct', uselist=False, back_populates='transactions')
 
     # Many to Many relationship
-    product_data: Mapped[List[EtsyProductProperty]] = relationship(secondary=transaction_product_data_association_table,
-                                                                   back_populates='transactions')
+    product_properties: Mapped[List[EtsyProductProperty]] = relationship(
+        secondary=transaction_product_data_association_table, back_populates='transactions')
 
     @classmethod
     def create(cls, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]], buyer: EtsyBuyer,
                seller: EtsySeller, existing_product: EtsyProduct,
-               product_data: List[EtsyProductProperty]) -> EtsyTransaction:
+               product_properties: List[EtsyProductProperty]) -> EtsyTransaction:
         if not isinstance(transaction_data, EtsyTransactionSpace):
             transaction_data = cls.create_namespace(transaction_data)
 
@@ -296,6 +303,7 @@ class EtsyTransaction(Base):
             is_digital=transaction_data.is_digital,
             file_data=transaction_data.file_date,
             transaction_type=transaction_data.transaction_type,
+            price=transaction_data.price,
             shipping_cost=transaction_data.shipping_cost,
             min_processing_days=transaction_data.min_processing_days,
             max_processing_days=transaction_data.max_processing_days,
@@ -308,8 +316,7 @@ class EtsyTransaction(Base):
             buyer_id=buyer.id,
             seller_id=seller.id,
             product_id=existing_product.id,
-            shipping_profile_id=transaction_data.shipping_profile_id,
-            product_data=product_data
+            product_properties=product_properties
         )
 
         return transaction
@@ -321,7 +328,7 @@ class EtsyTransaction(Base):
     @staticmethod
     def get_existing(session, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]]):
         if not isinstance(transaction_data, EtsyTransactionSpace):
-            transaction_data = EtsyReceipt.create_namespace(transaction_data)
+            transaction_data = EtsyTransaction.create_namespace(transaction_data)
 
         return session.query(EtsyTransaction).filter(
                     EtsyTransaction.transaction_id == transaction_data.transaction_id
@@ -381,7 +388,7 @@ class EtsyReceiptShipment(Base):
     tracking_code = Column(String)
 
     receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
-    receipt = relationship('EtsyReceipt', uselist=False, back_populates='shipments')
+    receipt = relationship('EtsyReceipt', uselist=False, back_populates='receipt_shipments')
 
     @classmethod
     def create(cls, receipt_shipment_space: EtsyReceiptShipmentSpace,
@@ -422,18 +429,18 @@ class EtsyVariation(Base):
 
 
 class EtsyProductProperty(Base):
-    __tablename__ = 'EtsyProductProperty'
+    __tablename__ = 'etsy_product_property'
     id: Mapped[int] = mapped_column(primary_key=True)
 
     property_id = Column(BigInteger, unique=True)
     property_name = Column(String)
     scale_id = Column(BigInteger)
     scale_name = Column(String)
-    value_ids = Column(ARRAY(BigInteger))
-    values = Column(ARRAY(String))
+    # value_ids = Column(ARRAY(BigInteger))
+    # values = Column(ARRAY(String))
 
     transactions: Mapped[List[EtsyTransaction]] = relationship(
-        secondary=transaction_product_data_association_table, back_populates="children"
+        secondary=transaction_product_data_association_table, back_populates="product_properties"
     )
 
     @classmethod
@@ -447,8 +454,8 @@ class EtsyProductProperty(Base):
             property_name=property_data.property_name,
             scale_id=property_data.scale_id,
             scale_name=property_data.scale_name,
-            value_ids=property_data.value_ids,
-            values=property_data.values
+            # value_ids=property_data.value_ids,
+            # values=property_data.values
         )
 
         if transactions is not None:

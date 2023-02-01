@@ -3,7 +3,6 @@ from database.utils import make_engine
 from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer,\
     EtsyProduct, EtsyProductProperty
 from database.enums import Etsy as EtsyEnums
-from database.factories import create_etsy_transaction, create_etsy_product_data
 
 from sqlalchemy.orm import Session
 
@@ -73,6 +72,8 @@ def get_new_orders():
 
         print(f"Processing {orders['count']} new orders")
 
+        orders = response
+
         for receipt in orders['results']:
             receipt_space = EtsyReceipt.create_namespace(receipt)
 
@@ -141,19 +142,25 @@ def get_new_orders():
                 # put a new product in the store)
                 existing_product = EtsyProduct.get_existing(session, transaction_space.product_id)
                 if existing_product is None:
+                    # TODO: Alert or something here...
+                    existing_product = EtsyProduct()
+                    session.add(existing_product)
+                    session.flush()
                     pass
 
                 # Check for existing transaction
                 existing_transaction = EtsyTransaction.get_existing(session, transaction)
                 if existing_transaction is None:
-                    new_transaction = create_etsy_transaction(transaction_space, buyer, seller, existing_product,
-                                                              product_properties)
-                    session.add(new_transaction)
+                    # TODO: Relate the shipping profile with the transaction here by querying for it using the
+                    #  shipping_profile_id
+                    receipt_transaction = EtsyTransaction.create(transaction_space, buyer, seller, existing_product,
+                                                             product_properties)
+                    session.add(receipt_transaction)
                     session.flush()
                 else:
                     # TODO: Update
-                    transaction = existing_transaction
-                transactions.append(transaction)
+                    receipt_transaction = existing_transaction
+                transactions.append(receipt_transaction)
 
             # Check if receipt exists
             existing_receipt = EtsyReceipt.get_existing(session, receipt)

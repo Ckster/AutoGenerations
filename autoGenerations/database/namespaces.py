@@ -5,9 +5,9 @@ class EtsyReceiptSpace:
     def __init__(self, receipt: Dict):
         self.receipt_id = receipt['receipt_id']
         self.receipt_type = receipt['receipt_type']
-        self.buyer_user_id = receipt['buyer_user_id']
+        self.buyer_id = receipt['buyer_user_id']
         self.buyer_email = receipt['buyer_email']
-        self.seller_user_id = receipt['seller_user_id']
+        self.seller_id = receipt['seller_user_id']
         self.seller_email = receipt['seller_email']
         self.status = receipt['status']
         self.payment_method = receipt['payment_method']
@@ -49,10 +49,10 @@ class AddressSpace:
         self.zip = receipt['zip']
         self.city = receipt['city']
         self.state = receipt['state']
-        self.country = receipt['country']
+        self.country = receipt['country_iso']
         self.first_line = receipt['first_line']
         self.second_line = receipt['second_line']
-        self.formattd = receipt['formatted']
+        self.formatted_address = receipt['formatted_address']
 
 
 class EtsyTransactionSpace:
