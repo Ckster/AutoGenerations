@@ -157,6 +157,27 @@ class API(Secrets):
             return response.json()
         else:
             raise LookupError(response.json())
+
+    def get_listings(self, listing_id: int):
+        """
+
+        :return:
+        """
+
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'listings', str(listing_id))
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "x-api-key": self.keystring,
+            "Authorization": f"Bearer {self._access_token}"
+        }
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
     def update_receipt(self, receipt_id: str, body: Dict[str, str]):
         """
 
