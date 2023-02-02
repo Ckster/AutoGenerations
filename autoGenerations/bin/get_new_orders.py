@@ -7,49 +7,49 @@ from database.enums import Etsy as EtsyEnums
 from sqlalchemy.orm import Session
 
 response = {'count': 1,
-            'results': [{
-                'receipt_id': 2780781914, 'receipt_type': 0, 'seller_user_id': 695701628,
-                'seller_email': 'verleyeerick@gmail.com', 'buyer_user_id': 746422806,
-                'buyer_email': 'erickverleye2@gmail.com', 'name': 'Erick',
-                'first_line': '3303 Bluff St', 'second_line': 'Unit 211',
-                'city': 'BOULDER', 'state': 'CO', 'zip': '80301',
-                'status': 'Paid',
-                'formatted_address': 'Erick\n3303 Bluff St\nUnit 211\nBOULDER, CO 80301\nUnited States',
-                'country_iso': 'US', 'payment_method': 'cc', 'payment_email': '', 'message_from_payment': None,
-                'message_from_seller': None, 'message_from_buyer': 'In Hoc Signo Vinces', 'is_shipped': False,
-                'is_paid': True, 'create_timestamp': 1675134602, 'created_timestamp': 1675134602,
-                'update_timestamp': 1675134622, 'updated_timestamp': 1675134622, 'is_gift': True,
-                'gift_message': 'Congratulations', 'grandtotal': {'amount': 109, 'divisor': 100,
-                                                                  'currency_code': 'USD'},
-                'subtotal': {'amount': 100, 'divisor': 100, 'currency_code': 'USD'},
-                'total_price': {'amount': 100, 'divisor': 100, 'currency_code': 'USD'},
-                'total_shipping_cost': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
-                'total_tax_cost': {'amount': 9, 'divisor': 100, 'currency_code': 'USD'},
-                'total_vat_cost': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
-                'discount_amt': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
-                'gift_wrap_price': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
-                'shipments': [], 'transactions': [{'transaction_id': 3414320431, 'title': 'TEST Do Not Buy',
-                                                   'description': 'This is an API test product, please do not buy this '
-                                                                  '- the order will not be fulfilled',
-                                                   'seller_user_id': 695701628, 'buyer_user_id': 746422806,
-                                                   'create_timestamp': 1675134602, 'created_timestamp': 1675134602,
-                                                   'paid_timestamp': None, 'shipped_timestamp': None, 'quantity': 5,
-                                                   'listing_image_id': 4626083805, 'receipt_id': 2780781914,
-                                                   'is_digital': False, 'file_data': '', 'listing_id': 1406729485,
-                                                   'sku': 'SKU101', 'product_id': 13311969728,
-                                                   'transaction_type': 'listing',
-                                                   'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'},
-                                                   'shipping_cost': {'amount': 0, 'divisor': 100,
-                                                                     'currency_code': 'USD'}, 'variations': [],
-                                                   'product_data': [], 'shipping_profile_id': 193275197951,
-                                                   'min_processing_days': 5, 'max_processing_days': 7,
-                                                   'shipping_method': None, 'shipping_upgrade': None,
-                                                   'expected_ship_date': 1675912218, 'buyer_coupon': 0,
-                                                   'shop_coupon': 0}], 'refunds': []
+        'results': [{
+            'receipt_id': 2780781914, 'receipt_type': 0, 'seller_user_id': 695701628,
+            'seller_email': 'verleyeerick@gmail.com', 'buyer_user_id': 746422806,
+            'buyer_email': 'erickverleye2@gmail.com', 'name': 'Erick',
+            'first_line': '3303 Bluff St', 'second_line': 'Unit 211',
+            'city': 'BOULDER', 'state': 'CO', 'zip': '80301',
+            'status': 'Paid',
+            'formatted_address': 'Erick\n3303 Bluff St\nUnit 211\nBOULDER, CO 80301\nUnited States',
+            'country_iso': 'US', 'payment_method': 'cc', 'payment_email': '', 'message_from_payment': None,
+            'message_from_seller': None, 'message_from_buyer': 'In Hoc Signo Vinces', 'is_shipped': False,
+            'is_paid': True, 'create_timestamp': 1675134602, 'created_timestamp': 1675134602,
+            'update_timestamp': 1675134622, 'updated_timestamp': 1675134622, 'is_gift': True,
+            'gift_message': 'Congratulations', 'grandtotal': {'amount': 109, 'divisor': 100,
+                                                              'currency_code': 'USD'},
+            'subtotal': {'amount': 100, 'divisor': 100, 'currency_code': 'USD'},
+            'total_price': {'amount': 100, 'divisor': 100, 'currency_code': 'USD'},
+            'total_shipping_cost': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
+            'total_tax_cost': {'amount': 9, 'divisor': 100, 'currency_code': 'USD'},
+            'total_vat_cost': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
+            'discount_amt': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
+            'gift_wrap_price': {'amount': 0, 'divisor': 100, 'currency_code': 'USD'},
+            'shipments': [], 'transactions': [{'transaction_id': 3414320431, 'title': 'TEST Do Not Buy',
+                                               'description': 'This is an API test product, please do not buy this '
+                                                              '- the order will not be fulfilled',
+                                               'seller_user_id': 695701628, 'buyer_user_id': 746422806,
+                                               'create_timestamp': 1675134602, 'created_timestamp': 1675134602,
+                                               'paid_timestamp': None, 'shipped_timestamp': None, 'quantity': 5,
+                                               'listing_image_id': 4626083805, 'receipt_id': 2780781914,
+                                               'is_digital': False, 'file_data': '', 'listing_id': 1406729485,
+                                               'sku': 'SKU101', 'product_id': 13311969728,
+                                               'transaction_type': 'listing',
+                                               'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'},
+                                               'shipping_cost': {'amount': 0, 'divisor': 100,
+                                                                 'currency_code': 'USD'}, 'variations': [],
+                                               'product_data': [], 'shipping_profile_id': 193275197951,
+                                               'min_processing_days': 5, 'max_processing_days': 7,
+                                               'shipping_method': None, 'shipping_upgrade': None,
+                                               'expected_ship_date': 1675912218, 'buyer_coupon': 0,
+                                               'shop_coupon': 0}], 'refunds': []
 
-                    }
-                ]
-            }
+                }
+            ]
+        }
 
 
 def get_new_orders():
@@ -94,7 +94,7 @@ def get_new_orders():
                 session.add(buyer)
                 session.flush()
             else:
-                # TODO: Update
+                existing_buyer.update(receipt)
                 buyer = existing_buyer
 
             # Check if the seller exists
@@ -104,7 +104,7 @@ def get_new_orders():
                 session.add(seller)
                 session.flush()
             else:
-                # TODO: Update
+                existing_seller.update(receipt)
                 seller = existing_seller
 
             # Create new shipments
@@ -116,7 +116,7 @@ def get_new_orders():
                     session.add(receipt_shipment)
                     session.flush()
                 else:
-                    # TODO: Update
+                    existing_receipt_shipment.update(shipment)
                     receipt_shipment = existing_receipt_shipment
                 receipt_shipments.append(receipt_shipment)
 
@@ -125,6 +125,10 @@ def get_new_orders():
             for transaction in receipt['transactions']:
                 transaction_space = EtsyTransaction.create_namespace(transaction)
 
+                # TODO: Do something with the listing id, for example we need to 1.) Keep an updated list of our stores
+                #  listings 2) Make sure to increase the quantity available when stock gets low (etsy only lets you
+                #  stock an item to 999) 3) Here we will only add listings if they don't already exist, and update their
+                #  status if we cannot find them.
                 # Get list of existing / created product data
                 product_properties = []
                 for property_data in transaction_space.product_property_data:
@@ -134,19 +138,26 @@ def get_new_orders():
                         session.add(product_property)
                         session.flush()
                     else:
-                        # TODO: Update
+                        existing_product_property.update(property_data)
                         product_property = existing_product_property
                     product_properties.append(product_property)
 
-                # Check for existing product, it should already exist in the database (we need to add these when we
-                # put a new product in the store)
+                # The transaction gives us the product_id, but no other information about the product. Using the
+                # listing id, we can call the get product endpoint and get the necessary info, which can be used to
+                # update the existing product record or create a new one. If it cannot be found, update the status of
+                # the record to NOT FOUND, or something
                 existing_product = EtsyProduct.get_existing(session, transaction_space.product_id)
                 if existing_product is None:
-                    # TODO: Alert or something here...
+
+                    # Need to get product information from api endpoint
+
                     existing_product = EtsyProduct()
                     session.add(existing_product)
                     session.flush()
                     pass
+
+                else:
+
 
                 # Check for existing transaction
                 existing_transaction = EtsyTransaction.get_existing(session, transaction)

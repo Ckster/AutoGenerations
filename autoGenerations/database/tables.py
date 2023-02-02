@@ -152,6 +152,19 @@ class EtsySeller(Base):
             EtsySeller.seller_id == seller_id
         ).first()
 
+    def update(self, seller_data: Union[EtsySellerSpace, Dict[str, Any]],
+               receipts: List[EtsyReceipt] = None, transactions: List[EtsyTransaction] = None,
+               overwrite_list: bool = False):
+        if not isinstance(seller_data, EtsySellerSpace):
+            seller_data = self.create_namespace(seller_data)
+        self.email = seller_data.email
+
+        if receipts is not None:
+            self.receipts = receipts if overwrite_list else self.receipts + receipts
+
+        if transactions:
+            self.transactions = transactions if overwrite_list else self.transactions + transactions
+
 
 class EtsyBuyer(Base):
     __tablename__ = 'etsy_buyer'
@@ -191,6 +204,19 @@ class EtsyBuyer(Base):
         return session.query(EtsyBuyer).filter(
             EtsyBuyer.buyer_id == buyer_id
         ).first()
+
+    def update(self, buyer_data: Union[EtsyBuyerSpace, Dict[str, Any]],
+               receipts: List[EtsyReceipt] = None, transactions: List[EtsyTransaction] = None,
+               overwrite_list: bool = False):
+        if not isinstance(buyer_data, EtsyBuyerSpace):
+            buyer_data = self.create_namespace(buyer_data)
+        self.email = buyer_data.email
+
+        if receipts is not None:
+            self.receipts = receipts if overwrite_list else self.receipts + receipts
+
+        if transactions:
+            self.transactions = transactions if overwrite_list else self.transactions + transactions
 
 
 class Address(Base):
@@ -391,13 +417,16 @@ class EtsyReceiptShipment(Base):
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='receipt_shipments')
 
     @classmethod
-    def create(cls, receipt_shipment_space: EtsyReceiptShipmentSpace,
+    def create(cls, receipt_shipment_data: Union[EtsyReceiptShipmentSpace, Dict[str, Any]],
                receipt: EtsyReceipt = None) -> EtsyReceiptShipment:
+        if not isinstance(receipt_shipment_data, EtsyProductSpace):
+            receipt_shipment_data = cls.create_namespace(receipt_shipment_data)
+
         receipt_shipment = cls(
-            receipt_shipping_id=receipt_shipment_space.receipt_shipping_id,
-            shipment_notification_timestamp=receipt_shipment_space.shipment_notification_timestamp,
-            carrier_name=receipt_shipment_space.carrier_name,
-            tracking_code=receipt_shipment_space.tracking_code
+            receipt_shipping_id=receipt_shipment_data.receipt_shipping_id,
+            shipment_notification_timestamp=receipt_shipment_data.shipment_notification_timestamp,
+            carrier_name=receipt_shipment_data.carrier_name,
+            tracking_code=receipt_shipment_data.tracking_code
         )
 
         if receipt is not None:
@@ -419,6 +448,18 @@ class EtsyReceiptShipment(Base):
             EtsyReceiptShipment.receipt_id == shipment_data.receipt_id
         )
 
+    def update(self, receipt_shipment_data: Union[EtsyReceiptShipmentSpace, Dict[str, Any]],
+               receipt: EtsyReceipt = None):
+        if not isinstance(receipt_shipment_data, EtsyProductSpace):
+            receipt_shipment_data = self.create_namespace(receipt_shipment_data)
+
+        self.shipment_notification_timestamp = receipt_shipment_data.shipment_notification_timestamp
+        self.carrier_name = receipt_shipment_data.carrier_name
+        self.tracking_code = receipt_shipment_data.tracking_code
+
+        if receipt is not None:
+            self.receipt = receipt
+
 
 class EtsyVariation(Base):
     __tablename__ = 'etsy_variation'
@@ -436,8 +477,6 @@ class EtsyProductProperty(Base):
     property_name = Column(String)
     scale_id = Column(BigInteger)
     scale_name = Column(String)
-    # value_ids = Column(ARRAY(BigInteger))
-    # values = Column(ARRAY(String))
 
     transactions: Mapped[List[EtsyTransaction]] = relationship(
         secondary=transaction_product_data_association_table, back_populates="product_properties"
@@ -453,9 +492,7 @@ class EtsyProductProperty(Base):
             product_id=property_data.property_id,
             property_name=property_data.property_name,
             scale_id=property_data.scale_id,
-            scale_name=property_data.scale_name,
-            # value_ids=property_data.value_ids,
-            # values=property_data.values
+            scale_name=property_data.scale_name
         )
 
         if transactions is not None:
@@ -478,6 +515,20 @@ class EtsyProductProperty(Base):
         ).filter(
             EtsyProductProperty.property_name == property_data.property_name
         ).first()
+
+    def update(self, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
+               transactions: List[EtsyTransaction] = None,
+               overwrite_lists: bool = False):
+        if not isinstance(property_data, EtsyProductPropertySpace):
+            property_data = self.create_namespace(property_data)
+
+        self.product_id = property_data.property_id
+        self.property_name = property_data.property_name
+        self.scale_id = property_data.scale_id
+        self.scale_name = property_data.scale_name
+
+        if transactions is not None:
+            self.transactions = transactions if overwrite_lists else self.transactions + transactions
 
 
 def create_database():
