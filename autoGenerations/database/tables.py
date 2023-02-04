@@ -54,20 +54,24 @@ class EtsyReceipt(Base):
     discount = Column(Float)
     gift_wrap_price = Column(Float)
 
-    address_id = Column(Integer, ForeignKey('address.id'))
+    _address_id = Column(Integer, ForeignKey('address.id'))
     address = relationship("Address", uselist=False, back_populates='receipts')
-    buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
+    _buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
     buyer = relationship("EtsyBuyer", uselist=False, back_populates='receipts')
-    seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
+    _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
 
     transactions = relationship("EtsyTransaction", back_populates='receipt')
     receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
 
     @classmethod
-    def create(cls, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]], address: Address, buyer: EtsyBuyer,
-               seller: EtsySeller, transactions: List[EtsyTransaction],
-               receipt_shipments: List[EtsyReceiptShipment]) -> EtsyReceipt:
+    def create(cls, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
+               address: Address = None,
+               buyer: EtsyBuyer = None,
+               seller: EtsySeller = None,
+               transactions: List[EtsyTransaction] = None,
+               receipt_shipments: List[EtsyReceiptShipment] = None
+               ) -> EtsyReceipt:
         if not isinstance(receipt_data, EtsyReceiptSpace):
             receipt_data = cls.create_namespace(receipt_data)
 
@@ -94,16 +98,22 @@ class EtsyReceipt(Base):
             tax_cost=receipt_data.tax_cost,
             vat_cost=receipt_data.vat_cost,
             discount=receipt_data.discount,
-            gift_wrap_price=receipt_data.gift_wrap_price,
-            address=address,
-            buyer=buyer,
-            seller=seller
+            gift_wrap_price=receipt_data.gift_wrap_price
         )
 
-        if transactions:
-            print(transactions)
+        if address is not None:
+            receipt.address = address
+
+        if buyer is not None:
+            receipt.buyer = buyer
+
+        if seller is not None:
+            receipt.seller = seller
+
+        if transactions is not None:
             receipt.transactions = transactions
-        if receipt_shipments:
+
+        if receipt_shipments is not None:
             receipt.receipt_shipments = receipt_shipments
 
         return receipt
@@ -302,17 +312,17 @@ class EtsyTransaction(Base):
     expected_ship_date = Column(BigInteger)
     buyer_coupon = Column(Integer)
     shop_coupon = Column(Integer)
-    etsy_product_id = Column(BigInteger)
+    product_id = Column(BigInteger)
 
-    shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
+    _shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship('EtsyShippingProfile', uselist=False, back_populates='transactions')
-    receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
+    _receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='transactions')
-    buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
+    _buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
     buyer = relationship('EtsyBuyer', uselist=False, back_populates='transactions')
-    seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
+    _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship('EtsySeller', uselist=False, back_populates='transactions')
-    product_id = Column(Integer, ForeignKey('etsy_product.id'))
+    _product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship('EtsyProduct', uselist=False, back_populates='transactions')
 
     # Many to Many relationship
@@ -320,9 +330,13 @@ class EtsyTransaction(Base):
         secondary=transaction_product_data_association_table, back_populates='transactions')
 
     @classmethod
-    def create(cls, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]], buyer: EtsyBuyer,
-               seller: EtsySeller, existing_product: EtsyProduct,
-               product_properties: List[EtsyProductProperty]) -> EtsyTransaction:
+    def create(cls, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]],
+               buyer: EtsyBuyer = None,
+               seller: EtsySeller = None,
+               product: EtsyProduct = None,
+               shipping_profile: EtsyShippingProfile = None,
+               receipt: EtsyReceipt = None,
+               product_properties: List[EtsyProductProperty] = None) -> EtsyTransaction:
         if not isinstance(transaction_data, EtsyTransactionSpace):
             transaction_data = cls.create_namespace(transaction_data)
 
@@ -346,12 +360,25 @@ class EtsyTransaction(Base):
             expected_ship_date=transaction_data.expected_ship_date,
             buyer_coupon=transaction_data.buyer_coupon,
             shop_coupon=transaction_data.shop_coupon,
-            etsy_product_id=transaction_data.product_id,
-            buyer_id=buyer.id,
-            seller_id=seller.id,
-            product_id=existing_product.id,
-            product_properties=product_properties
         )
+
+        if buyer is not None:
+            transaction.buyer = buyer
+
+        if seller is not None:
+            transaction.seller = seller
+
+        if shipping_profile is not None:
+            transaction.shipping_profile = shipping_profile
+
+        if product is not None:
+            transaction.product = product
+
+        if receipt is not None:
+            transaction.receipt = receipt
+
+        if product_properties is not None:
+            transaction.product_properties = product_properties
 
         return transaction
 
@@ -419,7 +446,7 @@ class EtsyShippingProfile(Base):
     origin_country_iso = Column(String)
     is_deleted = Column(Boolean)
     origin_postal_code = Column(String)
-    profile_type = Column(Etsy.ShippingProfileType)
+    profile_type = Column(Enum(Etsy.ShippingProfileType))
     domestic_handling_fee = Column(Float)
     internation_handling_fee = Column(Float)
 
@@ -446,6 +473,7 @@ class EtsyShippingProfileDestination(Base):
     min_delivery_days = Column(Integer)
     max_delivery_days = Column(Integer)
 
+    _shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="destinations")
 
 
@@ -455,7 +483,7 @@ class EtsyShippingProfileUpgrade(Base):
     shipping_profile_id = Column(BigInteger)
     upgrade_id = Column(BigInteger)
     upgrade_name = Column(String)
-    type = Column(Etsy.ShippingUpgradeType)
+    type = Column(Enum(Etsy.ShippingUpgradeType))
     rank = Column(Integer)
     language = Column(String)
     price = Column(Float)
@@ -465,6 +493,7 @@ class EtsyShippingProfileUpgrade(Base):
     min_delivery_days = Column(Integer)
     max_delivery_days = Column(Integer)
 
+    _shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="upgrades")
 
 
@@ -476,7 +505,7 @@ class EtsyReceiptShipment(Base):
     carrier_name = Column(String)
     tracking_code = Column(String)
 
-    receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
+    _receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='receipt_shipments')
 
     @classmethod
@@ -541,6 +570,8 @@ class EtsyProductProperty(Base):
     scale_id = Column(BigInteger)
     scale_name = Column(String)
 
+    # relationships
+    _product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship("EtsyProduct", uselist=False, back_populates='properties')
     transactions: Mapped[List[EtsyTransaction]] = relationship(
         secondary=transaction_product_data_association_table, back_populates="product_properties"
@@ -548,16 +579,19 @@ class EtsyProductProperty(Base):
 
     @classmethod
     def create(cls, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
-               transactions: List[EtsyTransaction] = None) -> EtsyProductProperty:
+               product: EtsyProduct = None, transactions: List[EtsyTransaction] = None) -> EtsyProductProperty:
         if not isinstance(property_data, EtsyProductPropertySpace):
             property_data = cls.create_namespace(property_data)
 
         property_data = cls(
-            product_id=property_data.property_id,
+            property_id=property_data.property_id,
             property_name=property_data.property_name,
             scale_id=property_data.scale_id,
             scale_name=property_data.scale_name
         )
+
+        if product is not None:
+            property_data.product = product
 
         if transactions is not None:
             property_data.transactions = transactions
@@ -598,11 +632,11 @@ class EtsyProductProperty(Base):
 class EtsyListing(Base):
     __tablename__ = 'etsy_listing'
     id: Mapped[int] = mapped_column(primary_key=True)
-    etsy_seller_id = Column(BigInteger)
-    etsy_shop_id = Column(BigInteger)
+    seller_id = Column(BigInteger)
+    shop_id = Column(BigInteger)
     title = Column(String)
     description = Column(String)
-    state = Column(Etsy.ListingState)
+    state = Column(Enum(Etsy.ListingState))
     creation_timestamp = Column(BigInteger)
     created_timestamp = Column(BigInteger)
     ending_timestamp = Column(BigInteger)
@@ -622,10 +656,10 @@ class EtsyListing(Base):
     personalization_is_required = Column(Boolean)
     personalization_char_count_max = Column(Integer)
     personalization_instructions = Column(String)
-    listing_type = Column(Etsy.ListingType)
+    listing_type = Column(Enum(Etsy.ListingType))
     tags = Column(String)  # Array
     materials = Column(String)  # Array
-    etsy_shipping_profile_id = Column(BigInteger)
+    shipping_profile_id = Column(BigInteger)
     return_policy_id = Column(BigInteger)
     processing_min = Column(Integer)
     processing_max = Column(Integer)
@@ -633,11 +667,11 @@ class EtsyListing(Base):
     when_made = Column(String)
     is_supply = Column(Boolean)
     item_weight = Column(Float)
-    item_weight_unit = Column(Etsy.ItemWeightUnit)
+    item_weight_unit = Column(Enum(Etsy.ItemWeightUnit))
     item_length = Column(Float)
     item_width = Column(Float)
     item_height = Column(Float)
-    item_dimensions_unit = Column(Etsy.ItemDimensionsUnit)
+    item_dimensions_unit = Column(Enum(Etsy.ItemDimensionsUnit))
     is_private = Column(Boolean)
     style = Column(String)   # Array
     file_data = Column(String)
@@ -650,11 +684,11 @@ class EtsyListing(Base):
     views = Column(Integer)
 
     # relationships
-    shipping_profile_id = Column(Integer, ForeignKey("etsy_shipping_profile.id"))
+    _shipping_profile_id = Column(Integer, ForeignKey("etsy_shipping_profile.id"))
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="listings")
-    seller_id = Column(Integer, ForeignKey("etsy_seller.id"))
+    _seller_id = Column(Integer, ForeignKey("etsy_seller.id"))
     seller = relationship("EtsySeller", uselist=False, back_populates="listings")
-    shop_id = Column(Integer, ForeignKey("etsy_shop.id"))
+    _shop_id = Column(Integer, ForeignKey("etsy_shop.id"))
     shop = relationship("EtsyShop", uselist=False, back_populates="listings")
 
     production_partners: Mapped[List[EtsyProductionPartner]] = relationship(
@@ -787,6 +821,7 @@ class EtsyOffering(Base):
     is_deleted = Column(Boolean)
     price = Column(Float)
 
+    product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship("EtsyProduct", uselist=False, back_populates='offerings')
 
 
