@@ -8,6 +8,14 @@ from apis.enums import Carrier
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
+class ListingNotFoundError(Exception):
+    pass
+
+
+class ProductNotFoundError(Exception):
+    pass
+
+
 class Secrets:
 
     def __init__(self):
@@ -51,6 +59,11 @@ class API(Secrets):
 
     def __init__(self):
         super(API, self).__init__()
+        self._signed_header = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "x-api-key": self.keystring,
+            "Authorization": f"Bearer {self._access_token}"
+        }
 
     def _ping(self):
         """
@@ -90,7 +103,7 @@ class API(Secrets):
             }
 
         response = requests.post(url, headers=headers, json=body)
-
+        print(response.json())
         if response.status_code == 200:
             data = response.json()
             new_access_token = data['access_token']
@@ -112,23 +125,13 @@ class API(Secrets):
             raise LookupError(response.json())
 
     def get_receipts(self, min_created: Union[int, str] = None):
-        """
-
-        :return:
-        """
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts')
-
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "x-api-key": self.keystring,
-            "Authorization": f"Bearer {self._access_token}"
-        }
 
         params = {}
         if min_created is not None:
             params['min_created'] = str(min_created)
 
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=self._signed_header, params=params)
 
         if response.status_code == 200:
             return response.json()
@@ -136,47 +139,42 @@ class API(Secrets):
             raise LookupError(response.json())
 
     def get_listings_by_shop_receipt(self, receipt_id: int):
-        """
-
-        :return:
-        """
-
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', str(receipt_id),
                            'listings')
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "x-api-key": self.keystring,
-            "Authorization": f"Bearer {self._access_token}"
-        }
-
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=self._signed_header)
 
         if response.status_code == 200:
             return response.json()
         else:
             raise LookupError(response.json())
 
-    def get_listings(self, listing_id: int):
-        """
-
-        :return:
-        """
-
+    def get_listing(self, listing_id: int):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'listings', str(listing_id))
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "x-api-key": self.keystring,
-            "Authorization": f"Bearer {self._access_token}"
-        }
+        response = requests.get(url, headers=self._signed_header)
 
-        response = requests.get(url, headers=headers)
+        data = response.json()
+        if response.status_code == 200:
+            return data
+        else:
+            if 'error' in data and data['error'].lower() == f'Could not find a Listing with listing_id' \
+                                                            f' = {listing_id}'.lower():
+                return ListingNotFoundError
+            else:
+                raise LookupError(response.json())
+
+    def get_listing_product(self, listing_id: int, product_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'listings', str(listing_id), 'inventory', 'products',
+                           str(product_id))
+
+        response = requests.get(url, headers=self._signed_header)
 
         if response.status_code == 200:
             return response.json()
         else:
             raise LookupError(response.json())
+
     def update_receipt(self, receipt_id: str, body: Dict[str, str]):
         """
 
@@ -184,13 +182,7 @@ class API(Secrets):
         """
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', receipt_id)
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "x-api-key": self.keystring,
-            "Authorization": f"Bearer {self._access_token}"
-        }
-
-        response = requests.put(url, headers=headers, json=body)
+        response = requests.put(url, headers=self._signed_header, json=body)
 
         if response.status_code == 200:
             return response.json()
@@ -201,12 +193,6 @@ class API(Secrets):
                               send_bcc: bool = True):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', order_id, 'tracking')
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "x-api-key": self.keystring,
-            "Authorization": f"Bearer {self._access_token}"
-        }
-
         body = {
             "carrier_name": carrier.name,
             "tracking_code": tracking_code,
@@ -214,7 +200,7 @@ class API(Secrets):
             "note_to_buyer": note_to_buyer
         }
 
-        response = requests.post(url, headers=headers, json=body)
+        response = requests.post(url, headers=self._signed_header, json=body)
 
         if response.status_code == 200:
             return response.json()

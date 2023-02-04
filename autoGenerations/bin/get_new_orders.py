@@ -51,6 +51,31 @@ response = {'count': 1,
             ]
         }
 
+listing = {'listing_id': 1406729485, 'user_id': 695701628, 'shop_id': 40548296, 'title': 'TEST Do Not Buy',
+           'description': 'This is an API test product, please do not buy this - the order will not be fulfilled',
+           'state': 'active', 'creation_timestamp': 1675134605, 'created_timestamp': 1675134605,
+           'ending_timestamp': 1685499005, 'original_creation_timestamp': 1675134217,
+           'last_modified_timestamp': 1675137484, 'updated_timestamp': 1675137484, 'state_timestamp': 1675134580,
+           'quantity': 15, 'shop_section_id': None, 'featured_rank': -1,
+           'url': 'https://www.etsy.com/listing/1406729485/test-do-not-buy',
+           'num_favorers': 0, 'non_taxable': False, 'is_taxable': True, 'is_customizable': False,
+           'is_personalizable': False, 'personalization_is_required': False, 'personalization_char_count_max': None,
+           'personalization_instructions': None, 'listing_type': 'physical', 'tags': [], 'materials': [],
+           'shipping_profile_id': 192161103378, 'return_policy_id': 1115979002120, 'processing_min': 5,
+           'processing_max': 7, 'who_made': 'i_did', 'when_made': 'made_to_order', 'is_supply': False,
+           'item_weight': None, 'item_weight_unit': None, 'item_length': None, 'item_width': None, 'item_height': None,
+           'item_dimensions_unit': None, 'is_private': False, 'style': [], 'file_data': '', 'has_variations': False,
+           'should_auto_renew': True, 'language': 'en-US',
+           'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}, 'taxonomy_id': 2078,
+           'production_partners': [], 'skus': ['SKU101'], 'views': 2, 'shipping_profile': None, 'shop': None,
+           'images': None, 'videos': None, 'user': None, 'translations': None, 'inventory': None}
+
+product = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': False,
+           'offerings': [{'offering_id': 13273503598, 'quantity': 15, 'is_enabled': True, 'is_deleted': False,
+                          'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}}], 'property_values': []}
+
+# TODO: Need to find a way to map listing to products... not sure why inventory field returns None for current listing
+
 
 def get_new_orders():
     etsy_api = EtsyAPI()

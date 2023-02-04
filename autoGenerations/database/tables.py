@@ -16,6 +16,13 @@ transaction_product_data_association_table = Table(
     Column("product_data_id", ForeignKey("etsy_product_property.id"), primary_key=True)
 )
 
+listing_production_partner_association_table = Table(
+    "listing_production_partner_association_table",
+    Base.metadata,
+    Column("listing_id", ForeignKey("etsy_listing.id"), primary_key=True),
+    Column("production_partner_id", ForeignKey("etsy_production_partner.id"), primary_key=True)
+)
+
 
 class EtsyReceipt(Base):
     """
@@ -121,6 +128,7 @@ class EtsySeller(Base):
 
     receipts = relationship('EtsyReceipt', back_populates='seller')
     transactions = relationship("EtsyTransaction", back_populates='seller')
+    listings = relationship("EtsyListing", back_populates='seller')
 
     @classmethod
     def create(cls, seller_data: Union[EtsySellerSpace, Dict[str, Any]],
@@ -367,8 +375,11 @@ class EtsyProduct(Base):
     product_id = Column(Integer, unique=True)
     sku = Column(Integer)
     price = Column(Float)
+    is_deleted = Column(Boolean)
 
     transactions = relationship("EtsyTransaction", back_populates='product')
+    offerings = relationship("EtsyOffering", back_populates='product')
+    properties = relationship("EtsyProductProperty", back_populates='products')
 
     @classmethod
     def create(cls, product_data: Union[EtsyProductSpace, Dict[str, Any]],
@@ -396,6 +407,7 @@ class EtsyProduct(Base):
         return session.query(EtsyProduct).filter(EtsyProduct.product_id == product_id).first()
 
 
+# TODO: Update this
 class EtsyShippingProfile(Base):
     __tablename__ = 'etsy_shipping_profile'
     id = Column(Integer, primary_key=True)
@@ -403,6 +415,7 @@ class EtsyShippingProfile(Base):
     name = Column(String)
 
     transactions = relationship("EtsyTransaction", back_populates='shipping_profile')
+    listings = relationship("EtsyListing", back_populates="shipping_profile")
 
 
 class EtsyReceiptShipment(Base):
@@ -478,6 +491,7 @@ class EtsyProductProperty(Base):
     scale_id = Column(BigInteger)
     scale_name = Column(String)
 
+    product = relationship("EtsyProduct", uselist=False, back_populates='properties')
     transactions: Mapped[List[EtsyTransaction]] = relationship(
         secondary=transaction_product_data_association_table, back_populates="product_properties"
     )
@@ -529,6 +543,133 @@ class EtsyProductProperty(Base):
 
         if transactions is not None:
             self.transactions = transactions if overwrite_lists else self.transactions + transactions
+
+
+class EtsyListing(Base):
+    __tablename__ = 'etsy_listing'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    etsy_seller_id = Column(BigInteger)
+    etsy_shop_id = Column(BigInteger)
+    title = Column(String)
+    description = Column(String)
+    state = Column(Etsy.ListingState)
+    creation_timestamp = Column(BigInteger)
+    created_timestamp = Column(BigInteger)
+    ending_timestamp = Column(BigInteger)
+    original_creation_timestamp = Column(BigInteger)
+    last_modified_timestamp = Column(BigInteger)
+    updated_timestamp = Column(BigInteger)
+    state_timestamp = Column(BigInteger)
+    quantity = Column(Integer)
+    shop_section_id = Column(Integer)
+    featured_rank = Column(Integer)
+    url = Column(String)
+    num_favorers = Column(Integer)
+    non_taxable = Column(Boolean)
+    is_taxable = Column(Boolean)
+    is_customizable = Column(Boolean)
+    is_personalizable = Column(Boolean)
+    personalization_is_required = Column(Boolean)
+    personalization_char_count_max = Column(Integer)
+    personalization_instructions = Column(String)
+    listing_type = Column(Etsy.ListingType)
+    tags = Column(String)  # Array
+    materials = Column(String)  # Array
+    etsy_shipping_profile_id = Column(BigInteger)
+    return_policy_id = Column(BigInteger)
+    processing_min = Column(Integer)
+    processing_max = Column(Integer)
+    who_made = Column(String)
+    when_made = Column(String)
+    is_supply = Column(Boolean)
+    item_weight = Column(Float)
+    item_weight_unit = Column(Etsy.ItemWeightUnit)
+    item_length = Column(Float)
+    item_width = Column(Float)
+    item_height = Column(Float)
+    item_dimensions_unit = Column(Etsy.ItemDimensionsUnit)
+    is_private = Column(Boolean)
+    style = Column(String)   # Array
+    file_data = Column(String)
+    has_variations = Column(Boolean)
+    should_auto_renew = Column(Boolean)
+    language = Column(String)
+    price = Column(Float)
+    taxonomy_id = Column(Integer)
+    skus = Column(String)
+    views = Column(Integer)
+
+    # relationships
+    shipping_profile_id = Column(Integer, ForeignKey("etsy_shipping_profile.id"))
+    shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="listings")
+    seller_id = Column(Integer, ForeignKey("etsy_seller.id"))
+    seller = relationship("EtsySeller", uselist=False, back_populates="listings")
+    shop_id = Column(Integer, ForeignKey("etsy_shop.id"))
+    shop = relationship("EtsyShop", uselist=False, back_populates="listings")
+
+    production_partners: Mapped[List[EtsyProductionPartner]] = relationship(
+        secondary=listing_production_partner_association_table, back_populates="listings"
+    )
+
+    @classmethod
+    def create(cls, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
+               transactions: List[EtsyTransaction] = None) -> EtsyProductProperty:
+        if not isinstance(property_data, EtsyProductPropertySpace):
+            property_data = cls.create_namespace(property_data)
+
+        property_data = cls(
+            product_id=property_data.property_id,
+            property_name=property_data.property_name,
+            scale_id=property_data.scale_id,
+            scale_name=property_data.scale_name
+        )
+
+        if transactions is not None:
+            property_data.transactions = transactions
+
+        return property_data
+
+    @staticmethod
+    def create_namespace(property_data: Dict[str, Any]):
+        return EtsyProductPropertySpace(property_data)
+
+    @staticmethod
+    def get_existing(session, property_data: Union[EtsyProductPropertySpace,
+                                                   Dict[str, Any]]) -> Union[None, EtsyProductProperty]:
+        if not isinstance(property_data, EtsyProductPropertySpace):
+            property_data = EtsyReceipt.create_namespace(property_data)
+
+        return session.query(EtsyProductProperty).filter(
+            EtsyProductProperty.property_id == property_data.property_id
+        ).filter(
+            EtsyProductProperty.property_name == property_data.property_name
+        ).first()
+
+    def update(self, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
+               transactions: List[EtsyTransaction] = None,
+               overwrite_lists: bool = False):
+        if not isinstance(property_data, EtsyProductPropertySpace):
+            property_data = self.create_namespace(property_data)
+
+        self.product_id = property_data.property_id
+        self.property_name = property_data.property_name
+        self.scale_id = property_data.scale_id
+        self.scale_name = property_data.scale_name
+
+        if transactions is not None:
+            self.transactions = transactions if overwrite_lists else self.transactions + transactions
+
+
+# TODO: Fill these out
+class EtsyProductionPartner(Base):
+    pass
+
+
+class EtsyShop(Base):
+    pass
+
+class EtsyOffering(Base):
+    pass
 
 
 def create_database():
