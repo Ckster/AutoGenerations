@@ -407,15 +407,65 @@ class EtsyProduct(Base):
         return session.query(EtsyProduct).filter(EtsyProduct.product_id == product_id).first()
 
 
-# TODO: Update this
 class EtsyShippingProfile(Base):
     __tablename__ = 'etsy_shipping_profile'
     id = Column(Integer, primary_key=True)
     shipping_profile_id = Column(Integer, unique=True)
-    name = Column(String)
+    title = Column(String)
+    user_id = Column(BigInteger)
+    min_processing_days = Column(Integer)
+    max_processing_days = Column(Integer)
+    processing_days_display_label = Column(String)
+    origin_country_iso = Column(String)
+    is_deleted = Column(Boolean)
+    origin_postal_code = Column(String)
+    profile_type = Column(Etsy.ShippingProfileType)
+    domestic_handling_fee = Column(Float)
+    internation_handling_fee = Column(Float)
+
+    # relationships
+    destinations = relationship("EtsyShippingProfileDestination", back_populates='shipping_profile')
+    upgrades = relationship("EtsyShippingProfileUpgrade", back_populates='shipping_profile')
 
     transactions = relationship("EtsyTransaction", back_populates='shipping_profile')
     listings = relationship("EtsyListing", back_populates="shipping_profile")
+
+
+class EtsyShippingProfileDestination(Base):
+    __tablename__ = 'etsy_shipping_profile_destination'
+    id = Column(Integer, primary_key=True)
+    shipping_profile_destination_id = Column(BigInteger)
+    shipping_profile_id = Column(BigInteger)
+    origin_country_iso = Column(String)
+    destination_country_iso = Column(String)
+    destination_region = Column(String)
+    primary_cost = Column(Float)
+    secondary_cost = Column(Float)
+    shipping_carrier_id = Column(Integer)
+    mail_class = Column(String)
+    min_delivery_days = Column(Integer)
+    max_delivery_days = Column(Integer)
+
+    shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="destinations")
+
+
+class EtsyShippingProfileUpgrade(Base):
+    __tablename__ = 'etsy_shipping_profile_upgrade'
+    id = Column(Integer, primary_key=True)
+    shipping_profile_id = Column(BigInteger)
+    upgrade_id = Column(BigInteger)
+    upgrade_name = Column(String)
+    type = Column(Etsy.ShippingUpgradeType)
+    rank = Column(Integer)
+    language = Column(String)
+    price = Column(Float)
+    secondary_price = Column(Float)
+    shipping_carrier_id = Column(String)
+    mail_class = Column(String)
+    min_delivery_days = Column(Integer)
+    max_delivery_days = Column(Integer)
+
+    shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="upgrades")
 
 
 class EtsyReceiptShipment(Base):
@@ -536,7 +586,7 @@ class EtsyProductProperty(Base):
         if not isinstance(property_data, EtsyProductPropertySpace):
             property_data = self.create_namespace(property_data)
 
-        self.product_id = property_data.property_id
+        self.property_id = property_data.property_id
         self.property_name = property_data.property_name
         self.scale_id = property_data.scale_id
         self.scale_name = property_data.scale_name
@@ -660,16 +710,84 @@ class EtsyListing(Base):
             self.transactions = transactions if overwrite_lists else self.transactions + transactions
 
 
-# TODO: Fill these out
 class EtsyProductionPartner(Base):
-    pass
+    __tablename__ = 'etsy_production_partner'
+    id = Column(Integer, primary_key=True)
+    production_partner_id = Column(BigInteger, unique=True)
+    partner_name = Column(String)
+    location = Column(String)
+
+    listings: Mapped[List[EtsyListing]] = relationship(
+        secondary=listing_production_partner_association_table, back_populates="production_partners"
+    )
 
 
 class EtsyShop(Base):
-    pass
+    """
+    https://developer.etsy.com/documentation/reference#operation/getShop
+    """
+    __tablename__ = 'etsy_shop'
+    id = Column(Integer, primary_key=True)
+    shop_id = Column(BigInteger, unique=True)
+    user_id = Column(BigInteger)
+    shop_name = Column(String)
+    create_date = Column(Integer)
+    created_timestamp = Column(Integer)
+    title = Column(String)
+    announcement = Column(String)
+    currency_code = Column(String)
+    is_vacation = Column(Boolean)
+    vacation_message = Column(String)
+    sale_message = Column(String)
+    digital_sale_message = Column(String)
+    update_date = Column(Integer)
+    updated_timestamp = Column(Integer)
+    listing_active_count = Column(Integer)
+    digital_listing_count = Column(Integer)
+    login_name = Column(String)
+    accepts_custom_requests = Column(Boolean)
+    policy_welcome = Column(String)
+    policy_payment = Column(String)
+    policy_shipping = Column(String)
+    policy_refunds = Column(String)
+    policy_additional = Column(String)
+    policy_seller_info = Column(String)
+    policy_update_date = Column(Integer)
+    policy_has_private_receipt_info = Column(Boolean)
+    has_unstructured_policies = Column(Boolean)
+    policy_privacy = Column(String)
+    vacation_autoreply = Column(String)
+    url = Column(String)
+    image_url_760x100 = Column(String)
+    num_favorers = Column(Integer)
+    languages = Column(String)  # Array
+    icon_url_fullxfull = Column(String)
+    is_using_structured_policies = Column(Boolean)
+    has_onboarded_structured_policies = Column(Boolean)
+    include_dispute_form_link = Column(Boolean)
+    is_etsy_payments_onboarded = Column(Boolean)
+    is_calculated_eligible = Column(Boolean)
+    is_opted_into_buyer_promise = Column(Boolean)
+    is_shop_us_based = Column(Boolean)
+    transaction_sold_count = Column(Integer)
+    shipping_from_country_iso = Column(String)
+    shop_location_country_iso = Column(String)
+    review_count = Column(Integer)
+    review_average = Column(Float)
+
+    listings = relationship("EtsyListing", back_populates="shop")
+
 
 class EtsyOffering(Base):
-    pass
+    __tablename__ = 'etsy_offering'
+    id = Column(Integer, primary_key=True)
+    offering_id = Column(BigInteger, unique=True)
+    quantity = Column(Integer)
+    is_enabled = Column(Boolean)
+    is_deleted = Column(Boolean)
+    price = Column(Float)
+
+    product = relationship("EtsyProduct", uselist=False, back_populates='offerings')
 
 
 def create_database():

@@ -42,3 +42,11 @@ class Etsy:
         METER = "m"
         YARD = "yd"
         INCHES = "inches"  # Yeah idk
+
+    class ShippingProfileType(enum.Enum):
+        MANUAL = "manual"
+        CALCULATED = "calculated"
+
+    class ShippingUpgradeType(enum.Enum):
+        DOMESTIC = "0"
+        INTERNATIONAL = "1"
