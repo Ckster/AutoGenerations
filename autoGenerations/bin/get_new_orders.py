@@ -94,55 +94,52 @@ def get_new_orders():
 
         # Etsy API
         orders = etsy_api.get_receipts(min_created=min_created)
-
         print(f"Processing {orders['count']} new orders")
 
+        # TODO: For testing
         orders = response
 
         for receipt in orders['results']:
             receipt_space = EtsyReceipt.create_namespace(receipt)
 
             # Check if the address exists
-            existing_address = Address.get_existing(session, receipt)
-            if existing_address is None:
+            address = Address.get_existing(session, receipt)
+            if address is None:
                 address = Address.create(receipt)
                 session.add(address)
                 session.flush()
             else:
                 # Nothing to update, if anything changes it becomes a different address
-                address = existing_address
+                address = address
 
             # Check if the buyer exists
-            existing_buyer = EtsyBuyer.get_existing(session, receipt_space.buyer_id)
-            if existing_buyer is None:
+            buyer = EtsyBuyer.get_existing(session, receipt_space.buyer_id)
+            if buyer is None:
                 buyer = EtsyBuyer.create(receipt)
                 session.add(buyer)
                 session.flush()
             else:
-                existing_buyer.update(receipt)
-                buyer = existing_buyer
+                buyer.update(receipt)
 
             # Check if the seller exists
-            existing_seller = EtsySeller.get_existing(session, receipt_space.seller_id)
-            if existing_seller is None:
+            seller = EtsySeller.get_existing(session, receipt_space.seller_id)
+            if seller is None:
                 seller = EtsySeller.create(receipt)
                 session.add(seller)
                 session.flush()
             else:
-                existing_seller.update(receipt)
-                seller = existing_seller
+                seller.update(receipt)
 
             # Create new shipments
             receipt_shipments = []
             for shipment in receipt['shipments']:
-                existing_receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment)
-                if existing_receipt_shipment is None:
+                receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment)
+                if receipt_shipment is None:
                     receipt_shipment = EtsyReceiptShipment.create(shipment)
                     session.add(receipt_shipment)
                     session.flush()
                 else:
-                    existing_receipt_shipment.update(shipment)
-                    receipt_shipment = existing_receipt_shipment
+                    receipt_shipment.update(shipment)
                 receipt_shipments.append(receipt_shipment)
 
             # Create new transactions
@@ -150,53 +147,51 @@ def get_new_orders():
             for transaction in receipt['transactions']:
                 transaction_space = EtsyTransaction.create_namespace(transaction)
 
-                # TODO: Do something with the listing id, for example we need to 1.) Keep an updated list of our stores
-                #  listings 2) Make sure to increase the quantity available when stock gets low (etsy only lets you
-                #  stock an item to 999) 3) Here we will only add listings if they don't already exist, and update their
-                #  status if we cannot find them.
-                # Get list of existing / created product data
+                # Get list of existing / created product properties
                 product_properties = []
                 for property_data in transaction_space.product_property_data:
-                    existing_product_property = EtsyProductProperty.get_existing(session, property_data)
-                    if existing_product_property is None:
+                    product_property = EtsyProductProperty.get_existing(session, property_data)
+                    if product_property is None:
                         product_property = EtsyProductProperty.create(property_data)
                         session.add(product_property)
                         session.flush()
                     else:
-                        existing_product_property.update(property_data)
-                        product_property = existing_product_property
+                        product_property.update(property_data)
                     product_properties.append(product_property)
 
-                # The transaction gives us the product_id, but no other information about the product. Using the
-                # listing id, we can call the get product endpoint and get the necessary info, which can be used to
-                # update the existing product record or create a new one. If it cannot be found, update the status of
-                # the record to NOT FOUND, or something
-                existing_product = EtsyProduct.get_existing(session, transaction_space.product_id)
-                if existing_product is None:
+                # Call endpoint to get more info about listing, then update / create a listing record
+                listing_response = etsy_api.get_listing(transaction_space.listing_id)
+                # TODO: Get existing, then update or create listing
 
-                    # Need to get product information from api endpoint
+                # TODO: Using listing response / API requests, update or create the shop, shop section, return policy,
+                #  shipping profile, and production partners records.
 
-                    existing_product = EtsyProduct()
-                    session.add(existing_product)
+                # TODO: From the shipping profile get the shipping upgrades and shipping destinations
+
+                # Call endpoint to get more info about the product, then update / create a product record
+                product_response = etsy_api.get_listing_product(transaction_space.listing_id,
+                                                                transaction_space.product_id)
+                # TODO: Get existing, then update or create product
+                # TODO: Using product response / API request, update or create the offerings records
+
+                product = EtsyProduct.get_existing(session, transaction_space.product_id)
+                if product is None:
+                    product = EtsyProduct()
+                    session.add(product)
                     session.flush()
                     pass
-
                 else:
-
+                    product.update()
 
                 # Check for existing transaction
-                existing_transaction = EtsyTransaction.get_existing(session, transaction)
-                if existing_transaction is None:
-                    # TODO: Relate the shipping profile with the transaction here by querying for it using the
-                    #  shipping_profile_id
-                    receipt_transaction = EtsyTransaction.create(transaction_space, buyer, seller, existing_product,
-                                                             product_properties)
-                    session.add(receipt_transaction)
-                    session.flush()
+                transaction = EtsyTransaction.get_existing(session, transaction)
+                if transaction is None:
+                    # TODO: Create, add, flush transaction
+                    pass
                 else:
-                    # TODO: Update
-                    receipt_transaction = existing_transaction
-                transactions.append(receipt_transaction)
+                    # TODO: Update transaction
+                    pass
+                transactions.append(transaction)
 
             # Check if receipt exists
             existing_receipt = EtsyReceipt.get_existing(session, receipt)
