@@ -772,17 +772,18 @@ class EtsyShippingProfileDestination(Base):
         if not isinstance(shipping_destination_data, EtsyShippingProfileDestinationSpace):
             shipping_destination_data = self.create_namespace(shipping_destination_data)
 
-        self.shipping_profile_destination_id=_check(self.shipping_profile_destination_id,
-                                                    shipping_destination_data.shipping_profile_destination_id)
-        self.origin_country_iso=_check(self.origin_country_iso, shipping_destination_data.origin_country_iso)
-        self.destination_country_iso=_check(self.destination_country_iso, shipping_destination_data.destination_country_iso)
-        self.destination_region=_check(self.destination_region, shipping_destination_data.destination_region)
-        self.primary_cost=_check(self.primary_cost, shipping_destination_data.primary_cost)
-        self.secondary_cost=_check(self.secondary_cost, shipping_destination_data.secondary_cost)
-        self.shipping_carrier_id=_check(self.shipping_carrier_id, shipping_destination_data.shipping_carrier_id)
-        self.mail_class=_check(self.mail_class, shipping_destination_data.mail_class)
-        self.min_delivery_days=_check(self.min_delivery_days, shipping_destination_data.min_delivery_days)
-        self.max_delivery_days=_check(self.max_delivery_days, shipping_destination_data.max_delivery_days)
+        self.shipping_profile_destination_id = _check(self.shipping_profile_destination_id,
+                                                      shipping_destination_data.shipping_profile_destination_id)
+        self.origin_country_iso = _check(self.origin_country_iso, shipping_destination_data.origin_country_iso)
+        self.destination_country_iso = _check(self.destination_country_iso,
+                                              shipping_destination_data.destination_country_iso)
+        self.destination_region = _check(self.destination_region, shipping_destination_data.destination_region)
+        self.primary_cost = _check(self.primary_cost, shipping_destination_data.primary_cost)
+        self.secondary_cost = _check(self.secondary_cost, shipping_destination_data.secondary_cost)
+        self.shipping_carrier_id = _check(self.shipping_carrier_id, shipping_destination_data.shipping_carrier_id)
+        self.mail_class = _check(self.mail_class, shipping_destination_data.mail_class)
+        self.min_delivery_days = _check(self.min_delivery_days, shipping_destination_data.min_delivery_days)
+        self.max_delivery_days = _check(self.max_delivery_days, shipping_destination_data.max_delivery_days)
 
         if shipping_profile is not None:
             self.shipping_profile = shipping_profile
@@ -852,21 +853,21 @@ class EtsyShippingProfileUpgrade(Base):
 
     def update(self, shipping_upgrade_data: Union[EtsyShippingProfileUpgrade, Dict[str, Any]],
                shipping_profile: EtsyShippingProfile = None
-               ) -> EtsyShippingProfileUpgrade:
+               ):
         if not isinstance(shipping_upgrade_data, EtsyShippingProfileUpgradeSpace):
             shipping_upgrade_data = self.create_namespace(shipping_upgrade_data)
 
-        self.upgrade_id=_check(self.upgrade_id, shipping_upgrade_data.upgrade_id)
-        self.upgrade_name=_check(self.upgrade_name, shipping_upgrade_data.upgrade_name)
-        self.type=_check(self.type, shipping_upgrade_data.type)
-        self.rank=_check(self.rank, shipping_upgrade_data.rank)
-        self.language=_check(self.language, shipping_upgrade_data.language)
-        self.price=_check(self.price, shipping_upgrade_data.price)
-        self.secondary_price=_check(self.secondary_price, shipping_upgrade_data.secondary_price)
-        self.shipping_carrier_id=_check(self.shipping_carrier_id, shipping_upgrade_data.shipping_carrier_id)
-        self.mail_class=_check(self.mail_class, shipping_upgrade_data.mail_class)
-        self.min_delivery_days=_check(self.min_delivery_days, shipping_upgrade_data.min_delivery_days)
-        self.max_delivery_days=_check(self.max_delivery_days, shipping_upgrade_data.max_delivery_days)
+        self.upgrade_id = _check(self.upgrade_id, shipping_upgrade_data.upgrade_id)
+        self.upgrade_name = _check(self.upgrade_name, shipping_upgrade_data.upgrade_name)
+        self.type = _check(self.type, shipping_upgrade_data.type)
+        self.rank = _check(self.rank, shipping_upgrade_data.rank)
+        self.language = _check(self.language, shipping_upgrade_data.language)
+        self.price = _check(self.price, shipping_upgrade_data.price)
+        self.secondary_price = _check(self.secondary_price, shipping_upgrade_data.secondary_price)
+        self.shipping_carrier_id = _check(self.shipping_carrier_id, shipping_upgrade_data.shipping_carrier_id)
+        self.mail_class = _check(self.mail_class, shipping_upgrade_data.mail_class)
+        self.min_delivery_days = _check(self.min_delivery_days, shipping_upgrade_data.min_delivery_days)
+        self.max_delivery_days = _check(self.max_delivery_days, shipping_upgrade_data.max_delivery_days)
 
         if shipping_profile is not None:
             self.shipping_profile = shipping_profile

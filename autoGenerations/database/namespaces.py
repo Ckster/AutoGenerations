@@ -266,7 +266,7 @@ class EtsyShopSectionSpace:
         self.active_listing_count = shop_section_data['active_listing_count']
 
 
-class EtsyProductionPartner:
+class EtsyProductionPartnerSpace:
     def __init__(self, production_partner: Dict):
         self.production_partner_id = production_partner['production_partner_id']
         self.partner_name = production_partner['partner_name']
