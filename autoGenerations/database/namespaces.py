@@ -3,6 +3,7 @@ from typing import Dict, List
 
 _SPECIAL_CHAR = '|'
 
+
 def list_string_encode(list_of_strings: List[str]) -> str:
     """
     sqlite does not support array column types (postgres does), so in order to keep development db the same as
@@ -159,6 +160,7 @@ class EtsyShippingProfileDestinationSpace:
         self.shipping_profile_destination_id = shipping_profile_destination_data['shipping_profile_destination_id']
         self.shipping_profile_id = shipping_profile_destination_data['shipping_profile_id']
         self.origin_country_iso = shipping_profile_destination_data['origin_country_iso']
+        self.destination_country_iso = shipping_profile_destination_data['destination_country_iso']
         self.destination_region = shipping_profile_destination_data['destination_region']
         self.primary_cost = shipping_profile_destination_data['primary_cost']['amount']
         self.secondary_cost = shipping_profile_destination_data['secondary_cost']['amount']
@@ -271,7 +273,7 @@ class EtsyProductionPartner:
         self.location = production_partner['location']
 
 
-class EtsyShop:
+class EtsyShopSpace:
     def __init__(self, etsy_shop_data: Dict):
         self.shop_id = etsy_shop_data['shop_id']
         self.user_id = etsy_shop_data['user_id']
