@@ -23,6 +23,13 @@ listing_production_partner_association_table = Table(
     Column("production_partner_id", ForeignKey("etsy_production_partner.id"), primary_key=True)
 )
 
+listing_product_association_table = Table(
+    "listing_product_association_table",
+    Base.metadata,
+    Column("listing_id", ForeignKey("etsy_listing.id"), primary_key=True),
+    Column("product_id", ForeignKey("etsy_product.id"), primary_key=True)
+)
+
 
 class EtsyReceipt(Base):
     """
@@ -296,6 +303,9 @@ class Address(Base):
 
 
 class EtsyTransaction(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopReceiptTransaction
+    """
     __tablename__ = 'etsy_transaction'
     id: Mapped[int] = mapped_column(primary_key=True)
     transaction_id = Column(BigInteger, unique=True)
@@ -402,6 +412,9 @@ class EtsyTransaction(Base):
 
 
 class EtsyProduct(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getListingProduct
+    """
     __tablename__ = 'etsy_product'
     id = Column(Integer, primary_key=True)
     product_id = Column(BigInteger, unique=True)
@@ -413,10 +426,17 @@ class EtsyProduct(Base):
     transactions = relationship("EtsyTransaction", back_populates='product')
     offerings = relationship("EtsyOffering", back_populates='product')
     properties = relationship("EtsyProductProperty", back_populates='products')
+    listings: Mapped[List[EtsyListing]] = relationship(
+        secondary=listing_product_association_table, back_populates="products"
+    )
 
     @classmethod
     def create(cls, product_data: Union[EtsyProductSpace, Dict[str, Any]],
-               transactions: List[EtsyTransaction] = None) -> EtsyProduct:
+               transactions: List[EtsyTransaction] = None,
+               offerings: List[EtsyOffering] = None,
+               properties: List[EtsyProductProperty] = None,
+               listings: List[EtsyListing] = None
+               ) -> EtsyProduct:
         if not isinstance(product_data, EtsyProductSpace):
             product_data = cls.create_namespace(product_data)
 
@@ -428,6 +448,15 @@ class EtsyProduct(Base):
 
         if transactions is not None:
             product.transactions = transactions
+
+        if offerings is not None:
+            product.offerings = offerings
+
+        if properties is not None:
+            product.properties = properties
+
+        if listings is not None:
+            product.listings = listings
 
         return product
 
@@ -441,6 +470,9 @@ class EtsyProduct(Base):
 
 
 class EtsyShippingProfile(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopShippingProfile
+    """
     __tablename__ = 'etsy_shipping_profile'
     id = Column(Integer, primary_key=True)
     shipping_profile_id = Column(BigInteger, unique=True)
@@ -465,6 +497,9 @@ class EtsyShippingProfile(Base):
 
 
 class EtsyShippingProfileDestination(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopShippingProfileDestinationsByShippingProfile
+    """
     __tablename__ = 'etsy_shipping_profile_destination'
     id = Column(Integer, primary_key=True)
     shipping_profile_destination_id = Column(BigInteger, unique=True)
@@ -488,6 +523,9 @@ class EtsyShippingProfileDestination(Base):
 
 
 class EtsyShippingProfileUpgrade(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopShippingProfileUpgrades
+    """
     __tablename__ = 'etsy_shipping_profile_upgrade'
     id = Column(Integer, primary_key=True)
     upgrade_id = Column(BigInteger, unique=True)
@@ -512,6 +550,9 @@ class EtsyShippingProfileUpgrade(Base):
 
 
 class EtsyReceiptShipment(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopReceipt
+    """
     __tablename__ = 'etsy_shipment'
     id = Column(Integer, primary_key=True)
     receipt_shipping_id = Column(BigInteger, unique=True)
@@ -576,6 +617,9 @@ class EtsyVariation(Base):
 
 
 class EtsyProductProperty(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getListingProperties
+    """
     __tablename__ = 'etsy_product_property'
     id: Mapped[int] = mapped_column(primary_key=True)
     property_id = Column(BigInteger, unique=True)
@@ -643,6 +687,9 @@ class EtsyProductProperty(Base):
 
 
 class EtsyListing(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getListing
+    """
     __tablename__ = 'etsy_listing'
     id: Mapped[int] = mapped_column(primary_key=True)
     listing_id = Column(BigInteger, unique=True)
@@ -704,6 +751,9 @@ class EtsyListing(Base):
     _return_policy_id = Column(Integer, ForeignKey('etsy_return_policy.id'))
     return_policy = relationship("EtsyReturnPolicy", uselist=False, back_populates="listings")
 
+    products: Mapped[List[EtsyProduct]] = relationship(
+        secondary=listing_product_association_table, back_populates="listings"
+    )
     production_partners: Mapped[List[EtsyProductionPartner]] = relationship(
         secondary=listing_production_partner_association_table, back_populates="listings"
     )
@@ -775,6 +825,9 @@ class EtsyReturnPolicy(Base):
 
 
 class EtsyShopSection(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopSection
+    """
     __tablename__ = 'etsy_shop_section'
     id = Column(Integer, primary_key=True)
     shop_section_id = Column(BigInteger, unique=True)
@@ -791,6 +844,9 @@ class EtsyShopSection(Base):
 
 
 class EtsyProductionPartner(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getShopProductionPartners
+    """
     __tablename__ = 'etsy_production_partner'
     id = Column(Integer, primary_key=True)
     production_partner_id = Column(BigInteger, unique=True)
@@ -864,6 +920,9 @@ class EtsyShop(Base):
 
 
 class EtsyOffering(Base):
+    """
+    https://developer.etsy.com/documentation/reference/#operation/getListingOffering
+    """
     __tablename__ = 'etsy_offering'
     id = Column(Integer, primary_key=True)
     offering_id = Column(BigInteger, unique=True)
