@@ -964,7 +964,7 @@ class EtsyProductProperty(Base):
         if not isinstance(property_data, EtsyProductPropertySpace):
             property_data = cls.create_namespace(property_data)
 
-        property_data = cls(
+        property_i = cls(
             property_id=property_data.property_id,
             property_name=property_data.property_name,
             scale_id=property_data.scale_id,
@@ -972,12 +972,12 @@ class EtsyProductProperty(Base):
         )
 
         if product is not None:
-            property_data.product = product
+            property_i.product = product
 
         if transactions is not None:
-            property_data.transactions = transactions
+            property_i.transactions = transactions
 
-        return property_data
+        return property_i
 
     @staticmethod
     def create_namespace(property_data: Dict[str, Any]):
@@ -1083,22 +1083,26 @@ class EtsyListing(Base):
     )
 
     @classmethod
-    def create(cls, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
-               transactions: List[EtsyTransaction] = None) -> EtsyProductProperty:
-        if not isinstance(property_data, EtsyProductPropertySpace):
-            property_data = cls.create_namespace(property_data)
+    def create(cls, listing_data: Union[EtsyListingSpace, Dict[str, Any]],
+               shipping_profile: EtsyShippingProfile = None,
+               seller: EtsySeller = None,
+               shop: EtsyShop = None,
+               shop_section: EtsyShopSection = None,
+               return_policy: EtsyReturnPolicy = None,
+               products: List[EtsyProduct] = None,
+               production_partners: List[EtsyProductionPartner] = None
+               ) -> EtsyListing:
+        if not isinstance(listing_data, EtsyListingSpace):
+            listing_data = cls.create_namespace(listing_data)
 
-        property_data = cls(
-            product_id=property_data.property_id,
-            property_name=property_data.property_name,
-            scale_id=property_data.scale_id,
-            scale_name=property_data.scale_name
+        listing = cls(
+
         )
 
-        if transactions is not None:
-            property_data.transactions = transactions
+        if products is not None:
+            listing.products = products
 
-        return property_data
+        return listing
 
     @staticmethod
     def create_namespace(property_data: Dict[str, Any]):
