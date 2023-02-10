@@ -227,6 +227,7 @@ class EtsyListingSpace:
         self.item_weight_unit = listing_data['item_weight_unit']
         self.item_length = listing_data['item_length']
         self.item_height = listing_data['item_height']
+        self.item_width = listing_data['item_width']
         self.item_dimensions_unit = listing_data['item_dimensions_unit']
         self.is_private = listing_data['is_private']
         self.style = listing_data['style']

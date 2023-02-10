@@ -4,7 +4,7 @@ from database.utils import Base, make_engine
 from database.enums import Etsy
 from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, EtsySellerSpace, EtsyBuyerSpace, \
     EtsyTransactionSpace, AddressSpace, EtsyProductPropertySpace, EtsyProductSpace, EtsyShippingProfileSpace, \
-    EtsyProductionPartner, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
+    EtsyProductionPartnerSpace, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
     EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -32,9 +32,14 @@ listing_product_association_table = Table(
 )
 
 
+# Thread on SQL UPDATE when you are 'changing' a table column value with the value it already is:
+# https://www.sqlservercentral.com/forums/topic/update-when-the-values-are-the-same. Apparently SQL
+# still marks the disk record as dirty and sends an update. So have to do check in all of the update methods to make
+# most efficient transaction
+
+
 # TODO: Implement this where it already isn't
-def _check(attr, new_val):
-    return new_val if attr != new_val else attr
+# TODO: Review the get_existing methods
 
 
 class EtsyReceipt(Base):
@@ -914,10 +919,10 @@ class EtsyReceiptShipment(Base):
     def get_existing(session, shipment_data: Union[EtsyReceiptShipment,
                                                    Dict[str, Any]]) -> Union[None, EtsyReceiptShipment]:
         if not isinstance(shipment_data, EtsyReceiptShipmentSpace):
-            shipment_data = EtsyReceipt.create_namespace(shipment_data)
+            shipment_data = EtsyReceiptShipment.create_namespace(shipment_data)
 
         return session.query(EtsyReceiptShipment).filter(
-            EtsyReceiptShipment.receipt_id == shipment_data.receipt_id
+            EtsyReceiptShipment.receipt_shipping_id == shipment_data.receipt_shipping_id
         )
 
     def update(self, receipt_shipment_data: Union[EtsyReceiptShipmentSpace, Dict[str, Any]],
@@ -987,7 +992,7 @@ class EtsyProductProperty(Base):
     def get_existing(session, property_data: Union[EtsyProductPropertySpace,
                                                    Dict[str, Any]]) -> Union[None, EtsyProductProperty]:
         if not isinstance(property_data, EtsyProductPropertySpace):
-            property_data = EtsyReceipt.create_namespace(property_data)
+            property_data = EtsyProductProperty.create_namespace(property_data)
 
         return session.query(EtsyProductProperty).filter(
             EtsyProductProperty.property_id == property_data.property_id
@@ -1096,8 +1101,71 @@ class EtsyListing(Base):
             listing_data = cls.create_namespace(listing_data)
 
         listing = cls(
-
+            listing_id=listing_data.listing_id,
+            title=listing_data.title,
+            description=listing_data.description,
+            state=listing_data.state,
+            creation_timestamp=listing_data.creation_timestamp,
+            created_timestamp=listing_data.created_timestamp,
+            ending_timestamp=listing_data.ending_timestamp,
+            original_creation_timestamp=listing_data.original_creation_timestamp,
+            last_modified_timestamp=listing_data.last_modified_timestamp,
+            updated_timestamp=listing_data.updated_timestamp,
+            state_timestamp=listing_data.state_timestamp,
+            quantity=listing_data.quantity,
+            featured_rank=listing_data.featured_rank,
+            url=listing_data.url,
+            num_favorers=listing_data.num_favorers,
+            non_taxable=listing_data.non_taxable,
+            is_taxable=listing_data.is_taxable,
+            is_customizable=listing_data.is_customizable,
+            is_personalizable=listing_data.is_personalizable,
+            personalization_is_required=listing_data.personalization_is_required,
+            personalization_char_count_max=listing_data.personalization_char_count_max,
+            personalization_instructions=listing_data.personalization_instructions,
+            listing_type=listing_data.listing_type,
+            tags=listing_data.tags,
+            materials=listing_data.materials,
+            processing_min=listing_data.processing_min,
+            processing_max=listing_data.processing_max,
+            who_made=listing_data.who_made,
+            when_made=listing_data.when_made,
+            is_supply=listing_data.is_supply,
+            item_weight=listing_data.item_weight,
+            item_weight_unit=listing_data.item_weight_unit,
+            item_length=listing_data.item_length,
+            item_width=listing_data.item_width,
+            item_height=listing_data.item_height,
+            item_dimensions_unit=listing_data.item_dimensions_unit,
+            is_private=listing_data.is_private,
+            style=listing_data.style,
+            file_data=listing_data.file_data,
+            has_variations=listing_data.has_variations,
+            should_auto_renew=listing_data.should_auto_renew,
+            language=listing_data.language,
+            price=listing_data.price,
+            taxonomy_id=listing_data.taxonomy_id,
+            skus=listing_data.skus,
+            views=listing_data.views
         )
+
+        if shipping_profile is not None:
+            listing.shipping_profile = shipping_profile
+
+        if seller is not None:
+            listing.seller = seller
+
+        if shop is not None:
+            listing.shop = shop
+
+        if shop_section is not None:
+            listing.shop_section = shop_section
+
+        if return_policy is not None:
+            listing.return_policy = return_policy
+
+        if production_partners is not None:
+            listing.production_partners = production_partners
 
         if products is not None:
             listing.products = products
@@ -1105,34 +1173,99 @@ class EtsyListing(Base):
         return listing
 
     @staticmethod
-    def create_namespace(property_data: Dict[str, Any]):
-        return EtsyProductPropertySpace(property_data)
+    def create_namespace(listing_data: Dict[str, Any]) -> EtsyListingSpace:
+        return EtsyListingSpace(listing_data)
 
     @staticmethod
-    def get_existing(session, property_data: Union[EtsyProductPropertySpace,
-                                                   Dict[str, Any]]) -> Union[None, EtsyProductProperty]:
-        if not isinstance(property_data, EtsyProductPropertySpace):
-            property_data = EtsyReceipt.create_namespace(property_data)
-
-        return session.query(EtsyProductProperty).filter(
-            EtsyProductProperty.property_id == property_data.property_id
-        ).filter(
-            EtsyProductProperty.property_name == property_data.property_name
+    def get_existing(session, listing_id: int) -> Union[None, EtsyListing]:
+        return session.query(EtsyListing).filter(
+            EtsyListing.listing_id == listing_id
         ).first()
 
-    def update(self, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
-               transactions: List[EtsyTransaction] = None,
-               overwrite_lists: bool = False):
-        if not isinstance(property_data, EtsyProductPropertySpace):
-            property_data = self.create_namespace(property_data)
+    def check_update(self, attr, new):
+        if attr != new:
+            a
 
-        self.product_id = property_data.property_id
-        self.property_name = property_data.property_name
-        self.scale_id = property_data.scale_id
-        self.scale_name = property_data.scale_name
+    def update(self, listing_data: Union[EtsyListingSpace, Dict[str, Any]],
+               shipping_profile: EtsyShippingProfile = None,
+               seller: EtsySeller = None,
+               shop: EtsyShop = None,
+               shop_section: EtsyShopSection = None,
+               return_policy: EtsyReturnPolicy = None,
+               products: List[EtsyProduct] = None,
+               production_partners: List[EtsyProductionPartner] = None
+               ):
+        if not isinstance(listing_data, EtsyListingSpace):
+            listing_data = self.create_namespace(listing_data)
 
-        if transactions is not None:
-            self.transactions = transactions if overwrite_lists else self.transactions + transactions
+        if self.listing_id != listing_data.listing_id:
+            self.listing_id = _check(self.listing_id, listing_data.listing_id)
+        self.title = listing_data.title
+        self.description = listing_data.description
+        self.state = listing_data.state
+        self.creation_timestamp = listing_data.creation_timestamp
+        self.created_timestamp = listing_data.created_timestamp
+        self.ending_timestamp = listing_data.ending_timestamp
+        self.original_creation_timestamp = listing_data.original_creation_timestamp
+        self.last_modified_timestamp = listing_data.last_modified_timestamp
+        self.updated_timestamp = listing_data.updated_timestamp
+        self.state_timestamp = listing_data.state_timestamp
+        self.quantity = listing_data.quantity
+        self.featured_rank = listing_data.featured_rank
+        self.url = listing_data.url
+        self.num_favorers = listing_data.num_favorers
+        self.non_taxable = listing_data.non_taxable
+        self.is_taxable = listing_data.is_taxable
+        self.is_customizable = listing_data.is_customizable
+        self.is_personalizable = listing_data.is_personalizable
+        self.personalization_is_required = listing_data.personalization_is_required
+        self.personalization_char_count_max = listing_data.personalization_char_count_max
+        self.personalization_instructions = listing_data.personalization_instructions
+        self.listing_type = listing_data.listing_type
+        self.tags = listing_data.tags
+        self.materials = listing_data.materials
+        self.processing_min = listing_data.processing_min
+        self.processing_max = listing_data.processing_max
+        self.who_made = listing_data.who_made
+        self.when_made = listing_data.when_made
+        self.is_supply = listing_data.is_supply
+        self.item_weight = listing_data.item_weight
+        self.item_weight_unit = listing_data.item_weight_unit
+        self.item_length = listing_data.item_length
+        self.item_width = listing_data.item_width
+        self.item_height = listing_data.item_height
+        self.item_dimensions_unit = listing_data.item_dimensions_unit
+        self.is_private = listing_data.is_private
+        self.style = listing_data.style
+        self.file_data = listing_data.file_data
+        self.has_variations = listing_data.has_variations
+        self.should_auto_renew = listing_data.should_auto_renew
+        self.language = listing_data.language
+        self.price = listing_data.price
+        self.taxonomy_id = listing_data.taxonomy_id
+        self.skus = listing_data.skus
+        self.views = listing_data.views
+
+        if shipping_profile is not None:
+            listing.shipping_profile = shipping_profile
+
+        if seller is not None:
+            listing.seller = seller
+
+        if shop is not None:
+            listing.shop = shop
+
+        if shop_section is not None:
+            listing.shop_section = shop_section
+
+        if return_policy is not None:
+            listing.return_policy = return_policy
+
+        if production_partners is not None:
+            listing.production_partners = production_partners
+
+        if products is not None:
+            listing.products = products
 
 
 class EtsyReturnPolicy(Base):
