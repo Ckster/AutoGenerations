@@ -37,8 +37,6 @@ listing_product_association_table = Table(
 # still marks the disk record as dirty and sends an update. So have to do check in all of the update methods to make
 # most efficient transaction
 
-
-# TODO: Implement this where it already isn't
 # TODO: Review the get_existing methods
 
 
@@ -1182,10 +1180,6 @@ class EtsyListing(Base):
             EtsyListing.listing_id == listing_id
         ).first()
 
-    def check_update(self, attr, new):
-        if attr != new:
-            a
-
     def update(self, listing_data: Union[EtsyListingSpace, Dict[str, Any]],
                shipping_profile: EtsyShippingProfile = None,
                seller: EtsySeller = None,
@@ -1193,7 +1187,8 @@ class EtsyListing(Base):
                shop_section: EtsyShopSection = None,
                return_policy: EtsyReturnPolicy = None,
                products: List[EtsyProduct] = None,
-               production_partners: List[EtsyProductionPartner] = None
+               production_partners: List[EtsyProductionPartner] = None,
+               overwrite_list: Bool = False
                ):
         if not isinstance(listing_data, EtsyListingSpace):
             listing_data = self.create_namespace(listing_data)
@@ -1247,25 +1242,26 @@ class EtsyListing(Base):
         self.views = listing_data.views
 
         if shipping_profile is not None:
-            listing.shipping_profile = shipping_profile
+            self.shipping_profile = shipping_profile
 
         if seller is not None:
-            listing.seller = seller
+            self.seller = seller
 
         if shop is not None:
-            listing.shop = shop
+            self.shop = shop
 
         if shop_section is not None:
-            listing.shop_section = shop_section
+            self.shop_section = shop_section
 
         if return_policy is not None:
-            listing.return_policy = return_policy
+            self.return_policy = return_policy
 
         if production_partners is not None:
-            listing.production_partners = production_partners
+            self.production_partners = production_partners if overwrite_list else \
+                self.production_partners + production_partners
 
         if products is not None:
-            listing.products = products
+            self.products = products if overwrite_list else self.products + production_partners
 
 
 class EtsyReturnPolicy(Base):
@@ -1283,6 +1279,56 @@ class EtsyReturnPolicy(Base):
     _shop_id = Column(Integer, ForeignKey("etsy_shop.id"))
     shop = relationship("EtsyShop", uselist=False, back_populates="return_policies")
     listings = relationship("EtsyListing", back_populates="return_policy")
+
+    @classmethod
+    def create(cls, return_policy_data: Union[EtsyReturnPolicy, Dict[str, Any]],
+               shop: EtsyShop = None,
+               listings: List[EtsyListing] = None) -> EtsyReturnPolicy:
+        if not isinstance(return_policy_data, EtsyReturnPolicySpace):
+            return_policy_data = cls.create_namespace(return_policy_data)
+
+        return_policy = cls(
+            return_policy_id=return_policy_data.return_policy_id,
+            accepts_returns=return_policy_data.accepts_return,
+            accepts_exchanges=return_policy_data.accepts_exchanges,
+            return_deadline=return_policy_data.return_deadline
+        )
+
+        if shop is not None:
+            return_policy.shop = shop
+
+        if listings is not None:
+            return_policy.listings = listings
+
+        return return_policy
+
+    @staticmethod
+    def create_namespace(return_policy_data: Dict[str, Any]):
+        return EtsyReturnPolicy(return_policy_data)
+
+    @staticmethod
+    def get_existing(session, return_policy_id: int) -> Union[None, EtsyReturnPolicy]:
+        return session.query(EtsyReturnPolicy).filter(
+            EtsyReturnPolicy.return_policy_id == return_policy_id
+        ).first()
+
+    def update(self, return_policy_data: Union[EtsyReturnPolicy, Dict[str, Any]],
+               shop: EtsyShop = None,
+               listings: List[EtsyListing] = None,
+               overwrite_list: Bool = False):
+        if not isinstance(return_policy_data, EtsyReturnPolicySpace):
+            return_policy_data = cls.create_namespace(return_policy_data)
+
+        self.return_policy_id = return_policy_data.return_policy_id
+        self.accepts_returns = return_policy_data.accepts_return
+        self.accepts_exchanges = return_policy_data.accepts_exchanges
+        self.return_deadline = return_policy_data.return_deadline
+
+        if shop is not None:
+            self.shop = shop
+
+        if listings is not None:
+            self.listings = listings if overwrite_list else self.listings + listings
 
 
 class EtsyShopSection(Base):
@@ -1303,6 +1349,62 @@ class EtsyShopSection(Base):
     shop = relationship("EtsyShop", uselist=False, back_populates="shop_sections")
     listings = relationship("EtsyListing", back_populates="shop_section")
 
+    @classmethod
+    def create(cls, shop_section_data: Union[EtsyShopSectionSpace, Dict[str, Any]],
+               seller: EtsySeller = None, shop: EtsyShop = None,
+               listings: List[EtsyListing] = None) -> EtsyShopSection:
+        if not isinstance(shop_section_data, EtsyShopSectionSpace):
+            shop_section_data = cls.create_namespace(shop_section_data)
+
+        shop_section = cls(
+            shop_section_id=shop_section_data.shop_section_id,
+            title=shop_section_data.title,
+            rank=shop_section_data.rank,
+            active_listing_count=shop_section_data.active_listing_count
+        )
+
+        if seller is not None:
+            shop_section.seller = seller
+
+        if shop is not None:
+            shop_section.shop = shop
+
+        if listings is not None:
+            shop_section.listings = listings
+
+        return shop_section
+
+    @staticmethod
+    def create_namespace(shop_section_data: Dict[str, Any]):
+        return EtsyShopSection(shop_section_data)
+
+    @staticmethod
+    def get_existing(session, shop_section_id: int) -> Union[None, EtsyShopSection]:
+        return session.query(EtsyShopSection).filter(
+            EtsyShopSection.shop_section_id == shop_section_id
+        ).first()
+
+    def update(self, shop_section_data: Union[EtsyShopSectionSpace, Dict[str, Any]],
+               seller: EtsySeller = None, shop: EtsyShop = None,
+               listings: List[EtsyListing] = None,
+               overwrite_list: Bool = False):
+        if not isinstance(shop_section_data, EtsyShopSectionSpace):
+            shop_section_data = cls.create_namespace(shop_section_data)
+
+        self.shop_section_id = shop_section_data.shop_section_id
+        self.title = shop_section_data.title
+        self.rank = shop_section_data.rank
+        self.active_listing_count = shop_section_data.active_listing_count
+
+        if seller is not None:
+            self.seller = seller
+
+        if shop is not None:
+            self.shop = shop
+
+        if listings is not None:
+            self.listings = listings if overwrite_list else self.listings + listings
+
 
 class EtsyProductionPartner(Base):
     """
@@ -1319,6 +1421,48 @@ class EtsyProductionPartner(Base):
         secondary=listing_production_partner_association_table, back_populates="production_partners"
     )
 
+    @classmethod
+    def create(cls, production_partner_data: Union[EtsyProductionPartnerSpace, Dict[str, Any]],
+               listings: List[EtsyListing] = None) -> EtsyProductionPartner:
+        if not isinstance(production_partner_data, EtsyProductionPartnerSpace):
+            production_partner_data = cls.create_namespace(production_partner_data)
+
+        production_partner = cls(
+            production_partner_id=production_partner_data.production_partner_id,
+            partner_name=production_partner_data.partner_name,
+            location=production_partner_data.location,
+            listings=production_partner_data.listings
+        )
+
+        if listings is not None:
+            production_partner.listings = listings
+
+        return production_partner
+
+    @staticmethod
+    def create_namespace(production_partner_data: Dict[str, Any]):
+        return EtsyProductionPartnerSpace(production_partner_data)
+
+    @staticmethod
+    def get_existing(session, production_partner_id: int) -> Union[None, EtsyProductionPartner]:
+        return session.query(EtsyProductionPartner).filter(
+            EtsyProductionPartner.production_partner_id == production_partner_id
+        ).first()
+
+    def update(self, production_partner_data: Union[EtsyProductionPartnerSpace, Dict[str, Any]],
+               listings: List[EtsyListing] = None,
+               overwrite_list: Bool = False):
+        if not isinstance(production_partner_data, EtsyProductionPartnerSpace):
+            production_partner_data = cls.create_namespace(production_partner_data)
+
+        self.production_partner_id = production_partner_data.production_partner_id,
+        self.partner_name = production_partner_data.partner_name,
+        self.location = production_partner_data.location,
+        self.listings = production_partner_data.listings
+
+        if listings is not None:
+            self.listings = listings if overwrite_list else self.listings + listings
+
 
 class EtsyShop(Base):
     """
@@ -1329,7 +1473,7 @@ class EtsyShop(Base):
     shop_id = Column(BigInteger, unique=True)
     shop_name = Column(String)
     create_date = Column(Integer)
-    created_timestamp = Column(Integer)
+    created_date = Column(Integer)
     title = Column(String)
     announcement = Column(String)
     currency_code = Column(String)
@@ -1378,6 +1522,155 @@ class EtsyShop(Base):
     listings = relationship("EtsyListing", back_populates="shop")
     return_policies = relationship("EtsyReturnPolicy", back_populates="shop")
     shop_sections = relationship("EtsyShopSection", back_populates="shop")
+
+    @classmethod
+    def create(cls, shop_data: Union[EtsyShopSection, Dict[str, Any]],
+               seller: EtsySeller = None,
+               listings: List[EtsyListing] = None,
+               return_policies: List[EtsyReturnPolicy] = None,
+               shop_sections: List[EtsyShopSection] = None) -> EtsyShop:
+        if not isinstance(shop_data, EtsyShopSpace):
+            shop_data = cls.create_namespace(shop_data)
+
+        shop = cls(
+            shop_id=shop_data.shop_id,
+            shop_name=shop_data.shop_name,
+            create_date=shop_data.create_date,
+            created_date=shop_data.created_date,
+            title=shop_data.title,
+            announcement=shop_data.announcement,
+            currency_code=shop_data.currency_code,
+            is_vacation=shop_data.is_vacation,
+            vacation_message=shop_data.vacation_message,
+            sale_message=shop_data.sale_message,
+            digital_sale_message=shop_data.digital_sale_message,
+            update_date=shop_data.update_date,
+            updated_timestamp=shop_data.updated_timestamp,
+            listing_active_count=shop_data.listing_active_count,
+            digital_listing_count=shop_data.digital_listing_count,
+            login_name=shop_data.login_name,
+            accepts_custom_requests=shop_data.accepts_custom_requests,
+            policy_welcome=shop_data.policy_welcome,
+            policy_payment=shop_data.policy_payment,
+            policy_shipping=shop_data.policy_shipping,
+            policy_refunds=shop_data.policy_refunds,
+            policy_additional=shop_data.policy_additional,
+            policy_seller_info=shop_data.policy_seller_info,
+            policy_update_date=shop_data.policy_update_date,
+            policy_has_private_receipt_info=shop_data.policy_has_private_receipt_info,
+            has_unstructured_policies=shop_data.has_unstructured_policies,
+            policy_privacy=shop_data.policy_privacy,
+            vacation_autoreply=shop_data.vacation_autoreply,
+            url=shop_data.url,
+            image_url_760x100=shop_data.image_url_760x100,
+            num_favorers=shop_data.num_favorers,
+            languages=shop_data.languages,
+            icon_url_fullxfull=shop_data.icon_url_fullxfull,
+            is_using_structured_policies=shop_data.is_using_structured_policies,
+            has_onboarded_structured_policies=shop_data.has_onboarded_structured_policies,
+            include_dispute_form_link=shop_data.include_dispute_form_link,
+            is_etsy_payments_onboarded=shop_data.is_etsy_payments_onboarded,
+            is_calculated_eligible=shop_data.is_calculated_eligible,
+            is_opted_into_buyer_promise=shop_data.is_opted_into_buyer_promise,
+            is_shop_us_based=shop_data.is_shop_us_based,
+            transaction_sold_count=shop_data.transaction_sold_account,
+            shipping_from_country_iso=shop_data.shipping_from_country_iso,
+            shop_location_country_iso=shop_data.shop_location_country_iso,
+            review_count=shop_data.review_count,
+            review_average=shop_data.review_average
+        )
+
+        if seller is not None:
+            shop.seller = seller
+
+        if listings is not None:
+            shop.listings = listings
+
+        if return_policies is not None:
+            shop.return_policies = return_policies
+
+        if shop_sections is not None:
+            shop.shop_sections = shop_sections
+
+        return shop
+
+    @staticmethod
+    def create_namespace(shop_data: Dict[str, Any]) -> EtsyShopSpace:
+        return EtsyShopSpace(shop_data)
+
+    @staticmethod
+    def get_existing(session, shop_id: int) -> Union[None, EtsyShop]:
+        return session.query(EtsyShop).filter(
+            EtsyShop.shop_id == shop_id
+        ).first()
+
+    def update(self, shop_data: Union[EtsyShopSection, Dict[str, Any]],
+               seller: EtsySeller = None,
+               listings: List[EtsyListing] = None,
+               return_policies: List[EtsyReturnPolicy] = None,
+               shop_sections: List[EtsyShopSection] = None,
+               overwrite_list: Boolean = False
+               ):
+        if not isinstance(shop_data, EtsyShopSpace):
+            shop_data = cls.create_namespace(shop_data)
+
+        self.shop_id = shop_data.shop_id,
+        self.shop_name = shop_data.shop_name,
+        self.create_date = shop_data.create_date,
+        self.created_date = shop_data.created_date,
+        self.title = shop_data.title,
+        self.announcement = shop_data.announcement,
+        self.currency_code = shop_data.currency_code,
+        self.is_vacation = shop_data.is_vacation,
+        self.vacation_message = shop_data.vacation_message,
+        self.sale_message = shop_data.sale_message,
+        self.digital_sale_message = shop_data.digital_sale_message,
+        self.update_date = shop_data.update_date,
+        self.updated_timestamp = shop_data.updated_timestamp,
+        self.listing_active_count = shop_data.listing_active_count,
+        self.digital_listing_count = shop_data.digital_listing_count,
+        self.login_name = shop_data.login_name,
+        self.accepts_custom_requests = shop_data.accepts_custom_requests,
+        self.policy_welcome = shop_data.policy_welcome,
+        self.policy_payment = shop_data.policy_payment,
+        self.policy_shipping = shop_data.policy_shipping,
+        self.policy_refunds = shop_data.policy_refunds,
+        self.policy_additional = shop_data.policy_additional,
+        self.policy_seller_info = shop_data.policy_seller_info,
+        self.policy_update_date = shop_data.policy_update_date,
+        self.policy_has_private_receipt_info = shop_data.policy_has_private_receipt_info,
+        self.has_unstructured_policies = shop_data.has_unstructured_policies,
+        self.policy_privacy = shop_data.policy_privacy,
+        self.vacation_autoreply = shop_data.vacation_autoreply,
+        self.url = shop_data.url,
+        self.image_url_760x100 = shop_data.image_url_760x100,
+        self.num_favorers = shop_data.num_favorers,
+        self.languages = shop_data.languages,
+        self.icon_url_fullxfull = shop_data.icon_url_fullxfull,
+        self.is_using_structured_policies = shop_data.is_using_structured_policies,
+        self.has_onboarded_structured_policies = shop_data.has_onboarded_structured_policies,
+        self.include_dispute_form_link = shop_data.include_dispute_form_link,
+        self.is_etsy_payments_onboarded = shop_data.is_etsy_payments_onboarded,
+        self.is_calculated_eligible = shop_data.is_calculated_eligible,
+        self.is_opted_into_buyer_promise = shop_data.is_opted_into_buyer_promise,
+        self.is_shop_us_based = shop_data.is_shop_us_based,
+        self.transaction_sold_count = shop_data.transaction_sold_account,
+        self.shipping_from_country_iso = shop_data.shipping_from_country_iso,
+        self.shop_location_country_iso = shop_data.shop_location_country_iso,
+        self.review_count = shop_data.review_count,
+        self.review_average = shop_data.review_average
+
+        if seller is not None:
+            self.seller = seller
+
+        if listings is not None:
+            self.listings = listings if overwrite_list else self.listings + listings
+
+        if return_policies is not None:
+            self.return_policies = return_policies if overwrite_list else self.return_policies + return_policies
+
+        if shop_sections is not None:
+            self.shop_sections = shop_sections if overwrite_list else self.shop_sections + shop_sections
 
 
 class EtsyOffering(Base):
