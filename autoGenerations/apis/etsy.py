@@ -175,6 +175,16 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
+    def get_shop(self, shop_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id))
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
     def update_receipt(self, receipt_id: str, body: Dict[str, str]):
         """
 

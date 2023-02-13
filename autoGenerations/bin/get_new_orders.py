@@ -1,7 +1,8 @@
 from apis.etsy import API as EtsyAPI
+from database.namespaces import EtsyReceiptShipmentSpace, EtsyProductPropertySpace, EtsyListingSpace, EtsyShopSpace
 from database.utils import make_engine
 from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer,\
-    EtsyProduct, EtsyProductProperty
+    EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop
 from database.enums import Etsy as EtsyEnums
 
 from sqlalchemy.orm import Session
@@ -51,7 +52,7 @@ response = {'count': 1,
             ]
         }
 
-listing = {'listing_id': 1406729485, 'user_id': 695701628, 'shop_id': 40548296, 'title': 'TEST Do Not Buy',
+listing_example = {'listing_id': 1406729485, 'user_id': 695701628, 'shop_id': 40548296, 'title': 'TEST Do Not Buy',
            'description': 'This is an API test product, please do not buy this - the order will not be fulfilled',
            'state': 'active', 'creation_timestamp': 1675134605, 'created_timestamp': 1675134605,
            'ending_timestamp': 1685499005, 'original_creation_timestamp': 1675134217,
@@ -103,7 +104,8 @@ def get_new_orders():
             receipt_space = EtsyReceipt.create_namespace(receipt)
 
             # Check if the address exists
-            address = Address.get_existing(session, receipt)
+            address = Address.get_existing(session, receipt_space.zip, receipt_space.city, receipt_space.state,
+                                           receipt_space.country, receipt_space.first_line, receipt_space.second_line)
             if address is None:
                 address = Address.create(receipt)
                 session.add(address)
@@ -133,7 +135,8 @@ def get_new_orders():
             # Create new shipments
             receipt_shipments = []
             for shipment in receipt['shipments']:
-                receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment)
+                shipment_space = EtsyReceiptShipmentSpace(shipment)
+                receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
                 if receipt_shipment is None:
                     receipt_shipment = EtsyReceiptShipment.create(shipment)
                     session.add(receipt_shipment)
@@ -150,7 +153,9 @@ def get_new_orders():
                 # Get list of existing / created product properties
                 product_properties = []
                 for property_data in transaction_space.product_property_data:
-                    product_property = EtsyProductProperty.get_existing(session, property_data)
+                    property_data_space = EtsyProductPropertySpace(property_data)
+                    product_property = EtsyProductProperty.get_existing(session, property_data_space.property_id,
+                                                                        property_data_space.property_name)
                     if product_property is None:
                         product_property = EtsyProductProperty.create(property_data)
                         session.add(product_property)
@@ -161,10 +166,28 @@ def get_new_orders():
 
                 # Call endpoint to get more info about listing, then update / create a listing record
                 listing_response = etsy_api.get_listing(transaction_space.listing_id)
-                # TODO: Get existing, then update or create listing
+                listing_space = EtsyListingSpace(listing_response)
+                listing = EtsyListing.get_existing(session, listing_space.listing_id)
+                if listing is None:
+                    listing = EtsyListing.create(listing_space, seller=seller)
+                    session.add(listing)
+                    session.flush()
+                else:
+                    listing.update(listing_space, seller=seller)
 
                 # TODO: Using listing response / API requests, update or create the shop, shop section, return policy,
                 #  shipping profile, and production partners records.
+
+                # TODO: Use API to get shop record
+                shop_response = etsy_api.get_shop(listing_space.shop_id)
+                shop_space = EtsyShopSpace(shop_response)
+                shop = EtsyShop.get_existing(session, shop_space.shop_id)
+                if shop is None:
+                    shop = EtsyShop.create(shop_space, seller=seller, listings=[listing])
+                    session.add(shop)
+                    session.flush()
+                else:
+                    shop.update(shop_space, listings=[listing])
 
                 # TODO: From the shipping profile get the shipping upgrades and shipping destinations
 

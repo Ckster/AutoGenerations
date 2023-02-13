@@ -136,7 +136,7 @@ class EtsyReceipt(Base):
         return receipt
 
     @staticmethod
-    def create_namespace(etsy_receipt: Dict[str, Any]):
+    def create_namespace(etsy_receipt: Dict[str, Any]) -> EtsyReceiptSpace:
         return EtsyReceiptSpace(etsy_receipt)
 
     @staticmethod
@@ -331,17 +331,15 @@ class Address(Base):
 
     @staticmethod
     def get_existing(session, zip_code: str, city: str, state: str, country: str, first_line: str,
-                     second_line: str = None) -> Union[None, Address]:
-        q = session.query(Address).filter(
+                     second_line: str) -> Union[None, Address]:
+        return session.query(Address).filter(
             Address.zip == zip_code,
             Address.city == city,
             Address.state == state,
             Address.country == country,
-            Address.first_line == first_line
-        )
-        if second_line is not None:
-            q = q.filter(Address.second_line == second_line)
-        return q.first()
+            Address.first_line == first_line,
+            Address.second_line == second_line
+        ).first()
 
 
 class EtsyTransaction(Base):
@@ -1508,7 +1506,7 @@ class EtsyShop(Base):
     shop_sections = relationship("EtsyShopSection", back_populates="shop")
 
     @classmethod
-    def create(cls, shop_data: Union[EtsyShopSection, Dict[str, Any]],
+    def create(cls, shop_data: Union[EtsyShopSpace, Dict[str, Any]],
                seller: EtsySeller = None,
                listings: List[EtsyListing] = None,
                return_policies: List[EtsyReturnPolicy] = None,
@@ -1588,7 +1586,7 @@ class EtsyShop(Base):
             EtsyShop.shop_id == shop_id
         ).first()
 
-    def update(self, shop_data: Union[EtsyShopSection, Dict[str, Any]],
+    def update(self, shop_data: Union[EtsyShopSpace, Dict[str, Any]],
                seller: EtsySeller = None,
                listings: List[EtsyListing] = None,
                return_policies: List[EtsyReturnPolicy] = None,
