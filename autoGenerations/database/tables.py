@@ -573,9 +573,9 @@ class EtsyProduct(Base):
         if not isinstance(product_data, EtsyProductSpace):
             product_data = self.create_namespace(product_data)
 
-        self.product_id = _check(self.product_id, product_data.product_id)
-        self.sku = _check(self.sku, product_data.sku)
-        self.price = _check(self.price, product_data.price)
+        self.product_id = (self.product_id, product_data.product_id)
+        self.sku = (self.sku, product_data.sku)
+        self.price = (self.price, product_data.price)
 
         if transactions is not None:
             self.transactions = transactions if overwrite_lists else self.transactions + transactions
@@ -679,19 +679,19 @@ class EtsyShippingProfile(Base):
         if not isinstance(shipping_profile_data, EtsyShippingProfileSpace):
             shipping_profile_data = self.create_namespace(shipping_profile_data)
 
-        self.shipping_profile_id = _check(self.shipping_profile_id, shipping_profile_data.shipping_profile_id)
-        self.title = _check(self.title, shipping_profile_data.title)
-        self.min_processing_days = _check(self.min_processing_days, shipping_profile_data.min_processing_days)
-        self.max_processing_days = _check(self.max_processing_days, shipping_profile_data.max_processing_days)
-        self.processing_days_display_label = _check(self.processing_days_display_label,
-                                                    shipping_profile_data.processing_days_display_label)
-        self.origin_country_iso = _check(self.origin_country_iso, shipping_profile_data.origin_country_iso)
-        self.is_deleted = _check(self.is_deleted, shipping_profile_data.is_deleted)
-        self.origin_postal_code = _check(self.origin_postal_code, shipping_profile_data.origin_postal_code)
-        self.profile_type = _check(self.profile_type, shipping_profile_data.profile_type)
-        self.domestic_handling_fee = _check(self.domestic_handling_fee, shipping_profile_data.domestic_handling_fee)
-        self.internation_handling_fee = _check(self.internation_handling_fee,
-                                               shipping_profile_data.international_handling_fee)
+        self.shipping_profile_id = (self.shipping_profile_id, shipping_profile_data.shipping_profile_id)
+        self.title = (self.title, shipping_profile_data.title)
+        self.min_processing_days = (self.min_processing_days, shipping_profile_data.min_processing_days)
+        self.max_processing_days = (self.max_processing_days, shipping_profile_data.max_processing_days)
+        self.processing_days_display_label = (self.processing_days_display_label,
+                                              shipping_profile_data.processing_days_display_label)
+        self.origin_country_iso = (self.origin_country_iso, shipping_profile_data.origin_country_iso)
+        self.is_deleted = (self.is_deleted, shipping_profile_data.is_deleted)
+        self.origin_postal_code = (self.origin_postal_code, shipping_profile_data.origin_postal_code)
+        self.profile_type = (self.profile_type, shipping_profile_data.profile_type)
+        self.domestic_handling_fee = (self.domestic_handling_fee, shipping_profile_data.domestic_handling_fee)
+        self.internation_handling_fee = (self.internation_handling_fee,
+                                         shipping_profile_data.international_handling_fee)
 
         if seller is not None:
             self.seller = seller
@@ -775,18 +775,18 @@ class EtsyShippingProfileDestination(Base):
         if not isinstance(shipping_destination_data, EtsyShippingProfileDestinationSpace):
             shipping_destination_data = self.create_namespace(shipping_destination_data)
 
-        self.shipping_profile_destination_id = _check(self.shipping_profile_destination_id,
-                                                      shipping_destination_data.shipping_profile_destination_id)
-        self.origin_country_iso = _check(self.origin_country_iso, shipping_destination_data.origin_country_iso)
-        self.destination_country_iso = _check(self.destination_country_iso,
-                                              shipping_destination_data.destination_country_iso)
-        self.destination_region = _check(self.destination_region, shipping_destination_data.destination_region)
-        self.primary_cost = _check(self.primary_cost, shipping_destination_data.primary_cost)
-        self.secondary_cost = _check(self.secondary_cost, shipping_destination_data.secondary_cost)
-        self.shipping_carrier_id = _check(self.shipping_carrier_id, shipping_destination_data.shipping_carrier_id)
-        self.mail_class = _check(self.mail_class, shipping_destination_data.mail_class)
-        self.min_delivery_days = _check(self.min_delivery_days, shipping_destination_data.min_delivery_days)
-        self.max_delivery_days = _check(self.max_delivery_days, shipping_destination_data.max_delivery_days)
+        self.shipping_profile_destination_id = (self.shipping_profile_destination_id,
+                                                shipping_destination_data.shipping_profile_destination_id)
+        self.origin_country_iso = (self.origin_country_iso, shipping_destination_data.origin_country_iso)
+        self.destination_country_iso = (self.destination_country_iso,
+                                        shipping_destination_data.destination_country_iso)
+        self.destination_region = (self.destination_region, shipping_destination_data.destination_region)
+        self.primary_cost = (self.primary_cost, shipping_destination_data.primary_cost)
+        self.secondary_cost = (self.secondary_cost, shipping_destination_data.secondary_cost)
+        self.shipping_carrier_id = (self.shipping_carrier_id, shipping_destination_data.shipping_carrier_id)
+        self.mail_class = (self.mail_class, shipping_destination_data.mail_class)
+        self.min_delivery_days = (self.min_delivery_days, shipping_destination_data.min_delivery_days)
+        self.max_delivery_days = (self.max_delivery_days, shipping_destination_data.max_delivery_days)
 
         if shipping_profile is not None:
             self.shipping_profile = shipping_profile
@@ -860,17 +860,17 @@ class EtsyShippingProfileUpgrade(Base):
         if not isinstance(shipping_upgrade_data, EtsyShippingProfileUpgradeSpace):
             shipping_upgrade_data = self.create_namespace(shipping_upgrade_data)
 
-        self.upgrade_id = _check(self.upgrade_id, shipping_upgrade_data.upgrade_id)
-        self.upgrade_name = _check(self.upgrade_name, shipping_upgrade_data.upgrade_name)
-        self.type = _check(self.type, shipping_upgrade_data.type)
-        self.rank = _check(self.rank, shipping_upgrade_data.rank)
-        self.language = _check(self.language, shipping_upgrade_data.language)
-        self.price = _check(self.price, shipping_upgrade_data.price)
-        self.secondary_price = _check(self.secondary_price, shipping_upgrade_data.secondary_price)
-        self.shipping_carrier_id = _check(self.shipping_carrier_id, shipping_upgrade_data.shipping_carrier_id)
-        self.mail_class = _check(self.mail_class, shipping_upgrade_data.mail_class)
-        self.min_delivery_days = _check(self.min_delivery_days, shipping_upgrade_data.min_delivery_days)
-        self.max_delivery_days = _check(self.max_delivery_days, shipping_upgrade_data.max_delivery_days)
+        self.upgrade_id = (self.upgrade_id, shipping_upgrade_data.upgrade_id)
+        self.upgrade_name = (self.upgrade_name, shipping_upgrade_data.upgrade_name)
+        self.type = (self.type, shipping_upgrade_data.type)
+        self.rank = (self.rank, shipping_upgrade_data.rank)
+        self.language = (self.language, shipping_upgrade_data.language)
+        self.price = (self.price, shipping_upgrade_data.price)
+        self.secondary_price = (self.secondary_price, shipping_upgrade_data.secondary_price)
+        self.shipping_carrier_id = (self.shipping_carrier_id, shipping_upgrade_data.shipping_carrier_id)
+        self.mail_class = (self.mail_class, shipping_upgrade_data.mail_class)
+        self.min_delivery_days = (self.min_delivery_days, shipping_upgrade_data.min_delivery_days)
+        self.max_delivery_days = (self.max_delivery_days, shipping_upgrade_data.max_delivery_days)
 
         if shipping_profile is not None:
             self.shipping_profile = shipping_profile
@@ -1188,13 +1188,13 @@ class EtsyListing(Base):
                return_policy: EtsyReturnPolicy = None,
                products: List[EtsyProduct] = None,
                production_partners: List[EtsyProductionPartner] = None,
-               overwrite_list: Bool = False
+               overwrite_list: Boolean = False
                ):
         if not isinstance(listing_data, EtsyListingSpace):
             listing_data = self.create_namespace(listing_data)
 
         if self.listing_id != listing_data.listing_id:
-            self.listing_id = _check(self.listing_id, listing_data.listing_id)
+            self.listing_id = (self.listing_id, listing_data.listing_id)
         self.title = listing_data.title
         self.description = listing_data.description
         self.state = listing_data.state
@@ -1315,9 +1315,9 @@ class EtsyReturnPolicy(Base):
     def update(self, return_policy_data: Union[EtsyReturnPolicy, Dict[str, Any]],
                shop: EtsyShop = None,
                listings: List[EtsyListing] = None,
-               overwrite_list: Bool = False):
+               overwrite_list: Boolean = False):
         if not isinstance(return_policy_data, EtsyReturnPolicySpace):
-            return_policy_data = cls.create_namespace(return_policy_data)
+            return_policy_data = self.create_namespace(return_policy_data)
 
         self.return_policy_id = return_policy_data.return_policy_id
         self.accepts_returns = return_policy_data.accepts_return
@@ -1387,9 +1387,9 @@ class EtsyShopSection(Base):
     def update(self, shop_section_data: Union[EtsyShopSectionSpace, Dict[str, Any]],
                seller: EtsySeller = None, shop: EtsyShop = None,
                listings: List[EtsyListing] = None,
-               overwrite_list: Bool = False):
+               overwrite_list: Boolean = False):
         if not isinstance(shop_section_data, EtsyShopSectionSpace):
-            shop_section_data = cls.create_namespace(shop_section_data)
+            shop_section_data = self.create_namespace(shop_section_data)
 
         self.shop_section_id = shop_section_data.shop_section_id
         self.title = shop_section_data.title
@@ -1430,8 +1430,7 @@ class EtsyProductionPartner(Base):
         production_partner = cls(
             production_partner_id=production_partner_data.production_partner_id,
             partner_name=production_partner_data.partner_name,
-            location=production_partner_data.location,
-            listings=production_partner_data.listings
+            location=production_partner_data.location
         )
 
         if listings is not None:
@@ -1451,14 +1450,13 @@ class EtsyProductionPartner(Base):
 
     def update(self, production_partner_data: Union[EtsyProductionPartnerSpace, Dict[str, Any]],
                listings: List[EtsyListing] = None,
-               overwrite_list: Bool = False):
+               overwrite_list: Boolean = False):
         if not isinstance(production_partner_data, EtsyProductionPartnerSpace):
-            production_partner_data = cls.create_namespace(production_partner_data)
+            production_partner_data = self.create_namespace(production_partner_data)
 
         self.production_partner_id = production_partner_data.production_partner_id,
         self.partner_name = production_partner_data.partner_name,
-        self.location = production_partner_data.location,
-        self.listings = production_partner_data.listings
+        self.location = production_partner_data.location
 
         if listings is not None:
             self.listings = listings if overwrite_list else self.listings + listings
@@ -1612,7 +1610,7 @@ class EtsyShop(Base):
                overwrite_list: Boolean = False
                ):
         if not isinstance(shop_data, EtsyShopSpace):
-            shop_data = cls.create_namespace(shop_data)
+            shop_data = self.create_namespace(shop_data)
 
         self.shop_id = shop_data.shop_id,
         self.shop_name = shop_data.shop_name,
@@ -1688,6 +1686,49 @@ class EtsyOffering(Base):
     # relationships
     product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship("EtsyProduct", uselist=False, back_populates='offerings')
+
+    @classmethod
+    def create(cls, offering_data: Union[EtsyOffering, Dict[str, Any]],
+               product: EtsyProduct = None) -> EtsyOffering:
+        if not isinstance(offering_data, EtsyOfferingSpace):
+            offering_data = cls.create_namespace(offering_data)
+
+        offering = cls(
+            offering_id=offering_data.offering_id,
+            quantity=offering_data.quantity,
+            is_enabled=offering_data.is_enabled,
+            is_deleted=offering_data.is_deleted,
+            price=offering_data.price
+        )
+
+        if product is not None:
+            offering.product = product
+
+        return offering
+
+    @staticmethod
+    def create_namespace(offering_data: Dict[str, Any]):
+        return EtsyOfferingSpace(offering_data)
+
+    @staticmethod
+    def get_existing(session, offering_id: int) -> Union[None, EtsyOffering]:
+        return session.query(EtsyOffering).filter(
+            EtsyOffering.offering_id == offering_id
+        ).first()
+
+    def update(self, offering_data: Union[EtsyOffering, Dict[str, Any]],
+               product: EtsyProduct = None):
+        if not isinstance(offering_data, EtsyOfferingSpace):
+            offering_data = self.create_namespace(offering_data)
+
+        self.offering_id = offering_data.offering_id,
+        self.quantity = offering_data.quantity,
+        self.is_enabled = offering_data.is_enabled,
+        self.is_deleted = offering_data.is_deleted,
+        self.price = offering_data.price
+
+        if product is not None:
+            self.product = product
 
 
 def create_database():
