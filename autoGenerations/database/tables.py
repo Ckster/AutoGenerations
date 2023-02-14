@@ -609,7 +609,7 @@ class EtsyShippingProfile(Base):
     listings = relationship("EtsyListing", back_populates="shipping_profile")
 
     @classmethod
-    def create(cls, shipping_profile_data: Union[EtsyShippingProfile, Dict[str, Any]],
+    def create(cls, shipping_profile_data: Union[EtsyShippingProfileSpace, Dict[str, Any]],
                seller: EtsySeller = None,
                destinations: List[EtsyShippingProfileDestination] = None,
                upgrades: List[EtsyShippingProfileUpgrade] = None,
@@ -727,7 +727,7 @@ class EtsyShippingProfileDestination(Base):
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="destinations")
 
     @classmethod
-    def create(cls, shipping_destination_data: Union[EtsyShippingProfileDestination, Dict[str, Any]],
+    def create(cls, shipping_destination_data: Union[EtsyShippingProfileDestinationSpace, Dict[str, Any]],
                shipping_profile: EtsyShippingProfile = None
                ) -> EtsyShippingProfileDestination:
         if not isinstance(shipping_destination_data, EtsyShippingProfileDestinationSpace):
@@ -761,7 +761,7 @@ class EtsyShippingProfileDestination(Base):
             EtsyShippingProfileDestination.shipping_profile_destination_id == shipping_destination_id
         ).first()
 
-    def update(self, shipping_destination_data: Union[EtsyShippingProfileDestination, Dict[str, Any]],
+    def update(self, shipping_destination_data: Union[EtsyShippingProfileDestinationSpace, Dict[str, Any]],
                shipping_profile: EtsyShippingProfile = None
                ):
         if not isinstance(shipping_destination_data, EtsyShippingProfileDestinationSpace):
@@ -811,7 +811,7 @@ class EtsyShippingProfileUpgrade(Base):
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="upgrades")
 
     @classmethod
-    def create(cls, shipping_upgrade_data: Union[EtsyShippingProfileUpgrade, Dict[str, Any]],
+    def create(cls, shipping_upgrade_data: Union[EtsyShippingProfileUpgradeSpace, Dict[str, Any]],
                shipping_profile: EtsyShippingProfile = None
                ) -> EtsyShippingProfileUpgrade:
         if not isinstance(shipping_upgrade_data, EtsyShippingProfileUpgradeSpace):
@@ -846,7 +846,7 @@ class EtsyShippingProfileUpgrade(Base):
             EtsyShippingProfileUpgrade.upgrade_id == shipping_upgrade_id
         ).first()
 
-    def update(self, shipping_upgrade_data: Union[EtsyShippingProfileUpgrade, Dict[str, Any]],
+    def update(self, shipping_upgrade_data: Union[EtsyShippingProfileUpgradeSpace, Dict[str, Any]],
                shipping_profile: EtsyShippingProfile = None
                ):
         if not isinstance(shipping_upgrade_data, EtsyShippingProfileUpgradeSpace):
@@ -1265,7 +1265,7 @@ class EtsyReturnPolicy(Base):
     listings = relationship("EtsyListing", back_populates="return_policy")
 
     @classmethod
-    def create(cls, return_policy_data: Union[EtsyReturnPolicy, Dict[str, Any]],
+    def create(cls, return_policy_data: Union[EtsyReturnPolicySpace, Dict[str, Any]],
                shop: EtsyShop = None,
                listings: List[EtsyListing] = None) -> EtsyReturnPolicy:
         if not isinstance(return_policy_data, EtsyReturnPolicySpace):
@@ -1296,7 +1296,7 @@ class EtsyReturnPolicy(Base):
             EtsyReturnPolicy.return_policy_id == return_policy_id
         ).first()
 
-    def update(self, return_policy_data: Union[EtsyReturnPolicy, Dict[str, Any]],
+    def update(self, return_policy_data: Union[EtsyReturnPolicySpace, Dict[str, Any]],
                shop: EtsyShop = None,
                listings: List[EtsyListing] = None,
                overwrite_list: Boolean = False):

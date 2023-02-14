@@ -185,6 +185,69 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
+    def get_shop_section(self, shop_id: int, shop_section_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'sections', str(shop_section_id))
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_return_policy(self, shop_id: int, return_policy_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'policies', str(return_policy_id))
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_shipping_profile(self, shop_id: int, shipping_profile_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'shipping-profiles',
+                           str(shipping_profile_id))
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_production_partners(self, shop_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'production-partners')
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_shop_shipping_profile_upgrades(self, shop_id: int, shipping_profile_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'shipping-profiles',
+                           str(shipping_profile_id), 'upgrades')
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_shop_shipping_profile_destinations(self, shop_id: int, shipping_profile_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'shipping-profiles',
+                           str(shipping_profile_id), 'destinations')
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
     def update_receipt(self, receipt_id: str, body: Dict[str, str]):
         """
 
