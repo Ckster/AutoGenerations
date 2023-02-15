@@ -6,7 +6,7 @@ from database.utils import make_engine
 from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
     EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination
-from database.enums import Etsy as EtsyEnums
+from database.enums import Etsy as EtsyEnums, OrderStatus, TransactionFulfillmentStatus
 
 from sqlalchemy.orm import Session
 
@@ -291,25 +291,30 @@ def get_new_orders():
                 # Check for existing transaction
                 transaction = EtsyTransaction.get_existing(session, transaction_space.transaction_id)
                 if transaction is None:
-                    transaction = EtsyTransaction.create(transaction_space, buyer=buyer, seller=seller, product=product,
-                                                         shipping_profile=shipping_profile,
-                                                         product_properties=product_properties)
+                    transaction = EtsyTransaction.create(
+                        transaction_space, fulfillment_status=TransactionFulfillmentStatus.NEEDS_FULFILLMENT,
+                        buyer=buyer, seller=seller, product=product, shipping_profile=shipping_profile,
+                        product_properties=product_properties)
                     session.add(transaction)
                     session.flush()
                 else:
-                    transaction.update(transaction_space, buyer=buyer, seller=seller, product=product,
-                                       shipping_profile=shipping_profile, product_properties=product_properties)
+                    transaction.update(transaction_space,
+                                       fulfillment_status=TransactionFulfillmentStatus.NEEDS_FULFILLMENT,
+                                       buyer=buyer, seller=seller, product=product, shipping_profile=shipping_profile,
+                                       product_properties=product_properties)
                 transactions.append(transaction)
 
             # Check if receipt exists
             receipt_c = EtsyReceipt.get_existing(session, receipt_space.receipt_id)
             if receipt_c is None:
-                receipt_c = EtsyReceipt.create(receipt_space, address=address, buyer=buyer, seller=seller,
+                receipt_c = EtsyReceipt.create(receipt_space, order_status=OrderStatus.INCOMPLETE,
+                                               address=address, buyer=buyer, seller=seller,
                                                transactions=transactions, receipt_shipments=receipt_shipments)
                 session.add(receipt_c)
                 session.flush()
             else:
-                receipt_c.update(receipt_space, address=address, buyer=buyer, seller=seller,
-                                 transactions=transactions, receipt_shipments=receipt_shipments)
+                receipt_c.update(receipt_space, order_status=OrderStatus.INCOMPLETE,
+                                 address=address, buyer=buyer, seller=seller, transactions=transactions,
+                                 receipt_shipments=receipt_shipments)
 
             session.commit()

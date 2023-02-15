@@ -1,20 +1,26 @@
 import enum
 
 
-class OrderStatus:
+class TransactionFulfillmentStatus:
     NEEDS_FULFILLMENT = 'needs_fulfillment'
-    FULFILLMENT_STARTED = 'fulfillment_started'
-    FULFILLED = 'fulfilled'
+    IN_PROGRESS = 'in_progress'
+    COMPLETED = 'completed'
+    ORDER_CANCELED = 'order_canceled'
+
+
+class OrderStatus:
+    INCOMPLETE = 'incomplete'
+    COMPLETE = 'complete'
     CANCELED = 'canceled'
 
 
 class Etsy:
     class OrderStatus(enum.Enum):
-        PAID = "paid"
-        COMPLETED = "completed"
-        OPEN = "open"
-        PAYMENT_PROCESSING = "payment_processing"
-        CANCELED = "canceled"
+        PAID = "Paid"
+        COMPLETED = "Completed"
+        OPEN = "Open"
+        PAYMENT_PROCESSING = "Payment_processing"
+        CANCELED = "Canceled"
 
     class ListingState(enum.Enum):
         ACTIVE = "active"

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Union, Dict, Any
 from database.utils import Base, make_engine
-from database.enums import Etsy
+from database.enums import Etsy, OrderStatus, TransactionFulfillmentStatus
 from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, EtsySellerSpace, EtsyBuyerSpace, \
     EtsyTransactionSpace, AddressSpace, EtsyProductPropertySpace, EtsyProductSpace, EtsyShippingProfileSpace, \
     EtsyProductionPartnerSpace, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
@@ -49,6 +49,7 @@ class EtsyReceipt(Base):
     receipt_id = Column(BigInteger, unique=True)
     receipt_type = Column(Integer)
     status = Column(Enum(Etsy.OrderStatus))
+    order_status = Column(Enum(OrderStatus))
     payment_method = Column(String)
     message_from_seller = Column(String)
     message_from_buyer = Column(String)
@@ -83,6 +84,7 @@ class EtsyReceipt(Base):
 
     @classmethod
     def create(cls, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
+               order_status: OrderStatus = None,
                address: Address = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
@@ -118,6 +120,9 @@ class EtsyReceipt(Base):
             gift_wrap_price=receipt_data.gift_wrap_price
         )
 
+        if order_status is not None:
+            receipt.order_status = order_status
+
         if address is not None:
             receipt.address = address
 
@@ -144,13 +149,14 @@ class EtsyReceipt(Base):
         return session.query(EtsyReceipt).filter(EtsyReceipt.receipt_id == int(receipt_id)).first()
 
     def update(self, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
+               order_status: OrderStatus = None,
                address: Address = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                transactions: List[EtsyTransaction] = None,
                receipt_shipments: List[EtsyReceiptShipment] = None,
                overwrite_list: Boolean = False
-               ) -> EtsyReceipt:
+               ):
         if not isinstance(receipt_data, EtsyReceiptSpace):
             receipt_data = self.create_namespace(receipt_data)
 
@@ -177,6 +183,9 @@ class EtsyReceipt(Base):
         self.vat_cost = receipt_data.vat_cost,
         self.discount = receipt_data.discount,
         self.gift_wrap_price = receipt_data.gift_wrap_price
+
+        if order_status is not None:
+            self.order_status = order_status
 
         if address is not None:
             self.address = address
@@ -400,6 +409,7 @@ class EtsyTransaction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     transaction_id = Column(BigInteger, unique=True)
     title = Column(String)
+    fulfillment_status = Column(Enum(TransactionFulfillmentStatus))
     description = Column(String)
     create_timestamp = Column(BigInteger)
     paid_timestamp = Column(BigInteger)
@@ -436,6 +446,7 @@ class EtsyTransaction(Base):
 
     @classmethod
     def create(cls, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]],
+               fulfillment_status: TransactionFulfillmentStatus = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                product: EtsyProduct = None,
@@ -466,6 +477,9 @@ class EtsyTransaction(Base):
             buyer_coupon=transaction_data.buyer_coupon,
             shop_coupon=transaction_data.shop_coupon,
         )
+
+        if fulfillment_status is not None:
+            transaction.fulfillment_status = fulfillment_status
 
         if buyer is not None:
             transaction.buyer = buyer
@@ -498,6 +512,7 @@ class EtsyTransaction(Base):
         ).first()
 
     def update(self, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]],
+               fulfillment_status: TransactionFulfillmentStatus = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                shipping_profile: EtsyShippingProfile = None,
@@ -527,6 +542,9 @@ class EtsyTransaction(Base):
         self.expected_ship_date = transaction_data.expected_ship_date
         self.buyer_coupon = transaction_data.buyer_coupon
         self.shop_coupon = transaction_data.shop_coupon
+
+        if fulfillment_status is not None:
+            self.fulfillment_status = fulfillment_status
 
         if buyer is not None:
             self.buyer = buyer
