@@ -1,7 +1,7 @@
 from apis.etsy import API as EtsyAPI
 from database.namespaces import EtsyReceiptShipmentSpace, EtsyProductPropertySpace, EtsyListingSpace, EtsyShopSpace, \
     EtsyShopSectionSpace, EtsyReturnPolicySpace, EtsyShippingProfileSpace, EtsyProductionPartnerSpace, \
-    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace
+    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyProductSpace
 from database.utils import make_engine
 from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
@@ -78,9 +78,10 @@ listing_example = {'listing_id': 1406729485, 'user_id': 695701628, 'shop_id': 40
                    'production_partners': [], 'skus': ['SKU101'], 'views': 2, 'shipping_profile': None, 'shop': None,
                    'images': None, 'videos': None, 'user': None, 'translations': None, 'inventory': None}
 
-product = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': False,
-           'offerings': [{'offering_id': 13273503598, 'quantity': 15, 'is_enabled': True, 'is_deleted': False,
-                          'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}}], 'property_values': []}
+product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': False,
+                  'offerings': [{'offering_id': 13273503598, 'quantity': 15, 'is_enabled': True, 'is_deleted': False,
+                                 'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}}],
+                  'property_values': []}
 
 
 # TODO: Need to find a way to map listing to products... not sure why inventory field returns None for current listing
@@ -278,36 +279,37 @@ def get_new_orders():
                 # Call endpoint to get more info about the product, then update / create a product record
                 product_response = etsy_api.get_listing_product(transaction_space.listing_id,
                                                                 transaction_space.product_id)
-                # TODO: Get existing, then update or create product
-                # TODO: Using product response / API request, update or create the offerings records
-
-                product = EtsyProduct.get_existing(session, transaction_space.product_id)
+                product_space = EtsyProductSpace(product_response)
+                product = EtsyProduct.get_existing(session, product_space.product_id)
                 if product is None:
-                    product = EtsyProduct()
+                    product = EtsyProduct.create(product_space, properties=product_properties, listings=[listing])
                     session.add(product)
                     session.flush()
-                    pass
                 else:
-                    product.update()
+                    product.update(product_space, properties=product_properties, listings=[listing])
 
                 # Check for existing transaction
-                transaction = EtsyTransaction.get_existing(session, transaction)
+                transaction = EtsyTransaction.get_existing(session, transaction_space.transaction_id)
                 if transaction is None:
-                    # TODO: Create, add, flush transaction
-                    pass
+                    transaction = EtsyTransaction.create(transaction_space, buyer=buyer, seller=seller, product=product,
+                                                         shipping_profile=shipping_profile,
+                                                         product_properties=product_properties)
+                    session.add(transaction)
+                    session.flush()
                 else:
-                    # TODO: Update transaction
-                    pass
+                    transaction.update(transaction_space, buyer=buyer, seller=seller, product=product,
+                                       shipping_profile=shipping_profile, product_properties=product_properties)
                 transactions.append(transaction)
 
             # Check if receipt exists
-            existing_receipt = EtsyReceipt.get_existing(session, receipt)
-            if existing_receipt is None:
-                new_receipt = EtsyReceipt.create(receipt, address, buyer, seller, transactions, receipt_shipments)
-                session.add(new_receipt)
+            receipt_c = EtsyReceipt.get_existing(session, receipt_space.receipt_id)
+            if receipt_c is None:
+                receipt_c = EtsyReceipt.create(receipt_space, address=address, buyer=buyer, seller=seller,
+                                               transactions=transactions, receipt_shipments=receipt_shipments)
+                session.add(receipt_c)
                 session.flush()
             else:
-                # TODO: Update
-                pass
+                receipt_c.update(receipt_space, address=address, buyer=buyer, seller=seller,
+                                 transactions=transactions, receipt_shipments=receipt_shipments)
 
             session.commit()

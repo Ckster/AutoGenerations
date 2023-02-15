@@ -141,7 +141,57 @@ class EtsyReceipt(Base):
 
     @staticmethod
     def get_existing(session, receipt_id: int) -> Union[None, EtsyReceipt]:
-        return session.query(EtsyReceipt).filter(EtsyReceipt.receipt_id == receipt_id).first()
+        return session.query(EtsyReceipt).filter(EtsyReceipt.receipt_id == int(receipt_id)).first()
+
+    def update(self, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
+               address: Address = None,
+               buyer: EtsyBuyer = None,
+               seller: EtsySeller = None,
+               transactions: List[EtsyTransaction] = None,
+               receipt_shipments: List[EtsyReceiptShipment] = None,
+               overwrite_list: Boolean = False
+               ) -> EtsyReceipt:
+        if not isinstance(receipt_data, EtsyReceiptSpace):
+            receipt_data = self.create_namespace(receipt_data)
+
+        self.receipt_id = receipt_data.receipt_id,
+        self.receipt_type = receipt_data.receipt_type,
+        self.status = receipt_data.status,
+        self.payment_method = receipt_data.payment_method,
+        self.message_from_seller = receipt_data.message_from_seller,
+        self.message_from_buyer = receipt_data.message_from_buyer,
+        self.message_from_payment = receipt_data.message_from_payment,
+        self.is_paid = receipt_data.is_paid,
+        self.is_shipped = receipt_data.is_shipped,
+        self.create_timestamp = receipt_data.create_timestamp,
+        self.created_timestamp = receipt_data.created_timestamp,
+        self.update_timestamp = receipt_data.update_timestamp,
+        self.updated_timestamp = receipt_data.updated_timestamp,
+        self.is_gift = receipt_data.is_gift,
+        self.gift_message = receipt_data.gift_message,
+        self.grand_total = receipt_data.grand_total,
+        self.sub_total = receipt_data.sub_total,
+        self.total_price = receipt_data.total_price,
+        self.shipping_cost = receipt_data.shipping_cost,
+        self.tax_cost = receipt_data.tax_cost,
+        self.vat_cost = receipt_data.vat_cost,
+        self.discount = receipt_data.discount,
+        self.gift_wrap_price = receipt_data.gift_wrap_price
+
+        if address is not None:
+            self.address = address
+
+        if buyer is not None:
+            self.buyer = buyer
+
+        if seller is not None:
+            self.seller = seller
+
+        if transactions is not None:
+            self.transactions = transactions if overwrite_list else self.transactions + transactions
+
+        if receipt_shipments is not None:
+            self.receipt_shipments = receipt_shipments if overwrite_list else self.receipt_shipments + receipt_shipments
 
 
 class EtsySeller(Base):
@@ -202,7 +252,7 @@ class EtsySeller(Base):
     @staticmethod
     def get_existing(session, seller_id: int) -> Union[None, EtsySeller]:
         return session.query(EtsySeller).filter(
-            EtsySeller.seller_id == seller_id
+            EtsySeller.seller_id == int(seller_id)
         ).first()
 
     def update(self, seller_data: Union[EtsySellerSpace, Dict[str, Any]],
@@ -273,7 +323,7 @@ class EtsyBuyer(Base):
     @staticmethod
     def get_existing(session, buyer_id: int) -> Union[None, EtsyBuyer]:
         return session.query(EtsyBuyer).filter(
-            EtsyBuyer.buyer_id == buyer_id
+            EtsyBuyer.buyer_id == int(buyer_id)
         ).first()
 
     def update(self, buyer_data: Union[EtsyBuyerSpace, Dict[str, Any]],
@@ -444,7 +494,7 @@ class EtsyTransaction(Base):
     @staticmethod
     def get_existing(session, transaction_id: int) -> Union[None, EtsyTransaction]:
         return session.query(EtsyTransaction).filter(
-            EtsyTransaction.transaction_id == transaction_id
+            EtsyTransaction.transaction_id == int(transaction_id)
         ).first()
 
     def update(self, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]],
@@ -553,7 +603,7 @@ class EtsyProduct(Base):
 
     @staticmethod
     def get_existing(session, product_id: int) -> Union[None, EtsyProduct]:
-        return session.query(EtsyProduct).filter(EtsyProduct.product_id == product_id).first()
+        return session.query(EtsyProduct).filter(EtsyProduct.product_id == int(product_id)).first()
 
     def update(self, product_data: Union[EtsyProductSpace, Dict[str, Any]],
                transactions: List[EtsyTransaction] = None,
@@ -657,7 +707,7 @@ class EtsyShippingProfile(Base):
     @staticmethod
     def get_existing(session, shipping_profile_id: int) -> Union[None, EtsyShippingProfile]:
         return session.query(EtsyShippingProfile).filter(
-            EtsyShippingProfile.shipping_profile_id == shipping_profile_id
+            EtsyShippingProfile.shipping_profile_id == int(shipping_profile_id)
         ).first()
 
     def update(self, shipping_profile_data: Union[EtsyShippingProfile, Dict[str, Any]],
@@ -758,7 +808,7 @@ class EtsyShippingProfileDestination(Base):
     @staticmethod
     def get_existing(session, shipping_destination_id: int) -> Union[None, EtsyShippingProfileDestination]:
         return session.query(EtsyShippingProfileDestination).filter(
-            EtsyShippingProfileDestination.shipping_profile_destination_id == shipping_destination_id
+            EtsyShippingProfileDestination.shipping_profile_destination_id == int(shipping_destination_id)
         ).first()
 
     def update(self, shipping_destination_data: Union[EtsyShippingProfileDestinationSpace, Dict[str, Any]],
@@ -843,7 +893,7 @@ class EtsyShippingProfileUpgrade(Base):
     @staticmethod
     def get_existing(session, shipping_upgrade_id: int) -> Union[None, EtsyShippingProfileUpgrade]:
         return session.query(EtsyShippingProfileUpgrade).filter(
-            EtsyShippingProfileUpgrade.upgrade_id == shipping_upgrade_id
+            EtsyShippingProfileUpgrade.upgrade_id == int(shipping_upgrade_id)
         ).first()
 
     def update(self, shipping_upgrade_data: Union[EtsyShippingProfileUpgradeSpace, Dict[str, Any]],
@@ -908,7 +958,7 @@ class EtsyReceiptShipment(Base):
     @staticmethod
     def get_existing(session, receipt_shipping_id: int) -> Union[None, EtsyReceiptShipment]:
         return session.query(EtsyReceiptShipment).filter(
-            EtsyReceiptShipment.receipt_shipping_id == receipt_shipping_id
+            EtsyReceiptShipment.receipt_shipping_id == int(receipt_shipping_id)
         )
 
     def update(self, receipt_shipment_data: Union[EtsyReceiptShipmentSpace, Dict[str, Any]],
@@ -979,7 +1029,7 @@ class EtsyProductProperty(Base):
         return session.query(EtsyProductProperty).filter(
             EtsyProductProperty.property_id == property_id
         ).filter(
-            EtsyProductProperty.property_name == property_name
+            EtsyProductProperty.property_name == int(property_name)
         ).first()
 
     def update(self, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
@@ -1161,7 +1211,7 @@ class EtsyListing(Base):
     @staticmethod
     def get_existing(session, listing_id: int) -> Union[None, EtsyListing]:
         return session.query(EtsyListing).filter(
-            EtsyListing.listing_id == listing_id
+            EtsyListing.listing_id == int(listing_id)
         ).first()
 
     def update(self, listing_data: Union[EtsyListingSpace, Dict[str, Any]],
@@ -1293,7 +1343,7 @@ class EtsyReturnPolicy(Base):
     @staticmethod
     def get_existing(session, return_policy_id: int) -> Union[None, EtsyReturnPolicy]:
         return session.query(EtsyReturnPolicy).filter(
-            EtsyReturnPolicy.return_policy_id == return_policy_id
+            EtsyReturnPolicy.return_policy_id == int(return_policy_id)
         ).first()
 
     def update(self, return_policy_data: Union[EtsyReturnPolicySpace, Dict[str, Any]],
@@ -1365,7 +1415,7 @@ class EtsyShopSection(Base):
     @staticmethod
     def get_existing(session, shop_section_id: int) -> Union[None, EtsyShopSection]:
         return session.query(EtsyShopSection).filter(
-            EtsyShopSection.shop_section_id == shop_section_id
+            EtsyShopSection.shop_section_id == int(shop_section_id)
         ).first()
 
     def update(self, shop_section_data: Union[EtsyShopSectionSpace, Dict[str, Any]],
@@ -1429,7 +1479,7 @@ class EtsyProductionPartner(Base):
     @staticmethod
     def get_existing(session, production_partner_id: int) -> Union[None, EtsyProductionPartner]:
         return session.query(EtsyProductionPartner).filter(
-            EtsyProductionPartner.production_partner_id == production_partner_id
+            EtsyProductionPartner.production_partner_id == int(production_partner_id)
         ).first()
 
     def update(self, production_partner_data: Union[EtsyProductionPartnerSpace, Dict[str, Any]],
@@ -1583,7 +1633,7 @@ class EtsyShop(Base):
     @staticmethod
     def get_existing(session, shop_id: int) -> Union[None, EtsyShop]:
         return session.query(EtsyShop).filter(
-            EtsyShop.shop_id == shop_id
+            EtsyShop.shop_id == int(shop_id)
         ).first()
 
     def update(self, shop_data: Union[EtsyShopSpace, Dict[str, Any]],
@@ -1697,7 +1747,7 @@ class EtsyOffering(Base):
     @staticmethod
     def get_existing(session, offering_id: int) -> Union[None, EtsyOffering]:
         return session.query(EtsyOffering).filter(
-            EtsyOffering.offering_id == offering_id
+            EtsyOffering.offering_id == int(offering_id)
         ).first()
 
     def update(self, offering_data: Union[EtsyOffering, Dict[str, Any]],
