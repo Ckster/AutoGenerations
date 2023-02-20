@@ -155,7 +155,7 @@ class EtsyReceipt(Base):
                seller: EtsySeller = None,
                transactions: List[EtsyTransaction] = None,
                receipt_shipments: List[EtsyReceiptShipment] = None,
-               overwrite_list: Boolean = False
+               overwrite_list: bool = False
                ):
         if not isinstance(receipt_data, EtsyReceiptSpace):
             receipt_data = self.create_namespace(receipt_data)
@@ -300,6 +300,7 @@ class EtsyBuyer(Base):
     id = Column(Integer, primary_key=True)
     buyer_id = Column(BigInteger, unique=True)
     email = Column(String)
+    name = Column(String)
 
     receipts = relationship('EtsyReceipt', back_populates='buyer')
     transactions = relationship("EtsyTransaction", back_populates='buyer')
@@ -314,7 +315,8 @@ class EtsyBuyer(Base):
 
         buyer = cls(
             buyer_id=buyer_data.buyer_id,
-            email=buyer_data.email
+            email=buyer_data.email,
+            name=buyer_data.name
         )
 
         if receipts is not None:
@@ -342,6 +344,7 @@ class EtsyBuyer(Base):
         if not isinstance(buyer_data, EtsyBuyerSpace):
             buyer_data = self.create_namespace(buyer_data)
         self.email = buyer_data.email
+        self.name = buyer_data.name
 
         if receipts is not None:
             self.receipts = receipts if overwrite_list else self.receipts + receipts
@@ -392,7 +395,7 @@ class Address(Base):
     def get_existing(session, zip_code: str, city: str, state: str, country: str, first_line: str,
                      second_line: str) -> Union[None, Address]:
         return session.query(Address).filter(
-            Address.zip == zip_code,
+            Address.zip_code == zip_code,
             Address.city == city,
             Address.state == state,
             Address.country == country,
@@ -580,7 +583,7 @@ class EtsyProduct(Base):
     # relationships
     transactions = relationship("EtsyTransaction", back_populates='product')
     offerings = relationship("EtsyOffering", back_populates='product')
-    properties = relationship("EtsyProductProperty", back_populates='products')
+    properties = relationship("EtsyProductProperty", back_populates='product')
     listings: Mapped[List[EtsyListing]] = relationship(
         secondary=listing_product_association_table, back_populates="products"
     )
@@ -598,7 +601,7 @@ class EtsyProduct(Base):
         product = cls(
             product_id=product_data.product_id,
             sku=product_data.sku,
-            price=product_data.price
+            is_deleted=product_data.is_deleted
         )
 
         if transactions is not None:
@@ -633,9 +636,9 @@ class EtsyProduct(Base):
         if not isinstance(product_data, EtsyProductSpace):
             product_data = self.create_namespace(product_data)
 
-        self.product_id = (self.product_id, product_data.product_id)
-        self.sku = (self.sku, product_data.sku)
-        self.price = (self.price, product_data.price)
+        self.product_id = product_data.product_id
+        self.sku = product_data.sku
+        self.is_deleted = product_data.is_deleted
 
         if transactions is not None:
             self.transactions = transactions if overwrite_lists else self.transactions + transactions
@@ -684,7 +687,7 @@ class EtsyShippingProfile(Base):
                transactions: List[EtsyTransaction] = None,
                listings: List[EtsyListing] = None
                ) -> EtsyShippingProfile:
-        if not isinstance(shipping_profile_data, EtsyProductSpace):
+        if not isinstance(shipping_profile_data, EtsyShippingProfileSpace):
             shipping_profile_data = cls.create_namespace(shipping_profile_data)
 
         shipping_profile = cls(
@@ -920,17 +923,17 @@ class EtsyShippingProfileUpgrade(Base):
         if not isinstance(shipping_upgrade_data, EtsyShippingProfileUpgradeSpace):
             shipping_upgrade_data = self.create_namespace(shipping_upgrade_data)
 
-        self.upgrade_id = (self.upgrade_id, shipping_upgrade_data.upgrade_id)
-        self.upgrade_name = (self.upgrade_name, shipping_upgrade_data.upgrade_name)
-        self.type = (self.type, shipping_upgrade_data.type)
-        self.rank = (self.rank, shipping_upgrade_data.rank)
-        self.language = (self.language, shipping_upgrade_data.language)
-        self.price = (self.price, shipping_upgrade_data.price)
-        self.secondary_price = (self.secondary_price, shipping_upgrade_data.secondary_price)
-        self.shipping_carrier_id = (self.shipping_carrier_id, shipping_upgrade_data.shipping_carrier_id)
-        self.mail_class = (self.mail_class, shipping_upgrade_data.mail_class)
-        self.min_delivery_days = (self.min_delivery_days, shipping_upgrade_data.min_delivery_days)
-        self.max_delivery_days = (self.max_delivery_days, shipping_upgrade_data.max_delivery_days)
+        self.upgrade_id = shipping_upgrade_data.upgrade_id
+        self.upgrade_name = shipping_upgrade_data.upgrade_name
+        self.type = shipping_upgrade_data.type
+        self.rank = shipping_upgrade_data.rank
+        self.language = shipping_upgrade_data.language
+        self.price = shipping_upgrade_data.price
+        self.secondary_price = shipping_upgrade_data.secondary_price
+        self.shipping_carrier_id = shipping_upgrade_data.shipping_carrier_id
+        self.mail_class = shipping_upgrade_data.mail_class
+        self.min_delivery_days = shipping_upgrade_data.min_delivery_days
+        self.max_delivery_days = shipping_upgrade_data.max_delivery_days
 
         if shipping_profile is not None:
             self.shipping_profile = shipping_profile
@@ -977,7 +980,7 @@ class EtsyReceiptShipment(Base):
     def get_existing(session, receipt_shipping_id: int) -> Union[None, EtsyReceiptShipment]:
         return session.query(EtsyReceiptShipment).filter(
             EtsyReceiptShipment.receipt_shipping_id == int(receipt_shipping_id)
-        )
+        ).first()
 
     def update(self, receipt_shipment_data: Union[EtsyReceiptShipmentSpace, Dict[str, Any]],
                receipt: EtsyReceipt = None):
@@ -1045,9 +1048,9 @@ class EtsyProductProperty(Base):
     @staticmethod
     def get_existing(session, property_id: int, property_name: str) -> Union[None, EtsyProductProperty]:
         return session.query(EtsyProductProperty).filter(
-            EtsyProductProperty.property_id == property_id
+            EtsyProductProperty.property_id == int(property_id)
         ).filter(
-            EtsyProductProperty.property_name == int(property_name)
+            EtsyProductProperty.property_name == property_name
         ).first()
 
     def update(self, property_data: Union[EtsyProductPropertySpace, Dict[str, Any]],
@@ -1240,7 +1243,7 @@ class EtsyListing(Base):
                return_policy: EtsyReturnPolicy = None,
                products: List[EtsyProduct] = None,
                production_partners: List[EtsyProductionPartner] = None,
-               overwrite_list: Boolean = False
+               overwrite_list: bool = False
                ):
         if not isinstance(listing_data, EtsyListingSpace):
             listing_data = self.create_namespace(listing_data)
@@ -1341,7 +1344,7 @@ class EtsyReturnPolicy(Base):
 
         return_policy = cls(
             return_policy_id=return_policy_data.return_policy_id,
-            accepts_returns=return_policy_data.accepts_return,
+            accepts_returns=return_policy_data.accepts_returns,
             accepts_exchanges=return_policy_data.accepts_exchanges,
             return_deadline=return_policy_data.return_deadline
         )
@@ -1367,12 +1370,12 @@ class EtsyReturnPolicy(Base):
     def update(self, return_policy_data: Union[EtsyReturnPolicySpace, Dict[str, Any]],
                shop: EtsyShop = None,
                listings: List[EtsyListing] = None,
-               overwrite_list: Boolean = False):
+               overwrite_list: bool = False):
         if not isinstance(return_policy_data, EtsyReturnPolicySpace):
             return_policy_data = self.create_namespace(return_policy_data)
 
         self.return_policy_id = return_policy_data.return_policy_id
-        self.accepts_returns = return_policy_data.accepts_return
+        self.accepts_returns = return_policy_data.accepts_returns
         self.accepts_exchanges = return_policy_data.accepts_exchanges
         self.return_deadline = return_policy_data.return_deadline
 
@@ -1439,7 +1442,7 @@ class EtsyShopSection(Base):
     def update(self, shop_section_data: Union[EtsyShopSectionSpace, Dict[str, Any]],
                seller: EtsySeller = None, shop: EtsyShop = None,
                listings: List[EtsyListing] = None,
-               overwrite_list: Boolean = False):
+               overwrite_list: bool = False):
         if not isinstance(shop_section_data, EtsyShopSectionSpace):
             shop_section_data = self.create_namespace(shop_section_data)
 
@@ -1502,7 +1505,7 @@ class EtsyProductionPartner(Base):
 
     def update(self, production_partner_data: Union[EtsyProductionPartnerSpace, Dict[str, Any]],
                listings: List[EtsyListing] = None,
-               overwrite_list: Boolean = False):
+               overwrite_list: bool = False):
         if not isinstance(production_partner_data, EtsyProductionPartnerSpace):
             production_partner_data = self.create_namespace(production_partner_data)
 
@@ -1523,7 +1526,6 @@ class EtsyShop(Base):
     shop_id = Column(BigInteger, unique=True)
     shop_name = Column(String)
     create_date = Column(Integer)
-    created_date = Column(Integer)
     title = Column(String)
     announcement = Column(String)
     currency_code = Column(String)
@@ -1586,7 +1588,6 @@ class EtsyShop(Base):
             shop_id=shop_data.shop_id,
             shop_name=shop_data.shop_name,
             create_date=shop_data.create_date,
-            created_date=shop_data.created_date,
             title=shop_data.title,
             announcement=shop_data.announcement,
             currency_code=shop_data.currency_code,
@@ -1604,6 +1605,8 @@ class EtsyShop(Base):
             policy_payment=shop_data.policy_payment,
             policy_shipping=shop_data.policy_shipping,
             policy_refunds=shop_data.policy_refunds,
+
+
             policy_additional=shop_data.policy_additional,
             policy_seller_info=shop_data.policy_seller_info,
             policy_update_date=shop_data.policy_update_date,
@@ -1617,13 +1620,15 @@ class EtsyShop(Base):
             languages=shop_data.languages,
             icon_url_fullxfull=shop_data.icon_url_fullxfull,
             is_using_structured_policies=shop_data.is_using_structured_policies,
+
+
             has_onboarded_structured_policies=shop_data.has_onboarded_structured_policies,
             include_dispute_form_link=shop_data.include_dispute_form_link,
             is_etsy_payments_onboarded=shop_data.is_etsy_payments_onboarded,
             is_calculated_eligible=shop_data.is_calculated_eligible,
             is_opted_into_buyer_promise=shop_data.is_opted_into_buyer_promise,
             is_shop_us_based=shop_data.is_shop_us_based,
-            transaction_sold_count=shop_data.transaction_sold_account,
+            transaction_sold_count=shop_data.transaction_sold_count,
             shipping_from_country_iso=shop_data.shipping_from_country_iso,
             shop_location_country_iso=shop_data.shop_location_country_iso,
             review_count=shop_data.review_count,
@@ -1659,7 +1664,7 @@ class EtsyShop(Base):
                listings: List[EtsyListing] = None,
                return_policies: List[EtsyReturnPolicy] = None,
                shop_sections: List[EtsyShopSection] = None,
-               overwrite_list: Boolean = False
+               overwrite_list: bool = False
                ):
         if not isinstance(shop_data, EtsyShopSpace):
             shop_data = self.create_namespace(shop_data)
@@ -1667,7 +1672,6 @@ class EtsyShop(Base):
         self.shop_id = shop_data.shop_id,
         self.shop_name = shop_data.shop_name,
         self.create_date = shop_data.create_date,
-        self.created_date = shop_data.created_date,
         self.title = shop_data.title,
         self.announcement = shop_data.announcement,
         self.currency_code = shop_data.currency_code,
@@ -1704,7 +1708,7 @@ class EtsyShop(Base):
         self.is_calculated_eligible = shop_data.is_calculated_eligible,
         self.is_opted_into_buyer_promise = shop_data.is_opted_into_buyer_promise,
         self.is_shop_us_based = shop_data.is_shop_us_based,
-        self.transaction_sold_count = shop_data.transaction_sold_account,
+        self.transaction_sold_count = shop_data.transaction_sold_count,
         self.shipping_from_country_iso = shop_data.shipping_from_country_iso,
         self.shop_location_country_iso = shop_data.shop_location_country_iso,
         self.review_count = shop_data.review_count,
@@ -1713,8 +1717,13 @@ class EtsyShop(Base):
         if seller is not None:
             self.seller = seller
 
-        if listings is not None:
-            self.listings = listings if overwrite_list else self.listings + listings
+        # if listings is not None:
+        #     new_val = listings if overwrite_list else self.listings + [l for l in listings if l not in
+        #                                                                      self.listings]
+        #     print(new_val, type(new_val))
+        #     for v in new_val:
+        #         print(type(v))
+        #     self.listings = new_val
 
         if return_policies is not None:
             self.return_policies = return_policies if overwrite_list else self.return_policies + return_policies
@@ -1740,7 +1749,7 @@ class EtsyOffering(Base):
     product = relationship("EtsyProduct", uselist=False, back_populates='offerings')
 
     @classmethod
-    def create(cls, offering_data: Union[EtsyOffering, Dict[str, Any]],
+    def create(cls, offering_data: Union[EtsyOfferingSpace, Dict[str, Any]],
                product: EtsyProduct = None) -> EtsyOffering:
         if not isinstance(offering_data, EtsyOfferingSpace):
             offering_data = cls.create_namespace(offering_data)
@@ -1768,7 +1777,7 @@ class EtsyOffering(Base):
             EtsyOffering.offering_id == int(offering_id)
         ).first()
 
-    def update(self, offering_data: Union[EtsyOffering, Dict[str, Any]],
+    def update(self, offering_data: Union[EtsyOfferingSpace, Dict[str, Any]],
                product: EtsyProduct = None):
         if not isinstance(offering_data, EtsyOfferingSpace):
             offering_data = self.create_namespace(offering_data)

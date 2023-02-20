@@ -1,14 +1,14 @@
 import enum
 
 
-class TransactionFulfillmentStatus:
+class TransactionFulfillmentStatus(enum.Enum):
     NEEDS_FULFILLMENT = 'needs_fulfillment'
     IN_PROGRESS = 'in_progress'
     COMPLETED = 'completed'
     ORDER_CANCELED = 'order_canceled'
 
 
-class OrderStatus:
+class OrderStatus(enum.Enum):
     INCOMPLETE = 'incomplete'
     COMPLETE = 'complete'
     CANCELED = 'canceled'
@@ -39,6 +39,7 @@ class Etsy:
         POUND = "lb"
         GRAM = "g"
         KILOGRAM = "kg"
+        NONE = "n/a"
 
     class ItemDimensionsUnit(enum.Enum):
         INCH = "in"
@@ -48,11 +49,12 @@ class Etsy:
         METER = "m"
         YARD = "yd"
         INCHES = "inches"  # Yeah idk
+        NONE = "n/a"
 
     class ShippingProfileType(enum.Enum):
         MANUAL = "manual"
         CALCULATED = "calculated"
 
     class ShippingUpgradeType(enum.Enum):
-        DOMESTIC = "0"
-        INTERNATIONAL = "1"
+        DOMESTIC = 0
+        INTERNATIONAL = 1

@@ -187,6 +187,7 @@ class API(Secrets):
 
     def get_shop_section(self, shop_id: int, shop_section_id: int):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'sections', str(shop_section_id))
+        print(url)
 
         response = requests.get(url, headers=self._signed_header)
 
@@ -196,7 +197,8 @@ class API(Secrets):
             raise LookupError(response.json())
 
     def get_return_policy(self, shop_id: int, return_policy_id: int):
-        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'policies', str(return_policy_id))
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'policies', 'return',
+                           str(return_policy_id))
 
         response = requests.get(url, headers=self._signed_header)
 

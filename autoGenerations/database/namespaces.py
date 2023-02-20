@@ -1,4 +1,5 @@
 from typing import Dict, List
+from database.enums import Etsy
 
 
 _SPECIAL_CHAR = '|'
@@ -38,7 +39,7 @@ class EtsyReceiptSpace:
         self.country = receipt['country_iso']
         self.seller_id = receipt['seller_user_id']
         self.seller_email = receipt['seller_email']
-        self.status = receipt['status']
+        self.status = Etsy.OrderStatus(receipt['status'])
         self.payment_method = receipt['payment_method']
         self.message_from_seller = receipt['message_from_seller']
         self.message_from_buyer = receipt['message_from_buyer']
@@ -65,6 +66,7 @@ class EtsyBuyerSpace:
     def __init__(self, receipt: Dict):
         self.buyer_id = receipt['buyer_user_id']
         self.email = receipt['buyer_email']
+        self.name = receipt['name']
 
 
 class EtsySellerSpace:
@@ -130,7 +132,8 @@ class EtsyProductSpace:
     def __init__(self, product: Dict):
         self.product_id = product['product_id']
         self.sku = product['sku']
-        self.price = product['price']
+        self.is_deleted = product['is_deleted']
+        self.offerings = product['offerings']
 
 
 class EtsyProductPropertySpace:
@@ -156,7 +159,7 @@ class EtsyShippingProfileSpace:
         self.shipping_profile_destinations = shipping_profile_data['shipping_profile_destinations']
         self.shipping_profile_upgrades = shipping_profile_data['shipping_profile_upgrades']
         self.origin_postal_code = shipping_profile_data['origin_postal_code']
-        self.profile_type = shipping_profile_data['profile_type']
+        self.profile_type = Etsy.ShippingProfileType(shipping_profile_data['profile_type'])
         self.domestic_handling_fee = shipping_profile_data['domestic_handling_fee']
         self.international_handling_fee = shipping_profile_data['international_handling_fee']
 
@@ -181,7 +184,7 @@ class EtsyShippingProfileUpgradeSpace:
         self.shipping_profile_id = shipping_profile_upgrade_data['shipping_profile_id']
         self.upgrade_id = shipping_profile_upgrade_data['upgrade_id']
         self.upgrade_name = shipping_profile_upgrade_data['upgrade_name']
-        self.type = shipping_profile_upgrade_data['type']
+        self.type = Etsy.ShippingUpgradeType(shipping_profile_upgrade_data['type'])
         self.rank = shipping_profile_upgrade_data['rank']
         self.language = shipping_profile_upgrade_data['language']
         self.price = shipping_profile_upgrade_data['price']['amount']
@@ -199,7 +202,7 @@ class EtsyListingSpace:
         self.shop_id = listing_data['shop_id']
         self.title = listing_data['title']
         self.description = listing_data['description']
-        self.state = listing_data['state']
+        self.state = Etsy.ListingState(listing_data['state'])
         self.creation_timestamp = listing_data['creation_timestamp']
         self.created_timestamp = listing_data['created_timestamp']
         self.ending_timestamp = listing_data['ending_timestamp']
@@ -219,9 +222,9 @@ class EtsyListingSpace:
         self.personalization_is_required = listing_data['personalization_is_required']
         self.personalization_char_count_max = listing_data['personalization_char_count_max']
         self.personalization_instructions = listing_data['personalization_instructions']
-        self.listing_type = listing_data['listing_type']
-        self.tags = listing_data['tags']
-        self.materials = listing_data['materials']
+        self.listing_type = Etsy.ListingType(listing_data['listing_type'])
+        self.tags = list_string_encode(listing_data['tags'])
+        self.materials = list_string_encode(listing_data['materials'])
         self.shipping_profile_id = listing_data['shipping_profile_id']
         self.return_policy_id = listing_data['return_policy_id']
         self.processing_min = listing_data['processing_min']
@@ -230,13 +233,15 @@ class EtsyListingSpace:
         self.when_made = listing_data['when_made']
         self.is_supply = listing_data['is_supply']
         self.item_weight = listing_data['item_weight']
-        self.item_weight_unit = listing_data['item_weight_unit']
+        self.item_weight_unit = Etsy.ItemWeightUnit(listing_data['item_weight_unit']) if \
+            listing_data['item_weight_unit'] is not None else Etsy.ItemWeightUnit.NONE
         self.item_length = listing_data['item_length']
         self.item_height = listing_data['item_height']
         self.item_width = listing_data['item_width']
-        self.item_dimensions_unit = listing_data['item_dimensions_unit']
+        self.item_dimensions_unit = Etsy.ItemDimensionsUnit(listing_data['item_dimensions_unit']) if \
+            listing_data['item_dimensions_unit'] is not None else Etsy.ItemDimensionsUnit.NONE
         self.is_private = listing_data['is_private']
-        self.style = listing_data['style']
+        self.style = list_string_encode(listing_data['style'])
         self.file_data = listing_data['file_data']
         self.has_variations = listing_data['has_variations']
         self.should_auto_renew = listing_data['should_auto_renew']
@@ -250,7 +255,7 @@ class EtsyListingSpace:
         self.videos = listing_data['videos']
         self.inventory = listing_data['inventory']
         self.production_partners = listing_data['production_partners']
-        self.skus = listing_data['skus']
+        self.skus = list_string_encode(listing_data['skus'])
         self.translations = listing_data['translations']
         self.views = listing_data['views']
 
@@ -259,7 +264,7 @@ class EtsyReturnPolicySpace:
     def __init__(self, return_policy_data: Dict):
         self.return_policy_id = return_policy_data['return_policy_id']
         self.shop_id = return_policy_data['shop_id']
-        self.accepts_return = return_policy_data['accepts_return']
+        self.accepts_returns = return_policy_data['accepts_returns']
         self.accepts_exchanges = return_policy_data['accepts_exchanges']
         self.return_deadline = return_policy_data['return_deadline']
 
@@ -286,7 +291,6 @@ class EtsyShopSpace:
         self.user_id = etsy_shop_data['user_id']
         self.shop_name = etsy_shop_data['shop_name']
         self.create_date = etsy_shop_data['create_date']
-        self.created_date = etsy_shop_data['created_date']
         self.title = etsy_shop_data['title']
         self.announcement = etsy_shop_data['announcement']
         self.currency_code = etsy_shop_data['currency_code']
@@ -314,16 +318,16 @@ class EtsyShopSpace:
         self.url = etsy_shop_data['url']
         self.image_url_760x100 = etsy_shop_data['image_url_760x100']
         self.num_favorers = etsy_shop_data['num_favorers']
-        self.languages = etsy_shop_data['languages']
+        self.languages = list_string_encode(etsy_shop_data['languages'])
         self.icon_url_fullxfull = etsy_shop_data['icon_url_fullxfull']
         self.is_using_structured_policies = etsy_shop_data['is_using_structured_policies']
         self.has_onboarded_structured_policies = etsy_shop_data['has_onboarded_structured_policies']
         self.include_dispute_form_link = etsy_shop_data['include_dispute_form_link']
         self.is_etsy_payments_onboarded = etsy_shop_data['is_etsy_payments_onboarded']
         self.is_calculated_eligible = etsy_shop_data['is_calculated_eligible']
-        self.is_opted_into_buyer_promise = etsy_shop_data['is_opted_into_buyer_promise']
+        self.is_opted_into_buyer_promise = etsy_shop_data['is_opted_in_to_buyer_promise']
         self.is_shop_us_based = etsy_shop_data['is_shop_us_based']
-        self.transaction_sold_account = etsy_shop_data['transaction_sold_account']
+        self.transaction_sold_count = etsy_shop_data['transaction_sold_count']
         self.shipping_from_country_iso = etsy_shop_data['shipping_from_country_iso']
         self.shop_location_country_iso = etsy_shop_data['shop_location_country_iso']
         self.review_count = etsy_shop_data['review_count']

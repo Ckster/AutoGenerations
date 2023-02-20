@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from database.tables import Address, EtsyBuyer
+from database.tables import Address, EtsyBuyer, EtsyProduct, EtsyOffering
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -34,7 +34,7 @@ class API(Secrets):
         super(API, self).__init__()
         self.access_key = self.sandbox_key if sandbox_mode else self.prod_key
 
-    def place_order(self, address: Address, buyer: EtsyBuyer, ):
+    def place_order(self, address: Address, buyer: EtsyBuyer, product: EtsyProduct, offering: EtsyOffering):
         url = "https://api.sandbox.prodigi.com/v4.0/Orders"
 
         headers = {
@@ -54,9 +54,9 @@ class API(Secrets):
                     "stateOrCounty": address.state
                 },
 
-                # TODO: Is this us or the buyer?
-                "name": "",
-                "email": "verleyeerick@gmail.com"
+                # TODO: Use our info here?
+                "name": buyer.name,
+                "email": buyer.email
             },
             "items": [{
                 "sku": "GLOBAL-FAP-16x24",
