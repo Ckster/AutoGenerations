@@ -31,6 +31,13 @@ listing_product_association_table = Table(
     Column("product_id", ForeignKey("etsy_product.id"), primary_key=True)
 )
 
+buyer_address_association_table = Table(
+    "buyer_address_association_table",
+    Base.metadata,
+    Column("buyer_id", ForeignKey("etsy_buyer.id"), primary_key=True),
+    Column("address_id", ForeignKey("address.id"), primary_key=True)
+)
+
 
 # Thread on SQL UPDATE when you are 'changing' a table column value to the value it already is:
 # https://www.sqlservercentral.com/forums/topic/update-when-the-values-are-the-same. Apparently SQL
@@ -323,18 +330,22 @@ class EtsySeller(Base):
 
 class EtsyBuyer(Base):
     __tablename__ = 'etsy_buyer'
-    id = Column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     buyer_id = Column(BigInteger, unique=True)
     email = Column(String)
     name = Column(String)
 
+    # relationships
     receipts = relationship('EtsyReceipt', back_populates='buyer')
     transactions = relationship("EtsyTransaction", back_populates='buyer')
+    addresses: Mapped[List[Address]] = relationship(
+        secondary=buyer_address_association_table, back_populates='buyers')
 
     @classmethod
     def create(cls, buyer_data: Union[EtsyBuyerSpace, Dict[str, Any]],
                receipts: List[EtsyReceipt] = None,
-               transactions: List[EtsyTransaction] = None
+               transactions: List[EtsyTransaction] = None,
+               addresses: List[Address] = None
                ) -> EtsyBuyer:
         if not isinstance(buyer_data, EtsyBuyerSpace):
             buyer_data = cls.create_namespace(buyer_data)
@@ -351,6 +362,9 @@ class EtsyBuyer(Base):
         if transactions is not None:
             buyer.transactions = transactions
 
+        if addresses is not None:
+            buyer.addresses = addresses
+
         return buyer
 
     @staticmethod
@@ -366,6 +380,7 @@ class EtsyBuyer(Base):
     def update(self, buyer_data: Union[EtsyBuyerSpace, Dict[str, Any]],
                receipts: List[EtsyReceipt] = None,
                transactions: List[EtsyTransaction] = None,
+               addresses: List[Address] = None,
                overwrite_list: bool = False):
         if not isinstance(buyer_data, EtsyBuyerSpace):
             buyer_data = self.create_namespace(buyer_data)
@@ -381,10 +396,13 @@ class EtsyBuyer(Base):
         if transactions:
             self.transactions = transactions if overwrite_list else merge_lists(self.transactions, transactions)
 
+        if addresses is not None:
+            self.addresses = addresses if overwrite_list else merge_lists(self.addresses, addresses)
+
 
 class Address(Base):
     __tablename__ = 'address'
-    id = Column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     first_line = Column(String)
     second_line = Column(String)
     city = Column(String)
@@ -393,11 +411,15 @@ class Address(Base):
     country = Column(String)
     formatted = Column(String)
 
+    # relationships
     receipts = relationship('EtsyReceipt', back_populates='address')
+    buyers: Mapped[List[EtsyBuyer]] = relationship(
+        secondary=buyer_address_association_table, back_populates='addresses')
 
     @classmethod
     def create(cls, address_data: Union[AddressSpace, Dict[str, Any]],
-               receipts: List[EtsyReceipt] = None) -> Address:
+               receipts: List[EtsyReceipt] = None,
+               buyers: List[EtsyBuyer] = None) -> Address:
         if not isinstance(address_data, AddressSpace):
             address_data = cls.create_namespace(address_data)
 
@@ -414,7 +436,13 @@ class Address(Base):
         if receipts is not None:
             address.receipts = receipts
 
+        if buyers is not None:
+            address.buyers = buyers
+
         return address
+
+    def update(self, buyers: List[EtsyBuyer], overwrite_list: bool = False):
+        self.buyers = buyers if overwrite_list else merge_lists(self.buyers, buyers)
 
     @staticmethod
     def create_namespace(address_data: Dict[str, Any]):
