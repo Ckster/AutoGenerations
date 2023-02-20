@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from database.tables import Address, EtsyBuyer, EtsyProduct, EtsyOffering
+from database.tables import Address, EtsyBuyer, EtsyProduct, EtsyOffering, EtsySeller, EtsyTransaction
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -34,7 +34,7 @@ class API(Secrets):
         super(API, self).__init__()
         self.access_key = self.sandbox_key if sandbox_mode else self.prod_key
 
-    def place_order(self, address: Address, buyer: EtsyBuyer, product: EtsyProduct, offering: EtsyOffering):
+    def place_order(self, address: Address, transaction: EtsyTransaction):
         url = "https://api.sandbox.prodigi.com/v4.0/Orders"
 
         headers = {
@@ -42,11 +42,17 @@ class API(Secrets):
             "Content-Type": "application/json"
         }
 
+        # TODO: Use transaction SKU to get prodigi SKU
+        sku = transaction.product.sku.split('%')[-1]
+
+        # TODO: Map the shipping upgrades if we are going to do that
+        shipping_method = 'Budget' if transaction.shipping_upgrade is None else transaction.shipping_upgrade
+
         body = {
-            "shippingMethod": "Budget",
+            "shippingMethod": shipping_method,
             "recipient": {
                 "address": {
-                    "line1": address.first_line,
+                    "line1":  address.first_line,
                     "line2": address.second_line,
                     "postalOrZipCode": address.zip_code,
                     "countryCode": address.country,
@@ -54,13 +60,12 @@ class API(Secrets):
                     "stateOrCounty": address.state
                 },
 
-                # TODO: Use our info here?
-                "name": buyer.name,
-                "email": buyer.email
+                "name": transaction.buyer.name,
+                "email": transaction.seller.email
             },
             "items": [{
-                "sku": "GLOBAL-FAP-16x24",
-                "copies": 1,
+                "sku": sku,
+                "copies": transaction.quantity,
                 "sizing": "fillPrintArea",
                 "assets": [
                     {

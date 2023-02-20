@@ -161,11 +161,13 @@ def get_new_orders():
             # Create new transactions
             transactions = []
             for transaction in receipt['transactions']:
+                print('Transaction', transaction)
                 transaction_space = EtsyTransaction.create_namespace(transaction)
 
                 # Get list of existing / created product properties
                 product_properties = []
                 for property_data in transaction_space.product_property_data:
+                    print('Property data', property_data)
                     property_data_space = EtsyProductPropertySpace(property_data)
                     product_property = EtsyProductProperty.get_existing(session, property_data_space.property_id,
                                                                         property_data_space.property_name)
@@ -180,7 +182,7 @@ def get_new_orders():
 
                 # Call endpoint to get more info about listing, then update / create a listing record
                 listing_response = etsy_api.get_listing(transaction_space.listing_id)
-                print(listing_response)
+                print('Listing', listing_response)
                 listing_space = EtsyListingSpace(listing_response)
                 listing = EtsyListing.get_existing(session, listing_space.listing_id)
                 if listing is None:
@@ -192,8 +194,6 @@ def get_new_orders():
                     session.flush()
 
                 shop_response = etsy_api.get_shop(listing_space.shop_id)
-                for k,v in shop_response.items():
-                    print(k, type(v))
                 shop_space = EtsyShopSpace(shop_response)
                 shop = EtsyShop.get_existing(session, shop_space.shop_id)
                 if shop is None:
@@ -201,7 +201,7 @@ def get_new_orders():
                     session.add(shop)
                     session.flush()
                 else:
-                   # shop.update(shop_space, seller=seller, listings=[listing], overwrite_list=True)
+                    shop.update(shop_space, seller=seller, listings=[listing], overwrite_list=True)
                     session.flush()
 
                 # Listing should be part of a section but possible that it isn't
@@ -298,9 +298,11 @@ def get_new_orders():
                 product_response = etsy_api.get_listing_product(transaction_space.listing_id,
                                                                 transaction_space.product_id)
                 product_space = EtsyProductSpace(product_response)
+                print('product', product_response)
 
                 offerings = []
                 for offering in product_space.offerings:
+                    print('offering', offering)
                     offering_space = EtsyOfferingSpace(offering)
                     offering = EtsyOffering.get_existing(session, offering_space.offering_id)
                     if offering is None:

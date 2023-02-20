@@ -160,28 +160,28 @@ class EtsyReceipt(Base):
         if not isinstance(receipt_data, EtsyReceiptSpace):
             receipt_data = self.create_namespace(receipt_data)
 
-        self.receipt_id = receipt_data.receipt_id,
-        self.receipt_type = receipt_data.receipt_type,
-        self.status = receipt_data.status,
-        self.payment_method = receipt_data.payment_method,
-        self.message_from_seller = receipt_data.message_from_seller,
-        self.message_from_buyer = receipt_data.message_from_buyer,
-        self.message_from_payment = receipt_data.message_from_payment,
-        self.is_paid = receipt_data.is_paid,
-        self.is_shipped = receipt_data.is_shipped,
-        self.create_timestamp = receipt_data.create_timestamp,
-        self.created_timestamp = receipt_data.created_timestamp,
-        self.update_timestamp = receipt_data.update_timestamp,
-        self.updated_timestamp = receipt_data.updated_timestamp,
-        self.is_gift = receipt_data.is_gift,
-        self.gift_message = receipt_data.gift_message,
-        self.grand_total = receipt_data.grand_total,
-        self.sub_total = receipt_data.sub_total,
-        self.total_price = receipt_data.total_price,
-        self.shipping_cost = receipt_data.shipping_cost,
-        self.tax_cost = receipt_data.tax_cost,
-        self.vat_cost = receipt_data.vat_cost,
-        self.discount = receipt_data.discount,
+        self.receipt_id = receipt_data.receipt_id
+        self.receipt_type = receipt_data.receipt_type
+        self.status = receipt_data.status
+        self.payment_method = receipt_data.payment_method
+        self.message_from_seller = receipt_data.message_from_seller
+        self.message_from_buyer = receipt_data.message_from_buyer
+        self.message_from_payment = receipt_data.message_from_payment
+        self.is_paid = receipt_data.is_paid
+        self.is_shipped = receipt_data.is_shipped
+        self.create_timestamp = receipt_data.create_timestamp
+        self.created_timestamp = receipt_data.created_timestamp
+        self.update_timestamp = receipt_data.update_timestamp
+        self.updated_timestamp = receipt_data.updated_timestamp
+        self.is_gift = receipt_data.is_gift
+        self.gift_message = receipt_data.gift_message
+        self.grand_total = receipt_data.grand_total
+        self.sub_total = receipt_data.sub_total
+        self.total_price = receipt_data.total_price
+        self.shipping_cost = receipt_data.shipping_cost
+        self.tax_cost = receipt_data.tax_cost
+        self.vat_cost = receipt_data.vat_cost
+        self.discount = receipt_data.discount
         self.gift_wrap_price = receipt_data.gift_wrap_price
 
         if order_status is not None:
@@ -478,7 +478,7 @@ class EtsyTransaction(Base):
             shipping_upgrade=transaction_data.shipping_upgrade,
             expected_ship_date=transaction_data.expected_ship_date,
             buyer_coupon=transaction_data.buyer_coupon,
-            shop_coupon=transaction_data.shop_coupon,
+            shop_coupon=transaction_data.shop_coupon
         )
 
         if fulfillment_status is not None:
@@ -742,19 +742,17 @@ class EtsyShippingProfile(Base):
         if not isinstance(shipping_profile_data, EtsyShippingProfileSpace):
             shipping_profile_data = self.create_namespace(shipping_profile_data)
 
-        self.shipping_profile_id = (self.shipping_profile_id, shipping_profile_data.shipping_profile_id)
-        self.title = (self.title, shipping_profile_data.title)
-        self.min_processing_days = (self.min_processing_days, shipping_profile_data.min_processing_days)
-        self.max_processing_days = (self.max_processing_days, shipping_profile_data.max_processing_days)
-        self.processing_days_display_label = (self.processing_days_display_label,
-                                              shipping_profile_data.processing_days_display_label)
-        self.origin_country_iso = (self.origin_country_iso, shipping_profile_data.origin_country_iso)
-        self.is_deleted = (self.is_deleted, shipping_profile_data.is_deleted)
-        self.origin_postal_code = (self.origin_postal_code, shipping_profile_data.origin_postal_code)
-        self.profile_type = (self.profile_type, shipping_profile_data.profile_type)
-        self.domestic_handling_fee = (self.domestic_handling_fee, shipping_profile_data.domestic_handling_fee)
-        self.internation_handling_fee = (self.internation_handling_fee,
-                                         shipping_profile_data.international_handling_fee)
+        self.shipping_profile_id = shipping_profile_data.shipping_profile_id
+        self.title = shipping_profile_data.title
+        self.min_processing_days = shipping_profile_data.min_processing_days
+        self.max_processing_days = shipping_profile_data.max_processing_days
+        self.processing_days_display_label = shipping_profile_data.processing_days_display_label
+        self.origin_country_iso = shipping_profile_data.origin_country_iso
+        self.is_deleted = shipping_profile_data.is_deleted
+        self.origin_postal_code = shipping_profile_data.origin_postal_code
+        self.profile_type = shipping_profile_data.profile_type
+        self.domestic_handling_fee = shipping_profile_data.domestic_handling_fee
+        self.internation_handling_fee = shipping_profile_data.international_handling_fee
 
         if seller is not None:
             self.seller = seller
@@ -838,18 +836,16 @@ class EtsyShippingProfileDestination(Base):
         if not isinstance(shipping_destination_data, EtsyShippingProfileDestinationSpace):
             shipping_destination_data = self.create_namespace(shipping_destination_data)
 
-        self.shipping_profile_destination_id = (self.shipping_profile_destination_id,
-                                                shipping_destination_data.shipping_profile_destination_id)
-        self.origin_country_iso = (self.origin_country_iso, shipping_destination_data.origin_country_iso)
-        self.destination_country_iso = (self.destination_country_iso,
-                                        shipping_destination_data.destination_country_iso)
-        self.destination_region = (self.destination_region, shipping_destination_data.destination_region)
-        self.primary_cost = (self.primary_cost, shipping_destination_data.primary_cost)
-        self.secondary_cost = (self.secondary_cost, shipping_destination_data.secondary_cost)
-        self.shipping_carrier_id = (self.shipping_carrier_id, shipping_destination_data.shipping_carrier_id)
-        self.mail_class = (self.mail_class, shipping_destination_data.mail_class)
-        self.min_delivery_days = (self.min_delivery_days, shipping_destination_data.min_delivery_days)
-        self.max_delivery_days = (self.max_delivery_days, shipping_destination_data.max_delivery_days)
+        self.shipping_profile_destination_id = shipping_destination_data.shipping_profile_destination_id
+        self.origin_country_iso = shipping_destination_data.origin_country_iso
+        self.destination_country_iso = shipping_destination_data.destination_country_iso
+        self.destination_region = shipping_destination_data.destination_region
+        self.primary_cost = shipping_destination_data.primary_cost
+        self.secondary_cost = shipping_destination_data.secondary_cost
+        self.shipping_carrier_id = shipping_destination_data.shipping_carrier_id
+        self.mail_class = shipping_destination_data.mail_class
+        self.min_delivery_days = shipping_destination_data.min_delivery_days
+        self.max_delivery_days = shipping_destination_data.max_delivery_days
 
         if shipping_profile is not None:
             self.shipping_profile = shipping_profile
@@ -1509,8 +1505,8 @@ class EtsyProductionPartner(Base):
         if not isinstance(production_partner_data, EtsyProductionPartnerSpace):
             production_partner_data = self.create_namespace(production_partner_data)
 
-        self.production_partner_id = production_partner_data.production_partner_id,
-        self.partner_name = production_partner_data.partner_name,
+        self.production_partner_id = production_partner_data.production_partner_id
+        self.partner_name = production_partner_data.partner_name
         self.location = production_partner_data.location
 
         if listings is not None:
@@ -1605,8 +1601,6 @@ class EtsyShop(Base):
             policy_payment=shop_data.policy_payment,
             policy_shipping=shop_data.policy_shipping,
             policy_refunds=shop_data.policy_refunds,
-
-
             policy_additional=shop_data.policy_additional,
             policy_seller_info=shop_data.policy_seller_info,
             policy_update_date=shop_data.policy_update_date,
@@ -1620,8 +1614,6 @@ class EtsyShop(Base):
             languages=shop_data.languages,
             icon_url_fullxfull=shop_data.icon_url_fullxfull,
             is_using_structured_policies=shop_data.is_using_structured_policies,
-
-
             has_onboarded_structured_policies=shop_data.has_onboarded_structured_policies,
             include_dispute_form_link=shop_data.include_dispute_form_link,
             is_etsy_payments_onboarded=shop_data.is_etsy_payments_onboarded,
@@ -1669,61 +1661,57 @@ class EtsyShop(Base):
         if not isinstance(shop_data, EtsyShopSpace):
             shop_data = self.create_namespace(shop_data)
 
-        self.shop_id = shop_data.shop_id,
-        self.shop_name = shop_data.shop_name,
-        self.create_date = shop_data.create_date,
-        self.title = shop_data.title,
-        self.announcement = shop_data.announcement,
-        self.currency_code = shop_data.currency_code,
-        self.is_vacation = shop_data.is_vacation,
-        self.vacation_message = shop_data.vacation_message,
-        self.sale_message = shop_data.sale_message,
-        self.digital_sale_message = shop_data.digital_sale_message,
-        self.update_date = shop_data.update_date,
-        self.updated_timestamp = shop_data.updated_timestamp,
-        self.listing_active_count = shop_data.listing_active_count,
-        self.digital_listing_count = shop_data.digital_listing_count,
-        self.login_name = shop_data.login_name,
-        self.accepts_custom_requests = shop_data.accepts_custom_requests,
-        self.policy_welcome = shop_data.policy_welcome,
-        self.policy_payment = shop_data.policy_payment,
-        self.policy_shipping = shop_data.policy_shipping,
-        self.policy_refunds = shop_data.policy_refunds,
-        self.policy_additional = shop_data.policy_additional,
-        self.policy_seller_info = shop_data.policy_seller_info,
-        self.policy_update_date = shop_data.policy_update_date,
-        self.policy_has_private_receipt_info = shop_data.policy_has_private_receipt_info,
-        self.has_unstructured_policies = shop_data.has_unstructured_policies,
-        self.policy_privacy = shop_data.policy_privacy,
-        self.vacation_autoreply = shop_data.vacation_autoreply,
-        self.url = shop_data.url,
-        self.image_url_760x100 = shop_data.image_url_760x100,
-        self.num_favorers = shop_data.num_favorers,
-        self.languages = shop_data.languages,
-        self.icon_url_fullxfull = shop_data.icon_url_fullxfull,
-        self.is_using_structured_policies = shop_data.is_using_structured_policies,
-        self.has_onboarded_structured_policies = shop_data.has_onboarded_structured_policies,
-        self.include_dispute_form_link = shop_data.include_dispute_form_link,
-        self.is_etsy_payments_onboarded = shop_data.is_etsy_payments_onboarded,
-        self.is_calculated_eligible = shop_data.is_calculated_eligible,
-        self.is_opted_into_buyer_promise = shop_data.is_opted_into_buyer_promise,
-        self.is_shop_us_based = shop_data.is_shop_us_based,
-        self.transaction_sold_count = shop_data.transaction_sold_count,
-        self.shipping_from_country_iso = shop_data.shipping_from_country_iso,
-        self.shop_location_country_iso = shop_data.shop_location_country_iso,
-        self.review_count = shop_data.review_count,
+        self.shop_id = shop_data.shop_id
+        self.shop_name = shop_data.shop_name
+        self.create_date = shop_data.create_date
+        self.title = shop_data.title
+        self.announcement = shop_data.announcement
+        self.currency_code = shop_data.currency_code
+        self.is_vacation = shop_data.is_vacation
+        self.vacation_message = shop_data.vacation_message
+        self.sale_message = shop_data.sale_message
+        self.digital_sale_message = shop_data.digital_sale_message
+        self.update_date = shop_data.update_date
+        self.updated_timestamp = shop_data.updated_timestamp
+        self.listing_active_count = shop_data.listing_active_count
+        self.digital_listing_count = shop_data.digital_listing_count
+        self.login_name = shop_data.login_name
+        self.accepts_custom_requests = shop_data.accepts_custom_requests
+        self.policy_welcome = shop_data.policy_welcome
+        self.policy_payment = shop_data.policy_payment
+        self.policy_shipping = shop_data.policy_shipping
+        self.policy_refunds = shop_data.policy_refunds
+        self.policy_additional = shop_data.policy_additional
+        self.policy_seller_info = shop_data.policy_seller_info
+        self.policy_update_date = shop_data.policy_update_date
+        self.policy_has_private_receipt_info = shop_data.policy_has_private_receipt_info
+        self.has_unstructured_policies = shop_data.has_unstructured_policies
+        self.policy_privacy = shop_data.policy_privacy
+        self.vacation_autoreply = shop_data.vacation_autoreply
+        self.url = shop_data.url
+        self.image_url_760x100 = shop_data.image_url_760x100
+        self.num_favorers = shop_data.num_favorers
+        self.languages = shop_data.languages
+        self.icon_url_fullxfull = shop_data.icon_url_fullxfull
+        self.is_using_structured_policies = shop_data.is_using_structured_policies
+        self.has_onboarded_structured_policies = shop_data.has_onboarded_structured_policies
+        self.include_dispute_form_link = shop_data.include_dispute_form_link
+        self.is_etsy_payments_onboarded = shop_data.is_etsy_payments_onboarded
+        self.is_calculated_eligible = shop_data.is_calculated_eligible
+        self.is_opted_into_buyer_promise = shop_data.is_opted_into_buyer_promise
+        self.is_shop_us_based = shop_data.is_shop_us_based
+        self.transaction_sold_count = shop_data.transaction_sold_count
+        self.shipping_from_country_iso = shop_data.shipping_from_country_iso
+        self.shop_location_country_iso = shop_data.shop_location_country_iso
+        self.review_count = shop_data.review_count
         self.review_average = shop_data.review_average
 
         if seller is not None:
             self.seller = seller
 
-        # if listings is not None:
-        #     new_val = listings if overwrite_list else self.listings + [l for l in listings if l not in
-        #                                                                      self.listings]
-        #     print(new_val, type(new_val))
-        #     for v in new_val:
-        #         print(type(v))
-        #     self.listings = new_val
+        if listings is not None:
+            new_val = listings if overwrite_list else self.listings + [l for l in listings if l not in self.listings]
+            self.listings = new_val
 
         if return_policies is not None:
             self.return_policies = return_policies if overwrite_list else self.return_policies + return_policies
@@ -1782,14 +1770,17 @@ class EtsyOffering(Base):
         if not isinstance(offering_data, EtsyOfferingSpace):
             offering_data = self.create_namespace(offering_data)
 
-        self.offering_id = offering_data.offering_id,
-        self.quantity = offering_data.quantity,
-        self.is_enabled = offering_data.is_enabled,
-        self.is_deleted = offering_data.is_deleted,
+        if self.offering_id != offering_data.offering_id:
+            self.offering_id = offering_data.offering_id
+        if self.quantity != offering_data.quantity:
+            self.quantity = offering_data.quantity
+        self.is_enabled = offering_data.is_enabled
+        self.is_deleted = offering_data.is_deleted
         self.price = offering_data.price
 
         if product is not None:
-            self.product = product
+            if self.product != product:
+                self.product = product
 
 
 def create_database():
