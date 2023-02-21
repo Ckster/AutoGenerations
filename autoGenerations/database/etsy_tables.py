@@ -8,7 +8,7 @@ from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, Etsy
     EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table, DateTime
 
 transaction_product_data_association_table = Table(
     "transaction_product_data_association_table",
@@ -64,10 +64,10 @@ class EtsyReceipt(Base):
     message_from_payment = Column(String)
     is_paid = Column(Boolean)
     is_shipped = Column(Boolean)
-    create_timestamp = Column(BigInteger)
-    created_timestamp = Column(BigInteger)
-    update_timestamp = Column(BigInteger)
-    updated_timestamp = Column(BigInteger)
+    create_timestamp = Column(DateTime)
+    created_timestamp = Column(DateTime)
+    update_timestamp = Column(DateTime)
+    updated_timestamp = Column(DateTime)
     is_gift = Column(Boolean)
     gift_message = Column(String)
     grand_total = Column(Float)
@@ -471,9 +471,9 @@ class EtsyTransaction(Base):
     title = Column(String)
     fulfillment_status = Column(Enum(TransactionFulfillmentStatus))
     description = Column(String)
-    create_timestamp = Column(BigInteger)
-    paid_timestamp = Column(BigInteger)
-    shipped_timestamp = Column(BigInteger)
+    create_timestamp = Column(DateTime)
+    paid_timestamp = Column(DateTime)
+    shipped_timestamp = Column(DateTime)
     quantity = Column(Integer)
     is_digital = Column(Boolean)
     file_data = Column(String)
@@ -484,7 +484,7 @@ class EtsyTransaction(Base):
     max_processing_days = Column(Integer)
     shipping_method = Column(String)
     shipping_upgrade = Column(String)
-    expected_ship_date = Column(BigInteger)
+    expected_ship_date = Column(DateTime)
     buyer_coupon = Column(Integer)
     shop_coupon = Column(Integer)
 
@@ -525,7 +525,7 @@ class EtsyTransaction(Base):
             shipped_timestamp=transaction_data.shipped_timestamp,
             quantity=transaction_data.quantity,
             is_digital=transaction_data.is_digital,
-            file_data=transaction_data.file_date,
+            file_data=transaction_data.file_data,
             transaction_type=transaction_data.transaction_type,
             price=transaction_data.price,
             shipping_cost=transaction_data.shipping_cost,
@@ -1043,7 +1043,7 @@ class EtsyReceiptShipment(Base):
     __tablename__ = 'etsy_shipment'
     id = Column(Integer, primary_key=True)
     receipt_shipping_id = Column(BigInteger, unique=True)
-    shipment_notification_timestamp = Column(BigInteger)
+    shipment_notification_timestamp = Column(DateTime)
     carrier_name = Column(String)
     tracking_code = Column(String)
 
@@ -1180,13 +1180,13 @@ class EtsyListing(Base):
     title = Column(String)
     description = Column(String)
     state = Column(Enum(Etsy.ListingState))
-    creation_timestamp = Column(BigInteger)
-    created_timestamp = Column(BigInteger)
-    ending_timestamp = Column(BigInteger)
-    original_creation_timestamp = Column(BigInteger)
-    last_modified_timestamp = Column(BigInteger)
-    updated_timestamp = Column(BigInteger)
-    state_timestamp = Column(BigInteger)
+    creation_timestamp = Column(DateTime)
+    created_timestamp = Column(DateTime)
+    ending_timestamp = Column(DateTime)
+    original_creation_timestamp = Column(DateTime)
+    last_modified_timestamp = Column(DateTime)
+    updated_timestamp = Column(DateTime)
+    state_timestamp = Column(DateTime)
     quantity = Column(Integer)
     featured_rank = Column(Integer)
     url = Column(String)
@@ -1675,7 +1675,7 @@ class EtsyShop(Base):
     id = Column(Integer, primary_key=True)
     shop_id = Column(BigInteger, unique=True)
     shop_name = Column(String)
-    create_date = Column(Integer)
+    create_date = Column(DateTime)
     title = Column(String)
     announcement = Column(String)
     currency_code = Column(String)
@@ -1683,8 +1683,8 @@ class EtsyShop(Base):
     vacation_message = Column(String)
     sale_message = Column(String)
     digital_sale_message = Column(String)
-    update_date = Column(Integer)
-    updated_timestamp = Column(Integer)
+    update_date = Column(DateTime)
+    updated_timestamp = Column(DateTime)
     listing_active_count = Column(Integer)
     digital_listing_count = Column(Integer)
     login_name = Column(String)
@@ -1695,7 +1695,7 @@ class EtsyShop(Base):
     policy_refunds = Column(String)
     policy_additional = Column(String)
     policy_seller_info = Column(String)
-    policy_update_date = Column(Integer)
+    policy_update_date = Column(DateTime)
     policy_has_private_receipt_info = Column(Boolean)
     has_unstructured_policies = Column(Boolean)
     policy_privacy = Column(String)

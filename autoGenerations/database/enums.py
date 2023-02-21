@@ -14,13 +14,37 @@ class OrderStatus(enum.Enum):
     CANCELED = 'canceled'
 
 
+class Prodigi:
+    class ShippingMethod(enum.Enum):
+        BUDGET = "Budget"
+        STANDARD = "Standard"
+        EXPRESS = "Express"
+        OVERNIGHT = "Overnight"
+
+    class StatusStage(enum.Enum):
+        IN_PROGRESS = "InProgress"
+        COMPLETE = "Complete"
+        CANCELLED = "Cancelled"
+
+    class DetailStatus(enum.Enum):
+        NOT_STARTED = "NotStarted"
+        IN_PROGRESS = "InProgress"
+        COMPLETE = "Complete"
+        ERROR = "Error"
+
+    class IssueErrorCode(enum.Enum):
+        NOT_DOWNLOADED = "order.items.assets.NotDownloaded"
+        FAILED_TO_DOWNLOAD = "order.items.assets.FailedToDownloaded"
+        ITEM_UNAVAILABLE = "order.items.assets.ItemUnavailable"
+
+
 class Etsy:
     class OrderStatus(enum.Enum):
-        PAID = "Paid"
-        COMPLETED = "Completed"
-        OPEN = "Open"
-        PAYMENT_PROCESSING = "Payment_processing"
-        CANCELED = "Canceled"
+        PAID = "paid"
+        COMPLETED = "completed"
+        OPEN = "open"
+        PAYMENT_PROCESSING = "payment_processing"
+        CANCELED = "canceled"
 
     class ListingState(enum.Enum):
         ACTIVE = "active"

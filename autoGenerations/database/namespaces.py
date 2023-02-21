@@ -1,6 +1,8 @@
 from typing import Dict, List
 from database.enums import Etsy
 
+from datetime import datetime
+
 
 _SPECIAL_CHAR = '|'
 
@@ -46,10 +48,10 @@ class EtsyReceiptSpace:
         self.message_from_payment = receipt['message_from_payment']
         self.is_paid = receipt['is_paid']
         self.is_shipped = receipt['is_shipped']
-        self.create_timestamp = receipt['create_timestamp']
-        self.created_timestamp = receipt['created_timestamp']
-        self.update_timestamp = receipt['update_timestamp']
-        self.updated_timestamp = receipt['updated_timestamp']
+        self.create_timestamp = datetime.utcfromtimestamp(receipt['create_timestamp'])
+        self.created_timestamp = datetime.utcfromtimestamp(receipt['created_timestamp'])
+        self.update_timestamp = datetime.utcfromtimestamp(receipt['update_timestamp'])
+        self.updated_timestamp = datetime.utcfromtimestamp(receipt['updated_timestamp'])
         self.is_gift = receipt['is_gift']
         self.gift_message = receipt['gift_message']
         self.grand_total = receipt['grandtotal']['amount']
@@ -93,15 +95,15 @@ class EtsyTransactionSpace:
         self.description = transaction['description']
         self.seller_user_id = transaction['seller_user_id']
         self.buyer_user_id = transaction['buyer_user_id']
-        self.create_timestamp = transaction['create_timestamp']
-        self.created_timestamp = transaction['created_timestamp']
-        self.paid_timestamp = transaction['paid_timestamp']
-        self.shipped_timestamp = transaction['shipped_timestamp']
+        self.create_timestamp = datetime.utcfromtimestamp(transaction['create_timestamp'])
+        self.created_timestamp = datetime.utcfromtimestamp(transaction['created_timestamp'])
+        self.paid_timestamp = datetime.utcfromtimestamp(transaction['paid_timestamp'])
+        self.shipped_timestamp = datetime.utcfromtimestamp(transaction['shipped_timestamp'])
         self.quantity = transaction['quantity']
         self.listing_image_id = transaction['listing_image_id']
         self.receipt_id = transaction['receipt_id']
         self.is_digital = transaction['is_digital']
-        self.file_date = transaction['file_data']
+        self.file_data = transaction['file_data']
         self.listing_id = transaction['listing_id']
         self.sku = transaction['sku']
         self.product_id = transaction['product_id']
@@ -115,7 +117,7 @@ class EtsyTransactionSpace:
         self.max_processing_days = transaction['max_processing_days']
         self.shipping_method = transaction['shipping_method']
         self.shipping_upgrade = transaction['shipping_upgrade']
-        self.expected_ship_date = transaction['expected_ship_date']
+        self.expected_ship_date = datetime.utcfromtimestamp(transaction['expected_ship_date'])
         self.buyer_coupon = transaction['buyer_coupon']
         self.shop_coupon = transaction['shop_coupon']
 
@@ -123,7 +125,8 @@ class EtsyTransactionSpace:
 class EtsyReceiptShipmentSpace:
     def __init__(self, receipt_shipment: Dict):
         self.receipt_shipping_id = receipt_shipment['receipt_shipping_id']
-        self.shipment_notification_timestamp = receipt_shipment['shipment_notification_timestamp']
+        self.shipment_notification_timestamp = datetime.utcfromtimestamp(
+            receipt_shipment['shipment_notification_timestamp'])
         self.carrier_name = receipt_shipment['carrier_name']
         self.tracking_code = receipt_shipment['tracking_code']
 
@@ -203,13 +206,13 @@ class EtsyListingSpace:
         self.title = listing_data['title']
         self.description = listing_data['description']
         self.state = Etsy.ListingState(listing_data['state'])
-        self.creation_timestamp = listing_data['creation_timestamp']
-        self.created_timestamp = listing_data['created_timestamp']
-        self.ending_timestamp = listing_data['ending_timestamp']
-        self.original_creation_timestamp = listing_data['original_creation_timestamp']
-        self.last_modified_timestamp = listing_data['last_modified_timestamp']
-        self.updated_timestamp = listing_data['updated_timestamp']
-        self.state_timestamp = listing_data['state_timestamp']
+        self.creation_timestamp = datetime.utcfromtimestamp(listing_data['creation_timestamp'])
+        self.created_timestamp = datetime.utcfromtimestamp(listing_data['created_timestamp'])
+        self.ending_timestamp = datetime.utcfromtimestamp(listing_data['ending_timestamp'])
+        self.original_creation_timestamp = datetime.utcfromtimestamp(listing_data['original_creation_timestamp'])
+        self.last_modified_timestamp = datetime.utcfromtimestamp(listing_data['last_modified_timestamp'])
+        self.updated_timestamp = datetime.utcfromtimestamp(listing_data['updated_timestamp'])
+        self.state_timestamp = datetime.utcfromtimestamp(listing_data['state_timestamp'])
         self.quantity = listing_data['quantity']
         self.shop_section_id = listing_data['shop_section_id']
         self.featured_rank = listing_data['featured_rank']
@@ -290,7 +293,7 @@ class EtsyShopSpace:
         self.shop_id = etsy_shop_data['shop_id']
         self.user_id = etsy_shop_data['user_id']
         self.shop_name = etsy_shop_data['shop_name']
-        self.create_date = etsy_shop_data['create_date']
+        self.create_date = datetime.utcfromtimestamp(etsy_shop_data['create_date'])
         self.title = etsy_shop_data['title']
         self.announcement = etsy_shop_data['announcement']
         self.currency_code = etsy_shop_data['currency_code']
@@ -298,8 +301,8 @@ class EtsyShopSpace:
         self.vacation_message = etsy_shop_data['vacation_message']
         self.sale_message = etsy_shop_data['sale_message']
         self.digital_sale_message = etsy_shop_data['digital_sale_message']
-        self.update_date = etsy_shop_data['update_date']
-        self.updated_timestamp = etsy_shop_data['updated_timestamp']
+        self.update_date = datetime.utcfromtimestamp(etsy_shop_data['update_date'])
+        self.updated_timestamp = datetime.utcfromtimestamp(etsy_shop_data['updated_timestamp'])
         self.listing_active_count = etsy_shop_data['listing_active_count']
         self.digital_listing_count = etsy_shop_data['digital_listing_count']
         self.login_name = etsy_shop_data['login_name']
@@ -310,7 +313,7 @@ class EtsyShopSpace:
         self.policy_refunds = etsy_shop_data['policy_refunds']
         self.policy_additional = etsy_shop_data['policy_additional']
         self.policy_seller_info = etsy_shop_data['policy_seller_info']
-        self.policy_update_date = etsy_shop_data['policy_update_date']
+        self.policy_update_date = datetime.utcfromtimestamp(etsy_shop_data['policy_update_date'])
         self.policy_has_private_receipt_info = etsy_shop_data['policy_has_private_receipt_info']
         self.has_unstructured_policies = etsy_shop_data['has_unstructured_policies']
         self.policy_privacy = etsy_shop_data['policy_privacy']
@@ -341,3 +344,71 @@ class EtsyOfferingSpace:
         self.is_enabled = offering_data['is_enabled']
         self.is_deleted = offering_data['is_deleted']
         self.price = offering_data['price']['amount']
+
+
+class ProdigiOrderSpace:
+    def __init__(self, order_data: Dict):
+        self.prodigi_id = order_data['id']
+        self.created = order_data['created']
+        self.last_updated = order_data['lastUpdated']
+        self.callback_url = order_data['callbackUrl']
+        self.merchant_reference = order_data['merchantReference']
+        self.shipping_method = order_data['shippingMethod']
+        self.idempotency_key = order_data['idempotencyKey']
+        self.status = order_data['status']
+        self.charges = order_data['charges']
+        self.shipments = order_data['shipments']
+        self.recipient = order_data['recipient']
+        self.items = order_data['items']
+        self.packing_slip = order_data['packingSlip']
+        self.metadata = order_data['metadata']
+
+
+class ProdigiStatusSpace:
+    def __init__(self, status_data: Dict):
+        self.stage = status_data['stage']
+        self.download_assets = status_data['details']['downloadAssets']
+        self.print_ready_assets_prepared = status_data['details']['printReadyAssetsPrepared']
+        self.allocate_production_location = status_data['details']['allocateProductionLocation']
+        self.in_production = status_data['details']['inProduction']
+        self.shipping = status_data['details']['shipping']
+        self.issues = status_data['issues']
+
+
+class ProdigiIssueSpace:
+    def __init__(self, issue_data: Dict):
+        self.object_id = issue_data['objectId']
+        self.error_code = issue_data['errorCode']
+        self.description = issue_data['description']
+        self.authorization_details = issue_data['authorisationDetails']
+
+
+class ProdigiAuthorizationDetailsSpace:
+    def __init__(self, authorization_details_data: Dict):
+        self.authorization_url = authorization_details_data['authorisationUrl']
+        self.payment_details = authorization_details_data['paymentDetails']
+
+
+class ProdigiCostSpace:
+    def __init__(self, cost_data: Dict):
+        self.amount = cost_data['amount']
+        self.currency = cost_data['currency']
+
+
+class ProdigiChargeSpace:
+    def __init__(self, charge_data: Dict):
+        self.prodigi_id = charge_data['id']
+        self.prodigi_invoice_number = charge_data['prodigiInvoiceNumber']
+        self.total_cost = charge_data['totalCost']
+        self.items = charge_data['items']
+
+
+class ProdigiChargeItemSpace:
+    def __init__(self, charge_item_data: Dict):
+        self.prodigi_id = charge_item_data['id']
+        self.description = charge_item_data['description']
+        self.item_sku = charge_item_data['itemSku']
+        self.shipment_id = charge_item_data['shipmentId']
+        self.item_id = charge_item_data['itemId']
+        self.merchant_item_reference = charge_item_data['merchantItemReference']
+        self.cost = charge_item_data['cost']
