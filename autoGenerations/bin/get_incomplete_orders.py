@@ -104,8 +104,7 @@ def get_new_orders():
 
         # Etsy API
         orders = etsy_api.get_receipts(min_created=min_created)
-        print(f"Processing {orders['count']} new orders")
-
+        print(f"Processing {orders['count']} orders")
         for receipt in orders['results']:
             receipt_space = EtsyReceipt.create_namespace(receipt)
 
