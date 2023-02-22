@@ -15,6 +15,13 @@ recipient_address_association_table = Table(
     Column("address_id", ForeignKey("address.id"), primary_key=True)
 )
 
+item_asset_association_table = Table(
+    "item_asset_association_table",
+    Base.metadata,
+    Column("item_id", ForeignKey("prodigi_item.id"), primary_key=True),
+    Column("asset_id", ForeignKey("prodigi_asset.id"), primary_key=True)
+)
+
 
 class ProdigiOrder(Base):
     """
@@ -36,11 +43,73 @@ class ProdigiOrder(Base):
     shipments = relationship("ProdigiShipment", back_populates="order")
     _recipient_id = Column(Integer, ForeignKey('prodigi_recipient.id'))
     recipient = relationship("ProdigiRecipient", uselist=False, back_populates="orders")
-    items = relationship()
-    packing_slip = relationship()
+    items = relationship("ProdigiItem", back_populates="order")
+    _packing_slip_id = Column(Integer, ForeignKey('prodigi_packing_slip.id'))
+    packing_slip = relationship("ProdigiPackingSlip", uselist=False, back_populates="order")
 
-    # TODO: Not sure about this
-    metadata = relationship()
+
+class ProdigiShipmentDetail(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#update-shipping-method
+    """
+    __tablename__ = 'prodigi_shipment_detail'
+    id = Column(Integer, primary_key=True)
+    prodigi_shipment_id = Column(String)
+    successful = Column(Boolean)
+    errorCode = Column(Enum(Prodigi.ShipmentUpdateErrorCode))
+    description = Column(String)
+
+    # relationships
+    _shipment_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
+    shipment = relationship("ProdigiShipment", uselist=False, back_populates="updates")
+
+
+class ProdigiPackingSlip(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-packing-slip
+    """
+    __tablename__ = 'prodigi_packing_slip'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    status = Column(String)
+
+    # relationships
+    order = relationship("ProdigiOrder", back_populates="packing_slip")
+
+
+class ProdigiItem(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-item
+    """
+    __tablename__ = 'prodigi_item'
+    id = Column(Integer, primary_key=True)
+    prodigi_id = Column(String, unique=True)
+    merchant_reference = Column(String)
+    sku = Column(String)
+    copies = Column(Integer)
+    sizing = Column(Enum(Prodigi.Sizing))
+
+    # relationships
+    _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
+    order = relationship("ProdigiOrder", uselist=False, back_populates='items')
+    _recipient_cost_id = Column(Integer, ForeignKey('prodigi_cost.id'))
+    recipient_cost = relationship("ProdigiCost", uselist=False, back_populates='item')
+    assets: Mapped[List[ProdigiAsset]] = relationship(
+        secondary=item_asset_association_table, back_populates='items')
+
+
+class ProdigiAsset(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-asset
+    """
+    __tablename__ = 'prodigi_asset'
+    id = Column(Integer, primary_key=True)
+    print_area = Column(String)
+    url = Column(String)
+
+    # relationships
+    items: Mapped[List[ProdigiItem]] = relationship(
+        secondary=item_asset_association_table, back_populates='assets')
 
 
 class ProdigiRecipient(Base):
@@ -76,6 +145,7 @@ class ProdigiShipment(Base):
     items = relationship("ProdigiShipmentItem", back_populates='shipment')
     _fulfillment_location_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
     fulfillment_location = relationship()
+    details = relationship("ProdigiShipmentDetail", back_populates="shipment")
 
 
 class ProdigiFulfillmentLocation(Base):
@@ -196,3 +266,5 @@ class ProdigiCost(Base):
     charge = relationship("ProdigiCharge", back_populates="total_cost")
     _charge_item_id = Column(Integer, ForeignKey('prodigi_charge_item.id'))
     charge_item = relationship("ProdigiChargeItem", back_populates="cost")
+    _item_id = Column(Integer, ForeignKey('prodigi_item.id'))
+    item = relationship("ProdigiItem", back_populates="recipient_cost")

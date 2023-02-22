@@ -37,6 +37,64 @@ class Prodigi:
         FAILED_TO_DOWNLOAD = "order.items.assets.FailedToDownloaded"
         ITEM_UNAVAILABLE = "order.items.assets.ItemUnavailable"
 
+    class Sizing(enum.Enum):
+        FILL_PRINT_AREA = 'fillPrintArea'
+        FIT_PRINT_AREA = 'fitPrintArea'
+        STRETCH_TO_PRINT_AREA = 'stretchToPrintArea'
+
+    class CreateOrderOutcome(enum.Enum):
+        CREATED = "created"
+        CREATED_WITH_ISSUES = "createdWithIssues"
+        ALREADY_EXISTS = "alreadyExists"
+
+    class GetOrderOutcome(enum.Enum):
+        OK = "ok"
+
+    class GeneralOutcome(enum.Enum):
+        VALIDATION_FAILED = "validationFailed"
+        ENTITY_NOT_FOUND = "entityNotFound"
+        ENDPOINT_DOES_NOT_EXIST = "endpointDoesNotExist"
+        METHOD_NOT_ALLOWED = "methodNotAllowed"
+        INVALID_CONTENT_TYPE = "invalidContentType"
+        INTERNAL_SERVER_ERROR = "internalServerError"
+        TIMED_OUT = "timedOut"
+
+    class OrderStatus(enum.Enum):
+        DRAFT = "draft"
+        AWAITING_PAYMENT = "awaitingPayment"
+        IN_PROGRESS = "inProgress"
+        COMPLETE = "complete"
+        CANCELLED = "cancelled"
+
+    class CancelOrderOutcome(enum.Enum):
+        CANCELLED = "cancelled"
+        FAILED_TO_CANCEL = "failedToCancel"
+        ACTION_NOT_AVAILABLE = "actionNotAvailable"
+
+    class ShipmentUpdateErrorCode(enum.Enum):
+        UPDATE_FAILED = "order.shipments.updateFailed"
+        INVALID = "order.shipments.invalid"
+        NOT_AVAILABLE = "order.shipments.notAvailable"
+
+    class UpdateShippingMethodOutcome(enum.Enum):
+        UPDATED = "updated"
+        PARTIALLY_UPDATED = "partiallyUpdated"
+        FAILED_TO_UPDATE = "failedToUpdate"
+        ACTION_NOT_AVAILABLE = "actionNotAvailable"
+
+    class UpdateRecipientOutcome(enum.Enum):
+        UPDATED = "updated"
+        PARTIALLY_UPDATED = "partiallyUpdated"
+        FAILED_TO_UPDATE = "failedToUpdate"
+        ACTION_NOT_AVAILABLE = "actionNotAvailable"
+
+    class UpdateRecipientResponse(enum.Enum):
+        COMPLETED = "completed"
+        PARTIALLY_COMPLETE = "partiallyComplete"
+        FAILED = "failed"
+
+
+
 
 class Etsy:
     class OrderStatus(enum.Enum):
