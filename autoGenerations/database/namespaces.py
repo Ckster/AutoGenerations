@@ -412,3 +412,43 @@ class ProdigiChargeItemSpace:
         self.item_id = charge_item_data['itemId']
         self.merchant_item_reference = charge_item_data['merchantItemReference']
         self.cost = charge_item_data['cost']
+
+
+class ProdigiShipmentSpace:
+    def __init__(self, shipment_data: Dict):
+        self.prodigi_id = shipment_data['id']
+        self.carrier = shipment_data['carrier']
+        self.tracking = shipment_data['tracking']
+        self.dispatch_date = datetime.utcfromtimestamp(shipment_data['dispatchDate'])
+        self.items = shipment_data['items']
+        self.fulfillment_location = shipment_data['fulfillmentLocation']
+
+
+class ProdigiFulfillmentLocationSpace:
+    def __init__(self, fulfillment_location_data: Dict):
+        self.country_code = fulfillment_location_data['countryCode']
+        self.lab_code = fulfillment_location_data['labCode']
+
+
+class ProdigiShipmentItemSpace:
+    def __init__(self, shipment_item_data: Dict):
+        self.item_id = shipment_item_data['itemId']
+
+
+class ProdigiRecipientSpace:
+    def __init__(self, recipient_data: Dict):
+        self.name = recipient_data['name']
+        self.email = recipient_data['email']
+        self.phone_number = recipient_data['phoneNumber']
+        self.address = recipient_data['address']
+
+
+class ProdigiAddressSpace:
+    def __init__(self, address_data: Dict):
+        self.line1 = address_data['line1']
+        self.line2 = address_data['line2']
+        self.zip_code = address_data['postalOrZipCode']
+        self.country_code = address_data['countryCode']
+        self.town_or_city = address_data['townOrCity']
+        self.state_or_country = address_data['stateOrCountry']
+

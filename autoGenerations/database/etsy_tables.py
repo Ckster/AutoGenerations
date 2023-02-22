@@ -6,6 +6,7 @@ from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, Etsy
     EtsyTransactionSpace, AddressSpace, EtsyProductPropertySpace, EtsyProductSpace, EtsyShippingProfileSpace, \
     EtsyProductionPartnerSpace, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
     EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace
+from database.prodigi_tables import recipient_address_association_table, ProdigiRecipient
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table, DateTime
@@ -415,6 +416,8 @@ class Address(Base):
     receipts = relationship('EtsyReceipt', back_populates='address')
     buyers: Mapped[List[EtsyBuyer]] = relationship(
         secondary=buyer_address_association_table, back_populates='addresses')
+    prodigi_recipients: Mapped[List[ProdigiRecipient]] = relationship(
+        secondary=recipient_address_association_table, back_populates='addresses')
 
     @classmethod
     def create(cls, address_data: Union[AddressSpace, Dict[str, Any]],

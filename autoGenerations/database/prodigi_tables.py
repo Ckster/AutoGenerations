@@ -2,9 +2,18 @@ from __future__ import annotations
 from typing import List, Union, Dict, Any
 from database.utils import Base, make_engine
 from database.enums import Prodigi
+from database.etsy_tables import Address
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table, DateTime
+
+
+recipient_address_association_table = Table(
+    "recipient_address_association_table",
+    Base.metadata,
+    Column("recipient_id", ForeignKey("prodigi_recipient.id"), primary_key=True),
+    Column("address_id", ForeignKey("address.id"), primary_key=True)
+)
 
 
 class ProdigiOrder(Base):
@@ -24,13 +33,75 @@ class ProdigiOrder(Base):
     # relationships
     status = relationship("ProdigiStatus", uselist=False, back_populates='order')
     charges = relationship("ProdigiCharge", back_populates="order")
-    shipments = relationship()
-    recipient = relationship()
+    shipments = relationship("ProdigiShipment", back_populates="order")
+    _recipient_id = Column(Integer, ForeignKey('prodigi_recipient.id'))
+    recipient = relationship("ProdigiRecipient", uselist=False, back_populates="orders")
     items = relationship()
     packing_slip = relationship()
 
     # TODO: Not sure about this
     metadata = relationship()
+
+
+class ProdigiRecipient(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-recipient
+    """
+    __tablename__ = 'prodigi_recipient'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    email = Column(String)
+    phone_number = Column(String)
+
+    # relationships
+    orders = relationship("ProdigiOrder", back_populates="recipient")
+    addresses: Mapped[List[Address]] = relationship(
+        secondary=recipient_address_association_table, back_populates='prodigi_recipients')
+
+
+class ProdigiShipment(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-shipment
+    """
+    __tablename__ = 'prodigi_shipment'
+    id = Column(Integer, primary_key=True)
+    prodigi_id = Column(String, unique=True)
+    carrier = Column(String)
+    tracking = Column(String)
+    dispatch_date = Column(DateTime)
+
+    # relationships
+    _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
+    order = relationship("ProdigiOrder", uselist=False, back_populates="shipments")
+    items = relationship("ProdigiShipmentItem", back_populates='shipment')
+    _fulfillment_location_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
+    fulfillment_location = relationship()
+
+
+class ProdigiFulfillmentLocation(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-fulfillment-location
+    """
+    __tablename__ = 'prodigi_shipment'
+    id = Column(Integer, primary_key=True)
+    country_code = Column(String)
+    lab_code = Column(String)
+
+    # relationships
+    shipment = relationship("ProdigiShipment", back_populates="fulfillment_location")
+
+
+class ProdigiShipmentItem(Base):
+    """
+    API Reference: https://www.prodigi.com/print-api/docs/reference/#order-shipment-item
+    """
+    __tablename__ = 'prodigi_shipment_item'
+    id = Column(Integer, primary_key=True)
+    item_id = Column(String, unique=True)
+
+    # relationships
+    _shipment_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
+    shipment = relationship("ProdigiShipment", uselist=False, back_populates='items')
 
 
 class ProdigiCharge(Base):
