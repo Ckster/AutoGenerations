@@ -50,8 +50,6 @@ class API(Secrets):
         :param transaction:
         :return:
         """
-        # TODO: Get a quote first to verify price
-
         url = os.path.join(BASE_URL, "orders")
 
         headers = {
@@ -65,8 +63,12 @@ class API(Secrets):
         # TODO: Map the shipping upgrades if we are going to do that
         shipping_method = 'Budget' if transaction.shipping_upgrade is None else transaction.shipping_upgrade
 
+        # TODO: Create a unique key for this order so prodigi can detect duplicate orders
+        idempotency_key = None
+
         body = {
             "shippingMethod": shipping_method,
+            "idempotencyKey": idempotency_key,
             "recipient": {
                 "address": {
                     "line1":  address.first_line,
@@ -274,6 +276,26 @@ class API(Secrets):
         }
 
         response = requests.post(url, headers=headers, json=body)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_product_details(self, sku):
+        """
+        API Reference: https://www.prodigi.com/print-api/docs/reference/#get-product-details
+        :param sku:
+        :return:
+        """
+        url = os.path.join(BASE_URL, "quotes", sku)
+
+        headers = {
+            "X-API-Key": self.access_key,
+            "Content-Type": "application/json"
+        }
+
+        response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
             return response.json()
