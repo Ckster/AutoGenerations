@@ -144,8 +144,7 @@ class ProdigiShipment(Base):
     order = relationship("ProdigiOrder", uselist=False, back_populates="shipments")
     items = relationship("ProdigiShipmentItem", back_populates='shipment')
     _fulfillment_location_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
-    fulfillment_location = relationship()
-    details = relationship("ProdigiShipmentDetail", back_populates="shipment")
+    fulfillment_location = relationship("ProdigiFulfillmentLocation", uselist=False, back_populates="shipment")
 
 
 class ProdigiFulfillmentLocation(Base):

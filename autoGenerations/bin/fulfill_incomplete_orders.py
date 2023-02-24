@@ -1,7 +1,8 @@
-from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace
+from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace
 from database.utils import make_engine
 from database.etsy_tables import EtsyReceipt
-from database.prodigi_tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost
+from database.prodigi_tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost, ProdigiShipment,\
+    ProdigiItem, ProdigiRecipient, ProdigiPackingSlip, ProdigiShipmentItem, ProdigiFulfillmentLocation, ProdigiAsset
 from database.enums import Etsy, Prodigi, OrderStatus, TransactionFulfillmentStatus
 from apis.prodigi import API
 
@@ -73,13 +74,92 @@ def main():
 
                     charges.append(charge)
 
-                # TODO: Add shipments here
+                shipments = []
+                for shipment_dict in prodigi_order_space.shipments:
+                    shipment_space = ProdigiShipmentSpace(shipment_dict)
 
-                # TODO: Add recipient here
+                    shipment_items = []
+                    for shipment_item_dict in shipment_space.items:
+                        shipment_item_space = ProdigiShipmentItemSpace(shipment_item_dict)
+                        shipment_item = ProdigiShipmentItem.get_existing(shipment_item_space.item_id)
+                        if shipment_item is None:
+                            shipment_item = ProdigiShipmentItem.create(shipment_item_space)
+                            session.add(shipment_item)
+                            session.flush()
+                        else:
+                            shipment_item.update(shipment_item_space)
+                        shipment_items.append(shipment_item)
 
-                # TODO: Add items here
+                    fulfillment_location = ProdigiFulfillmentLocation.get_existing(shipment_space.fulfillment_location)
+                    fulfillment_location_space = ProdigiFulfillmentLocationSpace(shipment_space.fulfillment_location)
+                    if fulfillment_location is None:
+                        fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
+                        session.add(fulfillment_location)
+                        session.flush()
+                    else:
+                        fulfillment_location.update(fulfillment_location)
+
+                    # TODO: Add above relationships
+                    shipment = ProdigiShipment.get_existing(shipment_dict)
+                    if shipment is None:
+                        shipment = ProdigiShipment.create(shipment_space)
+                        session.add(shipment)
+                        session.flush()
+                    else:
+                        shipment.update(shipment_space)
+                    shipments.append(shipment)
+
+                recipient = prodigi_order.recipient
+                recipient_space = ProdigiRecipientSpace(prodigi_order_space.recipient)
+                # TODO: Add the address
+                if receipt is None:
+                    recipient = ProdigiRecipient.create(recipient_space)
+                    session.add(receipt)
+                    session.flush()
+                else:
+                    recipient.update(recipient_space)
+
+                items = []
+                for item_dict in prodigi_order_space.items:
+                    item_space = ProdigiItemSpace(item_dict)
+
+                    cost_space = ProdigiCostSpace(item_space.recipient_cost)
+                    cost = ProdigiCost.get_existing(cost_space)
+                    if cost is None:
+                        cost = ProdigiCost.create(cost_space)
+                    # Nothing to update for cost
+
+                    assets = []
+                    for asset_dict in item_space.assets:
+                        asset_space = ProdigiAssetSpace(asset_dict)
+                        asset = ProdigiAsset.get_existing()
+                        if asset is None:
+                            asset = ProdigiAsset.create()
+                            session.add(asset)
+                            session.flush()
+                        else:
+                            asset.update()
+                        assets.append(asset)
+
+                    # TODO: Add cost and assets relationships
+                    item = ProdigiItem.get_existing(item_space)
+                    if item is None:
+                        item = ProdigiItem.create(item_space)
+                        session.add(item)
+                        session.flush()
+                    else:
+                        item.update(item_space)
+                    items.append(item)
 
                 # TODO: Add packing slip here
+                packing_slip = prodigi_order.packing_slip
+                packing_slip_space = ProdigiPackingSlipSpace(prodigi_order_space.packing_slip)
+                if packing_slip is None:
+                    packing_slip = ProdigiPackingSlip.create(packing_slip_space)
+                    session.add(packing_slip)
+                    session.flush()
+                else:
+                    packing_slip.update(packing_slip_space)
 
                 # Order was successful so each transaction should be updated to IN_PROGRESS
                 for transaction in receipt.transactions:
