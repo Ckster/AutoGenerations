@@ -45,6 +45,9 @@ buyer_address_association_table = Table(
 # still marks the disk record as dirty and sends an update... maybe. So have to do check in all of the update methods to
 # make most efficient transaction. Better safe than inefficient
 
+# TODO: Overwriting any of the many-to-one or many-to-many relationships with the update method and overwrite_lists=True
+#  will probably result in a lot of orphaned objects. Think about getting rid of that option
+
 def merge_lists(list1, list2):
     return list1 + [i for i in list2 if i not in list1]
 
@@ -158,62 +161,64 @@ class EtsyReceipt(Base):
     def get_existing(session, receipt_id: int) -> Union[None, EtsyReceipt]:
         return session.query(EtsyReceipt).filter(EtsyReceipt.receipt_id == int(receipt_id)).first()
 
-    def update(self, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
+    def update(self, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]] = None,
                order_status: OrderStatus = None,
                address: Address = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                transactions: List[EtsyTransaction] = None,
                receipt_shipments: List[EtsyReceiptShipment] = None,
+               prodigi_orders: List[ProdigiOrder] = None,
                overwrite_list: bool = False
                ):
-        if not isinstance(receipt_data, EtsyReceiptSpace):
-            receipt_data = self.create_namespace(receipt_data)
+        if receipt_data is not None:
+            if not isinstance(receipt_data, EtsyReceiptSpace):
+                receipt_data = self.create_namespace(receipt_data)
 
-        if self.receipt_type != receipt_data.receipt_type:
-            self.receipt_type = receipt_data.receipt_type
-        if self.status != receipt_data.status:
-            self.status = receipt_data.status
-        if self.payment_method != receipt_data.payment_method:
-            self.payment_method = receipt_data.payment_method
-        if self.message_from_seller != receipt_data.message_from_seller:
-            self.message_from_seller = receipt_data.message_from_seller
-        if self.message_from_buyer != receipt_data.message_from_buyer:
-            self.message_from_buyer = receipt_data.message_from_buyer
-        if self.message_from_payment != receipt_data.message_from_payment:
-            self.message_from_payment = receipt_data.message_from_payment
-        if self.is_paid != receipt_data.is_paid:
-            self.is_paid = receipt_data.is_paid
-        if self.is_shipped != receipt_data.is_shipped:
-            self.is_shipped = receipt_data.is_shipped
-        if self.create_timestamp != receipt_data.create_timestamp:
-            self.create_timestamp = receipt_data.create_timestamp
-        if self.created_timestamp != receipt_data.created_timestamp:
-            self.created_timestamp = receipt_data.created_timestamp
-        if self.update_timestamp != receipt_data.update_timestamp:
-            self.update_timestamp = receipt_data.update_timestamp
-        if self.update_timestamp != receipt_data.updated_timestamp:
-            self.updated_timestamp = receipt_data.updated_timestamp
-        if self.is_gift != receipt_data.is_gift:
-            self.is_gift = receipt_data.is_gift
-        if self.gift_message != receipt_data.gift_message:
-            self.gift_message = receipt_data.gift_message
-        if self.grand_total != receipt_data.grand_total:
-            self.grand_total = receipt_data.grand_total
-        if self.sub_total != receipt_data.sub_total:
-            self.sub_total = receipt_data.sub_total
-        if self.total_price != receipt_data.total_price:
-            self.total_price = receipt_data.total_price
-        if self.shipping_cost != receipt_data.shipping_cost:
-            self.shipping_cost = receipt_data.shipping_cost
-        if self.tax_cost != receipt_data.tax_cost:
-            self.tax_cost = receipt_data.tax_cost
-        if self.vat_cost != receipt_data.vat_cost:
-            self.vat_cost = receipt_data.vat_cost
-        if self.discount != receipt_data.discount:
-            self.discount = receipt_data.discount
-        if self.gift_wrap_price != receipt_data.gift_wrap_price:
-            self.gift_wrap_price = receipt_data.gift_wrap_price
+            if self.receipt_type != receipt_data.receipt_type:
+                self.receipt_type = receipt_data.receipt_type
+            if self.status != receipt_data.status:
+                self.status = receipt_data.status
+            if self.payment_method != receipt_data.payment_method:
+                self.payment_method = receipt_data.payment_method
+            if self.message_from_seller != receipt_data.message_from_seller:
+                self.message_from_seller = receipt_data.message_from_seller
+            if self.message_from_buyer != receipt_data.message_from_buyer:
+                self.message_from_buyer = receipt_data.message_from_buyer
+            if self.message_from_payment != receipt_data.message_from_payment:
+                self.message_from_payment = receipt_data.message_from_payment
+            if self.is_paid != receipt_data.is_paid:
+                self.is_paid = receipt_data.is_paid
+            if self.is_shipped != receipt_data.is_shipped:
+                self.is_shipped = receipt_data.is_shipped
+            if self.create_timestamp != receipt_data.create_timestamp:
+                self.create_timestamp = receipt_data.create_timestamp
+            if self.created_timestamp != receipt_data.created_timestamp:
+                self.created_timestamp = receipt_data.created_timestamp
+            if self.update_timestamp != receipt_data.update_timestamp:
+                self.update_timestamp = receipt_data.update_timestamp
+            if self.update_timestamp != receipt_data.updated_timestamp:
+                self.updated_timestamp = receipt_data.updated_timestamp
+            if self.is_gift != receipt_data.is_gift:
+                self.is_gift = receipt_data.is_gift
+            if self.gift_message != receipt_data.gift_message:
+                self.gift_message = receipt_data.gift_message
+            if self.grand_total != receipt_data.grand_total:
+                self.grand_total = receipt_data.grand_total
+            if self.sub_total != receipt_data.sub_total:
+                self.sub_total = receipt_data.sub_total
+            if self.total_price != receipt_data.total_price:
+                self.total_price = receipt_data.total_price
+            if self.shipping_cost != receipt_data.shipping_cost:
+                self.shipping_cost = receipt_data.shipping_cost
+            if self.tax_cost != receipt_data.tax_cost:
+                self.tax_cost = receipt_data.tax_cost
+            if self.vat_cost != receipt_data.vat_cost:
+                self.vat_cost = receipt_data.vat_cost
+            if self.discount != receipt_data.discount:
+                self.discount = receipt_data.discount
+            if self.gift_wrap_price != receipt_data.gift_wrap_price:
+                self.gift_wrap_price = receipt_data.gift_wrap_price
 
         if order_status is not None and self.order_status != order_status:
             self.order_status = order_status
@@ -233,6 +238,9 @@ class EtsyReceipt(Base):
         if receipt_shipments is not None:
             self.receipt_shipments = receipt_shipments if overwrite_list else merge_lists(
                 self.receipt_shipments, receipt_shipments)
+
+        if prodigi_orders is not None:
+            self.prodigi_orders = prodigi_orders if overwrite_list else merge_lists(self.prodigi_orders, prodigi_orders)
 
 
 class EtsySeller(Base):

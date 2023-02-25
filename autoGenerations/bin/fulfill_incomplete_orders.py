@@ -28,13 +28,28 @@ def main():
             items_to_order = []
             for transaction in receipt.transactions:
                 if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
-                    # TODO: Append the order item dictionaries here
-                    items_to_order.append({})
+
+                    # TODO: Use transaction SKU to get prodigi SKU
+                    sku = transaction.product.sku.split('%')[-1]
+
+                    # TODO: Customize any more stuff here
+                    items_to_order.append({
+                        "merchantReference": transaction.product.sku,  # Etsy SKU
+                        "sku": sku,
+                        "copies": transaction.quantity,
+                        "sizing": "fillPrintArea",
+                        "assets": [
+                            {
+                                "printArea": "default",
+                                "url": "https://your-image-url/image.png"
+                            }
+                        ]
+                    })
 
             if not items_to_order:
                 continue
 
-            order_response = prodigy_api.create_order(receipt.address, items_to_order)
+            order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order)
             outcome = order_response['outcome']
 
             if outcome == Prodigi.CreateOrderOutcome.CREATED.value:
@@ -158,8 +173,7 @@ def main():
                     if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
                         transaction.fulfillment_status = TransactionFulfillmentStatus.IN_PROGRESS
 
-                # TODO: Add the order to the etsy receipt record
-                receipt.add_prodigi_order(prodigi_order)
+                receipt.update(prodigi_orders=[prodigi_order])
 
             else:
                 error_string = f"For Etsy receipt id: {receipt.etsy_id} \nProdigi Outcome: {outcome}"

@@ -43,7 +43,7 @@ class API(Secrets):
         super(API, self).__init__()
         self.access_key = self.sandbox_key if sandbox_mode else self.prod_key
 
-    def create_order(self, address: Address, transaction: EtsyTransaction):
+    def create_order(self, address: Address, transaction: EtsyTransaction, items: List[Dict[str, str]]):
         """
         API Reference: https://www.prodigi.com/print-api/docs/reference/#create-order
         :param address:
@@ -56,9 +56,6 @@ class API(Secrets):
             "X-API-Key": self.access_key,
             "Content-Type": "application/json"
         }
-
-        # TODO: Use transaction SKU to get prodigi SKU
-        sku = transaction.product.sku.split('%')[-1]
 
         # TODO: Map the shipping upgrades if we are going to do that
         shipping_method = 'Budget' if transaction.shipping_upgrade is None else transaction.shipping_upgrade
@@ -82,18 +79,7 @@ class API(Secrets):
                 "name": transaction.buyer.name,
                 "email": transaction.seller.email
             },
-            "items": [{
-                "merchantReference": transaction.product.sku,  # Etsy SKU
-                "sku": sku,
-                "copies": transaction.quantity,
-                "sizing": "fillPrintArea",
-                "assets": [
-                    {
-                        "printArea": "default",
-                        "url": "https://your-image-url/image.png"
-                    }
-                ]
-            }]
+            "items": items
         }
 
         response = requests.post(url, headers=headers, json=body)

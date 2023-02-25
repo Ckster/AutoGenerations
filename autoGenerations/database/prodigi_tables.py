@@ -580,7 +580,7 @@ class ProdigiAuthorizationDetail(Base):
     payment_details = relationship("ProdigiCost", uselist=False, back_populates="authorization")
 
     @classmethod
-    def create(cls, authorization_detail_data: Union[ProdigiAuthorizationDetailSpace, Dict[str, Any]],
+    def create(cls, authorization_detail_data: Union[ProdigiAuthorizationDetailsSpace, Dict[str, Any]],
                issues: List[ProdigiIssue] = None,
                payment_details: List[ProdigiCost] = None
                ) -> ProdigiAuthorizationDetail:
