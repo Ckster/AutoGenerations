@@ -445,10 +445,33 @@ class ProdigiRecipientSpace:
 
 class ProdigiAddressSpace:
     def __init__(self, address_data: Dict):
-        self.line1 = address_data['line1']
-        self.line2 = address_data['line2']
-        self.zip_code = address_data['postalOrZipCode']
-        self.country_code = address_data['countryCode']
-        self.town_or_city = address_data['townOrCity']
-        self.state_or_country = address_data['stateOrCountry']
+        self.first_line = address_data['line1']
+        self.second_line = address_data['line2']
+        self.zip = address_data['postalOrZipCode']
+        self.country = address_data['countryCode']
+        self.city = address_data['townOrCity']
+        self.state = address_data['stateOrCountry']
 
+
+class ProdigiItemSpace:
+    def __init__(self, item_data: Dict):
+        self.prodigi_id = item_data['id']
+        self.merchant_reference = item_data['merchantReference']
+        self.sku = item_data['sku']
+        self.copies = item_data['copies']
+        self.sizing = item_data['sizing']
+        self.recipient_cost = item_data['recipient_cost']
+        self.attributes = item_data['attributes']
+        self.assets = item_data['assets']
+
+
+class ProdigiAssetSpace:
+    def __init__(self, asset_data: Dict):
+        self.print_area = asset_data['printArea']
+        self.url = asset_data['url']
+
+
+class ProdigiPackingSlipSpace:
+    def __init__(self, packing_slip_data: Dict):
+        self.url = packing_slip_data['url']
+        self.status = packing_slip_data['status']

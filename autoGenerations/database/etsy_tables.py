@@ -5,7 +5,7 @@ from database.enums import Etsy, OrderStatus, TransactionFulfillmentStatus
 from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, EtsySellerSpace, EtsyBuyerSpace, \
     EtsyTransactionSpace, AddressSpace, EtsyProductPropertySpace, EtsyProductSpace, EtsyShippingProfileSpace, \
     EtsyProductionPartnerSpace, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
-    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace
+    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace, ProdigiAddressSpace
 from database.prodigi_tables import recipient_address_association_table, ProdigiRecipient
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -420,7 +420,7 @@ class Address(Base):
         secondary=recipient_address_association_table, back_populates='addresses')
 
     @classmethod
-    def create(cls, address_data: Union[AddressSpace, Dict[str, Any]],
+    def create(cls, address_data: Union[AddressSpace, ProdigiAddressSpace, Dict[str, Any]],
                receipts: List[EtsyReceipt] = None,
                buyers: List[EtsyBuyer] = None) -> Address:
         if not isinstance(address_data, AddressSpace):
@@ -432,9 +432,11 @@ class Address(Base):
             city=address_data.city,
             state=address_data.state,
             zip_code=address_data.zip,
-            country=address_data.country,
-            formatted=address_data.formatted_address
+            country=address_data.country
         )
+
+        if hasattr(address_data, 'formatted_address'):
+            address.formatted = address_data.formatted_address
 
         if receipts is not None:
             address.receipts = receipts
