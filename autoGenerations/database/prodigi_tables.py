@@ -50,6 +50,8 @@ class ProdigiOrder(Base):
     items = relationship("ProdigiItem", back_populates="order")
     _packing_slip_id = Column(Integer, ForeignKey('prodigi_packing_slip.id'))
     packing_slip = relationship("ProdigiPackingSlip", uselist=False, back_populates="order")
+    _etsy_receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
+    etsy_receipt = relationship("EtsyReceipt", back_populates="prodigi_order")
 
     @classmethod
     def create(cls, order_data: Union[ProdigiOrderSpace, Dict[str, Any]],

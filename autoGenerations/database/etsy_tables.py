@@ -6,7 +6,7 @@ from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, Etsy
     EtsyTransactionSpace, AddressSpace, EtsyProductPropertySpace, EtsyProductSpace, EtsyShippingProfileSpace, \
     EtsyProductionPartnerSpace, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
     EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace, ProdigiAddressSpace
-from database.prodigi_tables import recipient_address_association_table, ProdigiRecipient
+from database.prodigi_tables import recipient_address_association_table, ProdigiRecipient, ProdigiOrder
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table, DateTime
@@ -87,6 +87,7 @@ class EtsyReceipt(Base):
     buyer = relationship("EtsyBuyer", uselist=False, back_populates='receipts')
     _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
+    prodigi_orders = relationship("ProdigiOrder", back_populates="etsy_receipt")
 
     transactions = relationship("EtsyTransaction", back_populates='receipt')
     receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
