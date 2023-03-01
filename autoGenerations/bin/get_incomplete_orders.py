@@ -85,6 +85,8 @@ product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': Fals
 
 
 # TODO: Need to find a way to map listing to products... not sure why inventory field returns None for current listing
+# TODO: Communicate any changes to existing Prodigi Orders - shipping changes, cancellations etc.
+
 
 def get_new_orders():
     etsy_api = EtsyAPI()

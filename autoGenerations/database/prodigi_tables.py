@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import List, Union, Dict, Any
-from database.utils import Base, make_engine
+from database.utils import Base
 from database.enums import Prodigi
-from database.etsy_tables import Address
+from database.etsy_tables import Address, merge_lists
 from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace,\
     ProdigiFulfillmentLocationSpace, ProdigiRecipientSpace, ProdigiItemSpace, ProdigiCostSpace, ProdigiAssetSpace,\
     ProdigiPackingSlipSpace, ProdigiChargeItemSpace, ProdigiStatusSpace, ProdigiIssueSpace, \
-    ProdigiAuthorizationDetailsSpace
+    ProdigiAuthorizationDetailsSpace, ProdigiShipmentDetailSpace
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table, DateTime
@@ -98,6 +98,52 @@ class ProdigiOrder(Base):
     def create_namespace(order_data: Dict[str, Any]) -> ProdigiOrderSpace:
         return ProdigiOrderSpace(order_data)
 
+    @staticmethod
+    def get_existing(session, prodigi_id: str) -> Union[ProdigiOrder, None]:
+        return session.query(ProdigiOrder).filter(ProdigiOrder.prodigi_id == prodigi_id).first()
+
+    def update(self, order_data: Union[ProdigiOrderSpace, Dict[str, Any]],
+               status: ProdigiStatus = None,
+               charges: List[ProdigiCharge] = None,
+               shipments: List[ProdigiShipment] = None,
+               recipient: ProdigiRecipient = None,
+               items: List[ProdigiItem] = None,
+               packing_slip: ProdigiPackingSlip = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(order_data, ProdigiOrderSpace):
+            order_data = self.create_namespace(order_data)
+
+            if self.last_updated != order_data.last_updated:
+                self.last_updated = order_data.last_updated
+            if self.callback_url != order_data.callback_url:
+                self.callback_url = order_data.callback_url
+            if self.merchant_reference != order_data.merchant_reference:
+                self.merchant_reference = order_data.merchant_reference
+            if self.shipping_method != order_data.shipping_method:
+                self.shipping_method = order_data.shipping_method
+            if self.idempotency_key != order_data.idempotency_key:
+                self.idempotency_key = order_data.idempotency_key
+
+        # relationships
+        if status is not None and self.status != status:
+            self.status = status
+
+        if recipient is not None and self.recipient != recipient:
+            self.recipient = recipient
+
+        if packing_slip is not None and self.packing_slip != packing_slip:
+            self.packing_slip = packing_slip
+
+        if charges is not None:
+            self.charges = charges if overwrite_list else merge_lists(self.charges, charges)
+
+        if shipments is not None:
+            self.shipments = shipments if overwrite_list else merge_lists(self.shipments, shipments)
+
+        if items is not None:
+            self.items = items if overwrite_list else merge_lists(self.items, items)
+
 
 class ProdigiShipmentDetail(Base):
     """
@@ -105,14 +151,67 @@ class ProdigiShipmentDetail(Base):
     """
     __tablename__ = 'prodigi_shipment_detail'
     id = Column(Integer, primary_key=True)
-    prodigi_shipment_id = Column(String)
+    shipment_id = Column(String)
     successful = Column(Boolean)
-    errorCode = Column(Enum(Prodigi.ShipmentUpdateErrorCode))
+    error_code = Column(Enum(Prodigi.ShipmentUpdateErrorCode))
     description = Column(String)
 
     # relationships
     _shipment_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
     shipment = relationship("ProdigiShipment", uselist=False, back_populates="updates")
+
+    @classmethod
+    def create(cls, shipment_detail_data: Union[ProdigiShipmentDetail, Dict[str, Any]],
+               shipment: ProdigiShipment = None) -> ProdigiShipmentDetail:
+        if not isinstance(shipment_detail_data, ProdigiShipmentDetailSpace):
+            shipment_detail_data = cls.create_namespace(shipment_detail_data)
+
+        shipment_detail = cls(
+            shipment_id=shipment_detail_data.shipment_id,
+            successful=shipment_detail_data.successful,
+            error_code=shipment_detail_data.error_code,
+            description=shipment_detail_data.description
+        )
+
+        if shipment is not None:
+            shipment_detail.shipment = shipment
+
+        return shipment_detail
+
+    @staticmethod
+    def create_namespace(shipment_detail_data: Dict[str, Any]) -> ProdigiShipmentDetailSpace:
+        return ProdigiShipmentDetailSpace(shipment_detail_data)
+
+    def get_existing(self, session, shipment_detail_data: Union[ProdigiShipmentDetail, Dict[str, Any]]
+                     ) -> Union[ProdigiShipmentDetail, None]:
+        if not isinstance(shipment_detail_data, ProdigiShipmentDetailSpace):
+            shipment_detail_data = self.create_namespace(shipment_detail_data)
+        return session.query(ProdigiShipmentDetail).filter(
+            ProdigiShipmentDetail.shipment_id == shipment_detail_data.shipment_id
+        ).filter(
+            ProdigiShipmentDetail.successful == shipment_detail_data.successful
+        ).filter(
+            ProdigiShipmentDetail.error_code == shipment_detail_data.error_code
+        ).filter(
+            ProdigiShipmentDetail.description == shipment_detail_data.description
+        ).first()
+
+    def update(self, shipment_detail_data: Union[ProdigiShipmentDetail, Dict[str, Any]],
+               shipment: ProdigiShipment = None):
+        if not isinstance(shipment_detail_data, ProdigiShipmentDetailSpace):
+            shipment_detail_data = self.create_namespace(shipment_detail_data)
+
+        if self.shipment_id != shipment_detail_data.shipment_id:
+            self.shipment_id = shipment_detail_data.shipment_id
+        if self.successful != shipment_detail_data.successful:
+            self.successful = shipment_detail_data.successful
+        if self.error_code != shipment_detail_data.error_code:
+            self.error_code = shipment_detail_data.error_code
+        if self.description != shipment_detail_data.description:
+            self.description = shipment_detail_data.description
+
+        if shipment is not None and self.shipment != shipment:
+            self.shipment = shipment
 
 
 class ProdigiPackingSlip(Base):
@@ -146,6 +245,19 @@ class ProdigiPackingSlip(Base):
     @staticmethod
     def create_namespace(packing_slip_data: Dict[str, Any]) -> ProdigiPackingSlipSpace:
         return ProdigiPackingSlipSpace(packing_slip_data)
+
+    def update(self, packing_slip_data: Union[ProdigiPackingSlipSpace, Dict[str, Any]],
+               order: ProdigiOrder = None):
+        if not isinstance(packing_slip_data, ProdigiPackingSlipSpace):
+            packing_slip_data = self.create_namespace(packing_slip_data)
+
+        if self.url != packing_slip_data.url:
+            self.url = packing_slip_data.url
+        if self.status != packing_slip_data.status:
+            self.status = packing_slip_data.status
+
+        if order is not None and self.order != order:
+            self.order = order
 
 
 class ProdigiItem(Base):
@@ -199,6 +311,10 @@ class ProdigiItem(Base):
     @staticmethod
     def create_namespace(item_data: Dict[str, Any]) -> ProdigiItemSpace:
         return ProdigiItemSpace(item_data)
+
+    @staticmethod
+    def get_existing(session, prodigi_id: str) -> ProdigiItem:
+        return session.query(ProdigiItem).filter(ProdigiItem.prodigi_id == prodigi_id).first()
 
 
 class ProdigiAsset(Base):

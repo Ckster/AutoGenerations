@@ -475,3 +475,12 @@ class ProdigiPackingSlipSpace:
     def __init__(self, packing_slip_data: Dict):
         self.url = packing_slip_data['url']
         self.status = packing_slip_data['status']
+
+
+class ProdigiShipmentDetailSpace:
+    def __init__(self, shipment_detail_data: Dict):
+        self.shipment_id = shipment_detail_data['shipmentId']
+        self.successful = shipment_detail_data['successful']
+        self.error_code = shipment_detail_data['errorCode']
+        self.description = shipment_detail_data['description']
+
