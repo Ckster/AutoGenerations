@@ -9,7 +9,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 def send_mail(subject: str, message: str,
-              server="smtp.gmail.com", port=587, send_from='auto.generations.store@gmail.com',
+              server="smtp.gmail.com", port=587, send_from='auto.generations.shop@gmail.com',
               username='auto.generations.shop@gmail.com',
               use_tls=True):
     """Compose and send email with provided info and attachments.
@@ -37,6 +37,6 @@ def send_mail(subject: str, message: str,
     smtp = smtplib.SMTP(server, port)
     if use_tls:
         smtp.starttls()
-    smtp.login(username, email_info['PASSWORD'])
+    smtp.login(username, email_info['APP_PASSWORD'])
     smtp.sendmail(send_from, email_info['RECIPIENTS'], msg.as_string())
     smtp.quit()
