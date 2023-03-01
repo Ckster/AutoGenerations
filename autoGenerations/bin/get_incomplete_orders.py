@@ -3,7 +3,7 @@ from database.namespaces import EtsyReceiptShipmentSpace, EtsyProductPropertySpa
     EtsyShopSectionSpace, EtsyReturnPolicySpace, EtsyShippingProfileSpace, EtsyProductionPartnerSpace, \
     EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyProductSpace, EtsyOfferingSpace
 from database.utils import make_engine
-from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
+from database.etsy_tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
     EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination, EtsyOffering
 from database.enums import Etsy as EtsyEnums, OrderStatus, TransactionFulfillmentStatus
@@ -85,7 +85,6 @@ product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': Fals
 
 
 # TODO: Need to find a way to map listing to products... not sure why inventory field returns None for current listing
-
 
 def get_new_orders():
     etsy_api = EtsyAPI()
