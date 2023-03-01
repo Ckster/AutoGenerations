@@ -566,6 +566,12 @@ class ProdigiIssue(Base):
     def create_namespace(issue_data: Dict[str, Any]) -> ProdigiIssueSpace:
         return ProdigiIssueSpace(issue_data)
 
+    def alert_string(self):
+        alert_string = ''
+        alert_string += f'Object ID: {self.object_id}\n' if self.object_id else ''
+        alert_string += f'Error code: {self.error_code}\n' if self.error_code else ''
+        alert_string += f'Description: {self.description}\n' if self.description else ''
+
 
 class ProdigiAuthorizationDetail(Base):
     """

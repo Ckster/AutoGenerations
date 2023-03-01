@@ -263,9 +263,10 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def update_order_tracking(self, order_id: str, carrier: Carrier, tracking_code: str, note_to_buyer: str,
-                              send_bcc: bool = True):
-        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', order_id, 'tracking')
+    def create_receipt_shipment(self, receipt_id: str, carrier: Carrier, tracking_code: str, note_to_buyer: str,
+                                send_bcc: bool = True):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', receipt_id,
+                           'tracking')
 
         body = {
             "carrier_name": carrier.name,

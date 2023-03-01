@@ -25,6 +25,7 @@ def main():
 
         for receipt in incomplete_receipts:
 
+            # TODO: Add support for gifts
             items_to_order = []
             for transaction in receipt.transactions:
                 if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
@@ -33,15 +34,16 @@ def main():
                     sku = transaction.product.sku.split('%')[-1]
 
                     # TODO: Customize any more stuff here
+                    # TODO: Make the merchantReference the product name that the customer will see
                     items_to_order.append({
-                        "merchantReference": transaction.product.sku,  # Etsy SKU
+                        "merchantReference": 'Product name',
                         "sku": sku,
                         "copies": transaction.quantity,
                         "sizing": "fillPrintArea",
                         "assets": [
                             {
                                 "printArea": "default",
-                                "url": "https://your-image-url/image.png"
+                                "url": "https://your-image-url/image.png"  # TODO: Get asset url from SKU
                             }
                         ]
                     })
@@ -53,7 +55,12 @@ def main():
             outcome = order_response['outcome']
 
             if outcome == Prodigi.CreateOrderOutcome.CREATED.value:
-                transaction.fulfillment_status = TransactionFulfillmentStatus.IN_PROGRESS
+
+                # Order was successful so each transaction should be updated to IN_PROGRESS
+                for transaction in receipt.transactions:
+                    if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
+                        transaction.fulfillment_status = TransactionFulfillmentStatus.IN_PROGRESS
+
                 prodigi_order_space = ProdigiOrderSpace(order_response['order'])
 
                 # Create the charges
@@ -167,12 +174,6 @@ def main():
                                                     packing_slip=packing_slip, charges=charges, shipments=shipments,
                                                     items=items)
                 session.add(prodigi_order)
-
-                # Order was successful so each transaction should be updated to IN_PROGRESS
-                for transaction in receipt.transactions:
-                    if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
-                        transaction.fulfillment_status = TransactionFulfillmentStatus.IN_PROGRESS
-
                 receipt.update(prodigi_orders=[prodigi_order])
 
             else:
