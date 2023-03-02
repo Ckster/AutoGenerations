@@ -6,7 +6,7 @@ from database.utils import make_engine
 from database.etsy_tables import Address
 from database.prodigi_tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost, ProdigiShipment, \
     ProdigiItem, ProdigiRecipient, ProdigiPackingSlip, ProdigiShipmentItem, ProdigiFulfillmentLocation, ProdigiAsset, \
-    ProdigiIssue, ProdigiAuthorizationDetail, ProdigiChargeItem
+    ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem
 from database.enums import Prodigi
 from apis.prodigi import API as ProdigiAPI
 from apis.etsy import API as EtsyAPI
@@ -16,6 +16,19 @@ from sqlalchemy.orm import Session
 
 
 def main():
+    """
+
+
+    Note on overwriting... there are some objects that come from Prodigi without an ID. For example, each issue in the
+    list of status issues returned from the order info endpoint come without an ID. We could compare each of the new
+    issue's attributes to those of each existings' attributes to see if it is really new or not. We would also have to
+    compare the attributres of its relationships. Also, this would not solve the case in which an item is removed /
+    deleted on Prodigi's end and we now need to remove the record in the database. So, for the sake of keeping things
+    simple, un-ID'd object will be overwritten on each update, even if the data is exactly is the same, because it is
+    too much of a pain to check if it's the exact same or not.
+
+    :return:
+    """
     # 1) Get all incomplete Prodigi Orders
     # 2) Call for updates
     # 3) Create the new database objects from call response
@@ -34,25 +47,27 @@ def main():
             order_information = prodigi_api.get_order(prodigi_order.prodigi_id)
             order_information_space = ProdigiOrderSpace(order_information)
 
-            # Update status
+            # Update the status attributes
             status_space = ProdigiStatusSpace(order_information_space.status)
+            prodigi_order.status.update(status_space)
+
+            # Overwrite the status issues
+            for old_issue_id in [issue.id for issue in prodigi_order.status.issues]:
+                session.query(ProdigiStatus).filter(ProdigiStatus.id == old_issue_id).delete()
+
             issues = []
-            for issue_dict in status_space.issues:
-                issue_space = ProdigiIssueSpace(issue_dict)
+            for new_issue_dict in status_space.issues:
+                new_issue_space = ProdigiIssueSpace(new_issue_dict)
+                authorization_details_space = ProdigiAuthorizationDetailsSpace(new_issue_space.authorization_details)
+                payment_details_space = ProdigiCostSpace(authorization_details_space.payment_details)
 
-                authorization_details_space = ProdigiAuthorizationDetailsSpace(issue_space.authorization_details)
-                authorization_details = ProdigiAuthorizationDetail.create(authorization_details_space)
-
-                issue = ProdigiIssue.get_existing(issue_space)
-                if issue is None:
-                    issue = ProdigiIssue.create(issue_space, authorization_details=authorization_details)
-                    session.add(issue)
-                    session.flush()
-                else:
-                    issue.update(issue_space, authorization_details=authorization_details)
+                payment_details = ProdigiCost.create(payment_details_space)
+                authorization_details = ProdigiAuthorizationDetails.create(authorization_details_space,
+                                                                           payment_details=payment_details)
+                issue = ProdigiIssue.create(new_issue_space, authorization_details=authorization_details)
                 issues.append(issue)
 
-            received_status = ProdigiStatus.create(status_space, issues=issues)
+            prodigi_order.status.issues = issues
 
             # Update / create charges
             received_charges = []
@@ -60,12 +75,11 @@ def main():
                 charge_space = ProdigiChargeSpace(charge_dict)
 
                 total_cost_space = ProdigiCostSpace(charge_space.total_cost)
-                total_cost = ProdigiCost.create(total_cost_space)
 
                 charge_items = []
                 for charge_item_dict in charge_space.items:
                     charge_item_space = ProdigiChargeItemSpace(charge_item_dict)
-                    charge_item = ProdigiChargeItem.get_existing(charge_item_space)
+                    charge_item = ProdigiChargeItem.get_existing(session, charge_item_space.prodigi_id)
                     if charge_item is None:
                         charge_item = ProdigiChargeItem.create(charge_item_space)
                         session.add(charge_item)
@@ -74,14 +88,20 @@ def main():
                         charge_item.update(charge_item_space)
                     charge_items.append(charge_item)
 
-                charge = ProdigiCharge.get_existing(charge_space.prodigi_id)
+                charge = ProdigiCharge.get_existing(session, charge_space.prodigi_id)
                 if charge is None:
-                    charge = ProdigiCharge.create(charge_space, order=prodigi_order, total_cost=total_cost,
-                                                  items=charge_items)
+                    total_cost = ProdigiCost.create(total_cost_space)
+                    charge = ProdigiCharge.create(charge_space, total_cost=total_cost, items=charge_items)
                     session.add(charge)
                     session.flush()
                 else:
-                    charge.update(charge_space, order=prodigi_order, total_cost=total_cost, items=charge_items)
+                    charge.update(charge_space, items=charge_items)
+                    total_cost = charge.total_cost
+                    if total_cost is None:
+                        total_cost = ProdigiCost.create(total_cost_space)
+                        charge.total_cost = total_cost
+                    else:
+                        total_cost.update(total_cost_space)
                 received_charges.append(charge)
 
             # Update / create shipments
@@ -92,7 +112,7 @@ def main():
                 shipment_items = []
                 for shipment_item_dict in shipment_space.items:
                     shipment_item_space = ProdigiShipmentItemSpace(shipment_item_dict)
-                    shipment_item = ProdigiShipmentItem.get_existing(shipment_item_space.item_id)
+                    shipment_item = ProdigiShipmentItem.get_existing(session, shipment_item_space.item_id)
                     if shipment_item is None:
                         shipment_item = ProdigiShipmentItem.create(shipment_item_space)
                         session.add(shipment_item)
@@ -100,11 +120,11 @@ def main():
                     shipment_items.append(shipment_item)
 
                 fulfillment_location_space = ProdigiFulfillmentLocationSpace(shipment_space.fulfillment_location)
-                fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
 
-                shipment = ProdigiShipment.get_existing(shipment_space.prodigi_id)
+                shipment = ProdigiShipment.get_existing(session, shipment_space.prodigi_id)
                 if shipment is None:
-                    shipment = ProdigiShipment.create(shipment_space, order=prodigi_order, items=shipment_items,
+                    fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
+                    shipment = ProdigiShipment.create(shipment_space, items=shipment_items,
                                                       fulfillment_location=fulfillment_location)
                     session.add(shipment)
                     session.flush()
@@ -115,14 +135,37 @@ def main():
                                                      tracking_code=shipment.tracking, note_to_buyer=note_to_buyer,
                                                      send_bcc=True)
                 else:
-                    shipment.update(shipment_space, items=shipment_items, fulfillment_location=fulfillment_location)
+                    shipment.update(shipment_space, items=shipment_items)
+                    fulfillment_location = shipment.fulfillment_location
+                    if fulfillment_location is None:
+                        fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
+                        session.add(fulfillment_location)
+                        session.flush()
+                        shipment.fulfillment_location = fulfillment_location
+                    else:
+                        fulfillment_location.update(fulfillment_location_space)
                 received_shipments.append(shipment)
 
             # Update recipient
+            recipient = prodigi_order.recipient
             recipient_space = ProdigiRecipientSpace(order_information_space.recipient)
+
             address_space = ProdigiAddressSpace(recipient_space.address)
-            address = Address.create(address_space)
-            received_recipient = ProdigiRecipient.create(recipient_space, addresses=[address])
+            address = Address.get_existing(session, address_space.zip, address_space.city, address_space.state,
+                                           address_space.country, address_space.first_line,
+                                           address_space.second_line)
+            if address is None:
+                address = Address.create(address_space)
+                session.add(address)
+                session.flush()
+
+            if recipient is None:
+                received_recipient = ProdigiRecipient.create(recipient_space, addresses=[address])
+                session.add(received_recipient)
+                session.flush()
+                prodigi_order.recipient = received_recipient
+            else:
+                recipient.udpdate(recipient_space, addresses=[address])
 
             # Update / create items
             received_items = []
@@ -130,7 +173,6 @@ def main():
                 item_space = ProdigiItemSpace(item_dict)
 
                 recipient_cost_space = ProdigiCostSpace(item_space.recipient_cost)
-                recipient_cost = ProdigiCost.create(recipient_cost_space)
 
                 assets = []
                 for asset_dict in item_space.assets:
@@ -142,23 +184,32 @@ def main():
                         session.flush()
                     assets.append(asset)
 
-                item = ProdigiItem.get_existing(item_space)
+                item = ProdigiItem.get_existing(session, item_space.prodigi_id)
                 if item is None:
+                    recipient_cost = ProdigiCost.create(recipient_cost_space)
                     item = ProdigiItem.create(item_space, recipient_cost=recipient_cost, assets=assets)
                     session.add(item)
                     session.flush()
                 else:
-                    item.update(item_space, recipient_cost=recipient_cost, assets=assets)
+                    item.update(item_space, assets=assets)
+                    item.recipient_cost.update(recipient_cost_space)
                 received_items.append(item)
 
             # Update / create packing slip
             packing_slip_space = ProdigiPackingSlipSpace(order_information_space.packing_slip)
-            received_packing_slip = ProdigiPackingSlip.create(packing_slip_space)
+            packing_slip = prodigi_order.packing_slip
+            if packing_slip is None:
+                packing_slip = ProdigiPackingSlip.create(packing_slip_space)
+                session.add(packing_slip)
+                session.flush()
+                prodigi_order.packing_slip = packing_slip
+            else:
+                packing_slip.update(packing_slip_space)
+            prodigi_order.packing_slip.update(packing_slip_space)
 
             # Update order
             prodigi_order.update(order_information_space, status=received_status, charges=received_charges,
-                                 shipments=received_shipments, recipient=received_recipient, items=received_items,
-                                 packing_slip=received_packing_slip)
+                                 shipments=received_shipments, recipient=received_recipient, items=received_items)
 
             status = prodigi_order.status
 

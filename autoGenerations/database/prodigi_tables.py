@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Union, Dict, Any
 from database.utils import Base
 from database.enums import Prodigi
-from database.etsy_tables import Address, merge_lists
+from database.etsy_tables import Address, merge_lists, EtsyReceipt
 from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace,\
     ProdigiFulfillmentLocationSpace, ProdigiRecipientSpace, ProdigiItemSpace, ProdigiCostSpace, ProdigiAssetSpace,\
     ProdigiPackingSlipSpace, ProdigiChargeItemSpace, ProdigiStatusSpace, ProdigiIssueSpace, \
@@ -42,16 +42,22 @@ class ProdigiOrder(Base):
     idempotency_key = Column(String)
 
     # relationships
-    status = relationship("ProdigiStatus", uselist=False, back_populates='order')
-    charges = relationship("ProdigiCharge", back_populates="order")
-    shipments = relationship("ProdigiShipment", back_populates="order")
+
+    # one to many
+    charges = relationship("ProdigiCharge", back_populates="order", cascade="all, delete, delete-orphan")
+    shipments = relationship("ProdigiShipment", back_populates="order", cascade="all, delete, delete-orphan")
+    items = relationship("ProdigiItem", back_populates="order", cascade="all, delete, delete-orphan")
+
+    # many to one
     _recipient_id = Column(Integer, ForeignKey('prodigi_recipient.id'))
     recipient = relationship("ProdigiRecipient", uselist=False, back_populates="orders")
-    items = relationship("ProdigiItem", back_populates="order")
-    _packing_slip_id = Column(Integer, ForeignKey('prodigi_packing_slip.id'))
-    packing_slip = relationship("ProdigiPackingSlip", uselist=False, back_populates="order")
     _etsy_receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
-    etsy_receipt = relationship("EtsyReceipt", back_populates="prodigi_order")
+    etsy_receipt = relationship("EtsyReceipt", uselist=False, back_populates="prodigi_order")
+
+    # one to one
+    status = relationship("ProdigiStatus", uselist=False, back_populates='order', cascade="all, delete, delete-orphan")
+    packing_slip = relationship("ProdigiPackingSlip", uselist=False, back_populates="order",
+                                cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, order_data: Union[ProdigiOrderSpace, Dict[str, Any]],
@@ -60,7 +66,9 @@ class ProdigiOrder(Base):
                shipments: List[ProdigiShipment] = None,
                recipient: ProdigiRecipient = None,
                items: List[ProdigiItem] = None,
-               packing_slip: ProdigiPackingSlip = None) -> ProdigiOrder:
+               packing_slip: ProdigiPackingSlip = None,
+               etsy_receipt: EtsyReceipt = None
+               ) -> ProdigiOrder:
         if not isinstance(order_data, ProdigiOrderSpace):
             order_data = cls.create_namespace(order_data)
 
@@ -92,6 +100,9 @@ class ProdigiOrder(Base):
         if packing_slip is not None:
             order.packing_slip = packing_slip
 
+        if etsy_receipt is not None:
+            order.etsy_receipt = etsy_receipt
+
         return order
 
     @staticmethod
@@ -109,6 +120,7 @@ class ProdigiOrder(Base):
                recipient: ProdigiRecipient = None,
                items: List[ProdigiItem] = None,
                packing_slip: ProdigiPackingSlip = None,
+               etsy_receipt: EtsyReceipt = None,
                overwrite_list: bool = False
                ):
         if not isinstance(order_data, ProdigiOrderSpace):
@@ -135,6 +147,9 @@ class ProdigiOrder(Base):
         if packing_slip is not None and self.packing_slip != packing_slip:
             self.packing_slip = packing_slip
 
+        if etsy_receipt is not None and self.etsy_receipt != etsy_receipt:
+            self.etsy_receipt = etsy_receipt
+
         if charges is not None:
             self.charges = charges if overwrite_list else merge_lists(self.charges, charges)
 
@@ -157,6 +172,8 @@ class ProdigiShipmentDetail(Base):
     description = Column(String)
 
     # relationships
+
+    # many to one
     _shipment_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
     shipment = relationship("ProdigiShipment", uselist=False, back_populates="updates")
 
@@ -224,7 +241,10 @@ class ProdigiPackingSlip(Base):
     status = Column(String)
 
     # relationships
-    order = relationship("ProdigiOrder", back_populates="packing_slip")
+
+    # one to one
+    _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
+    order = relationship("ProdigiOrder", uselist=False, back_populates="packing_slip")
 
     @classmethod
     def create(cls, packing_slip_data: Union[ProdigiPackingSlipSpace, Dict[str, Any]],
@@ -273,12 +293,18 @@ class ProdigiItem(Base):
     sizing = Column(Enum(Prodigi.Sizing))
 
     # relationships
+
+    # many to one
     _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
     order = relationship("ProdigiOrder", uselist=False, back_populates='items')
-    _recipient_cost_id = Column(Integer, ForeignKey('prodigi_cost.id'))
-    recipient_cost = relationship("ProdigiCost", uselist=False, back_populates='item')
-    assets: Mapped[List[ProdigiAsset]] = relationship(
-        secondary=item_asset_association_table, back_populates='items')
+
+    # one to one
+    recipient_cost = relationship("ProdigiCost", uselist=False, back_populates='item',
+                                  cascade="all, delete, delete-orphan")
+
+    # many to many
+    assets: Mapped[List[ProdigiAsset]] = relationship(secondary=item_asset_association_table, back_populates='items',
+                                                      cascade='all, delete-orphan')
 
     @classmethod
     def create(cls, item_data: Union[ProdigiItemSpace, Dict[str, Any]],
@@ -316,6 +342,35 @@ class ProdigiItem(Base):
     def get_existing(session, prodigi_id: str) -> ProdigiItem:
         return session.query(ProdigiItem).filter(ProdigiItem.prodigi_id == prodigi_id).first()
 
+    def update(self, item_data: Union[ProdigiItemSpace, Dict[str, Any]],
+               order: ProdigiOrder = None,
+               recipient_cost: ProdigiCost = None,
+               assets: List[ProdigiAsset] = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(item_data, ProdigiItemSpace):
+            item_data = self.create_namespace(item_data)
+
+        if self.prodigi_id != item_data.prodigi_id:
+            self.prodigi_id = item_data.prodigi_id
+        if self.merchant_reference != item_data.merchant_reference:
+            self.merchant_reference = item_data.merchant_reference
+        if self.sku != item_data.sku:
+            self.sku = item_data.sku
+        if self.copies != item_data.copies:
+            self.copies = item_data.copies
+        if self.sizing != item_data.sizing:
+            self.sizing = item_data.sizing
+
+        if order is not None and self.order != order:
+            self.order = order
+
+        if recipient_cost is not None and self.recipient_cost != recipient_cost:
+            self.recipient_cost = recipient_cost
+
+        if assets is not None:
+            self.assets = assets if overwrite_list else merge_lists(self.assets, assets)
+
 
 class ProdigiAsset(Base):
     """
@@ -327,8 +382,9 @@ class ProdigiAsset(Base):
     url = Column(String)
 
     # relationships
-    items: Mapped[List[ProdigiItem]] = relationship(
-        secondary=item_asset_association_table, back_populates='assets')
+
+    # many to many
+    items: Mapped[List[ProdigiItem]] = relationship(secondary=item_asset_association_table, back_populates='assets')
 
     @classmethod
     def create(cls, asset_data: Union[ProdigiAssetSpace, Dict[str, Any]],
@@ -350,6 +406,21 @@ class ProdigiAsset(Base):
     def create_namespace(asset_data: Dict[str, Any]) -> ProdigiAssetSpace:
         return ProdigiAssetSpace(asset_data)
 
+    def update(self, asset_data: Union[ProdigiAssetSpace, Dict[str, Any]],
+               items: List[ProdigiItem] = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(asset_data, ProdigiAssetSpace):
+            asset_data = self.create_namespace(asset_data)
+
+        if self.print_area != asset_data.print_area:
+            self.print_area = asset_data.print_area
+        if self.url != asset_data.url:
+            self.url = asset_data.url
+
+        if items is not None:
+            self.items = items if overwrite_list else merge_lists(self.items, items)
+
 
 class ProdigiRecipient(Base):
     """
@@ -362,9 +433,14 @@ class ProdigiRecipient(Base):
     phone_number = Column(String)
 
     # relationships
+
+    # one to many
     orders = relationship("ProdigiOrder", back_populates="recipient")
+
+    # many to many
     addresses: Mapped[List[Address]] = relationship(
-        secondary=recipient_address_association_table, back_populates='prodigi_recipients')
+        secondary=recipient_address_association_table, back_populates='prodigi_recipients',
+        cascade='all, delete-orphan')
 
     @classmethod
     def create(cls, recipient_data: Union[ProdigiRecipientSpace, Dict[str, Any]],
@@ -392,6 +468,24 @@ class ProdigiRecipient(Base):
     def create_namespace(recipient_data: Dict[str, Any]) -> ProdigiRecipientSpace:
         return ProdigiRecipientSpace(recipient_data)
 
+    def get_existing(self, session, recipient_data: Union[ProdigiRecipientSpace, Dict[str, Any]]):
+        if not isinstance(recipient_data, ProdigiRecipientSpace):
+            recipient_data = self.create_namespace(recipient_data)
+        return session.query(ProdigiRecipient).filter(
+            ProdigiRecipient.name == recipient_data.name
+        ).filter(
+            ProdigiRecipient.email == recipient_data.email
+        ).filter(
+            ProdigiRecipient.phone_number == recipient_data.phone_number
+        ).first()
+
+    def update(self, orders: List[ProdigiOrder] = None, addresses: List[Address] = None, overwrite_list: bool = False):
+        if orders is not None:
+            self.orders = orders if overwrite_list else merge_lists(self.orders, orders)
+
+        if addresses is not None:
+            self.addresses = addresses if overwrite_list else merge_lists(self.addresses, addresses)
+
 
 class ProdigiShipment(Base):
     """
@@ -405,16 +499,25 @@ class ProdigiShipment(Base):
     dispatch_date = Column(DateTime)
 
     # relationships
+
+    # one to many
+    shipment_items = relationship("ProdigiShipmentItem", back_populates='shipment',
+                                  cascade="all, delete, delete-orphan")
+    shipment_details = relationship("ProdigiShipmentDetail", back_populates='shipment',
+                                    cascade="all, delete, delete-orphan")
+
+    # many to one
     _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
     order = relationship("ProdigiOrder", uselist=False, back_populates="shipments")
-    items = relationship("ProdigiShipmentItem", back_populates='shipment')
-    _fulfillment_location_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
-    fulfillment_location = relationship("ProdigiFulfillmentLocation", uselist=False, back_populates="shipment")
+
+    # one to one
+    fulfillment_location = relationship("ProdigiFulfillmentLocation", uselist=False, back_populates="shipment",
+                                        cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, shipment_data: Union[ProdigiShipmentSpace, Dict[str, Any]],
-               order: List[ProdigiOrder] = None,
-               items: List[ProdigiItem] = None,
+               order: ProdigiOrder = None,
+               shipment_items: List[ProdigiShipmentItem] = None,
                fulfillment_location: ProdigiFulfillmentLocation = None) -> ProdigiShipment:
         if not isinstance(shipment_data, ProdigiShipmentSpace):
             shipment_data = cls.create_namespace(shipment_data)
@@ -429,8 +532,8 @@ class ProdigiShipment(Base):
         if order is not None:
             shipment.order = order
 
-        if items is not None:
-            shipment.items = items
+        if shipment_items is not None:
+            shipment.shipment_items = shipment_items
 
         if fulfillment_location is not None:
             shipment.fulfillment_location = fulfillment_location
@@ -440,6 +543,35 @@ class ProdigiShipment(Base):
     @staticmethod
     def create_namespace(order_data: Dict[str, Any]) -> ProdigiOrderSpace:
         return ProdigiOrderSpace(order_data)
+
+    @staticmethod
+    def get_existing(session, prodigi_id: str) -> Union[None, ProdigiShipment]:
+        return session.query(ProdigiShipment).filter(ProdigiShipment.prodigi_id == prodigi_id).first()
+
+    def update(self, shipment_data: Union[ProdigiShipmentSpace, Dict[str, Any]],
+               order: ProdigiOrder = None,
+               shipment_items: List[ProdigiShipmentItem] = None,
+               fulfillment_location: ProdigiFulfillmentLocation = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(shipment_data, ProdigiShipmentSpace):
+            shipment_data = self.create_namespace(shipment_data)
+
+        if self.carrier != shipment_data.carrier:
+            self.carrier = shipment_data.carrier
+        if self.tracking != shipment_data.tracking:
+            self.tracking = shipment_data.tracking
+        if self.dispatch_date != shipment_data.dispatch_date:
+            self.dispatch_date = shipment_data.dispatch_date
+
+        if order is not None and self.order != order:
+            self.order = order
+
+        if fulfillment_location is not None and self.fulfillment_location != fulfillment_location:
+            self.fulfillment_location = fulfillment_location
+
+        if shipment_items is not None:
+            self.shipment_items = shipment_items if overwrite_list else merge_lists(self.items, shipment_items)
 
 
 class ProdigiFulfillmentLocation(Base):
@@ -452,6 +584,9 @@ class ProdigiFulfillmentLocation(Base):
     lab_code = Column(String)
 
     # relationships
+
+    # one to one
+    _shipment_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
     shipment = relationship("ProdigiShipment", back_populates="fulfillment_location")
 
     @classmethod
@@ -474,6 +609,19 @@ class ProdigiFulfillmentLocation(Base):
     def create_namespace(fulfillment_location_data: Dict[str, Any]) -> ProdigiFulfillmentLocationSpace:
         return ProdigiFulfillmentLocationSpace(fulfillment_location_data)
 
+    def update(self, fulfillment_location_data: Union[ProdigiFulfillmentLocationSpace, Dict[str, Any]],
+               shipment: ProdigiShipment = None):
+        if not isinstance(fulfillment_location_data, ProdigiFulfillmentLocationSpace):
+            fulfillment_location_data = self.create_namespace(fulfillment_location_data)
+
+        if self.country_code != fulfillment_location_data.country_code:
+            self.country_code = fulfillment_location_data.country_code
+        if self.lab_code != fulfillment_location_data.lab_code:
+            self.lab_code = fulfillment_location_data.lab_code
+
+        if shipment is not None and self.shipment != shipment:
+            self.shipment = shipment
+
 
 class ProdigiShipmentItem(Base):
     """
@@ -484,6 +632,8 @@ class ProdigiShipmentItem(Base):
     item_id = Column(String, unique=True)
 
     # relationships
+
+    # many to one
     _shipment_id = Column(Integer, ForeignKey('prodigi_shipment.id'))
     shipment = relationship("ProdigiShipment", uselist=False, back_populates='items')
 
@@ -506,6 +656,15 @@ class ProdigiShipmentItem(Base):
     def create_namespace(shipment_item_data: Dict[str, Any]) -> ProdigiShipmentItemSpace:
         return ProdigiShipmentItemSpace(shipment_item_data)
 
+    @staticmethod
+    def get_existing(session, item_id: str) -> Union[ProdigiShipmentItem, None]:
+        return session.query(ProdigiShipmentItem).filter(ProdigiShipmentItem.item_id == item_id).first()
+
+    def update(self, shipment: ProdigiShipment):
+
+        if self.shipment != shipment:
+            self.shipment = shipment
+
 
 class ProdigiCharge(Base):
     __tablename__ = 'prodigi_charge'
@@ -514,10 +673,17 @@ class ProdigiCharge(Base):
     prodigi_invoice_number = Column(String)
 
     # relationships
+
+    # one to many
+    items = relationship("ProdigiChargeItem", back_populates="charge", cascade="all, delete, delete-orphan")
+
+    # many to one
     _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
     order = relationship("ProdigiOrder", uselist=False, back_populates="charges")
-    total_cost = relationship("ProdigiCost", uselist=False, back_populates="charge")
-    items = relationship("ProdigiChargeItem", back_populates="charge")
+
+    # one to
+    total_cost = relationship("ProdigiCost", uselist=False, back_populates="charge",
+                              cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, charge_data: Union[ProdigiChargeSpace, Dict[str, Any]],
@@ -547,6 +713,31 @@ class ProdigiCharge(Base):
     def create_namespace(charge_data: Dict[str, Any]) -> ProdigiChargeSpace:
         return ProdigiChargeSpace(charge_data)
 
+    @staticmethod
+    def get_existing(session, prodigi_id: str) -> Union[ProdigiCharge, None]:
+        return session.query(ProdigiCharge).filter(ProdigiCharge.prodigi_id == prodigi_id).first()
+
+    def update(self, charge_data: Union[ProdigiChargeSpace, Dict[str, Any]],
+               order: ProdigiOrder = None,
+               total_cost: ProdigiCost = None,
+               items: List[ProdigiItem] = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(charge_data, ProdigiChargeSpace):
+            charge_data = self.create_namespace(charge_data)
+
+        if self.prodigi_invoice_number != charge_data.prodigi_invoice_number:
+            self.prodigi_invoice_number = charge_data.prodigi_invoice_number
+
+        if order is not None and self.order != order:
+            self.order = order
+
+        if total_cost is not None and self.total_cost != total_cost:
+            self.total_cost = total_cost
+
+        if items is not None:
+            self.items = items if overwrite_list else merge_lists(self.items, items)
+
 
 class ProdigiChargeItem(Base):
     __tablename__ = 'prodigi_charge_item'
@@ -559,7 +750,11 @@ class ProdigiChargeItem(Base):
     merchant_item_reference = Column(String)
 
     # relationships
-    cost = relationship("ProdigiCost", uselist=False, back_populates="charge_item")
+
+    # one to one
+    cost = relationship("ProdigiCost", uselist=False, back_populates="charge_item", cascade="all, delete, delete-orphan")
+
+    # many to one
     _charge_id = Column(Integer, ForeignKey('prodigi_charge.id'))
     charge = relationship("ProdigiCharge", uselist=False, back_populates="items")
 
@@ -592,6 +787,34 @@ class ProdigiChargeItem(Base):
     def create_namespace(charge_item_data: Dict[str, Any]) -> ProdigiChargeItemSpace:
         return ProdigiChargeItemSpace(charge_item_data)
 
+    @staticmethod
+    def get_existing(session, prodigi_id: str) -> Union[ProdigiChargeItem, None]:
+        return session.query(ProdigiChargeItem).filter(ProdigiChargeItem.prodigi_id == prodigi_id).first()
+
+    def update(self, charge_item_data: Union[ProdigiChargeItemSpace, Dict[str, Any]],
+               cost: ProdigiCost = None,
+               charge: ProdigiCharge = None
+               ):
+        if not isinstance(charge_item_data, ProdigiChargeItemSpace):
+            charge_item_data = self.create_namespace(charge_item_data)
+
+        if self.description != charge_item_data.description:
+            self.description = charge_item_data.description
+        if self.item_sku != charge_item_data.item_sku:
+            self.item_sku = charge_item_data.item_sku
+        if self.shipment_id != charge_item_data.shipment_id:
+            self.shipment_id = charge_item_data.shipment_id
+        if self.item_id != charge_item_data.item_id:
+            self.item_id = charge_item_data.item_id
+        if self.merchant_item_reference != charge_item_data.merchant_item_reference:
+            self.merchant_item_reference = charge_item_data.merchant_item_reference
+
+        if cost is not None and self.cost != cost:
+            self.cost = cost
+
+        if charge is not None and self.charge != charge:
+            self.charge = charge
+
 
 class ProdigiStatus(Base):
     """
@@ -607,9 +830,13 @@ class ProdigiStatus(Base):
     shipping = Column(Enum(Prodigi.DetailStatus))
 
     # relationships
+
+    # one to one
     _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
     order = relationship("ProdigiOrder", back_populates="status")
-    issues = relationship("ProdigiIssue", back_populates="status")
+
+    # one to many
+    issues = relationship("ProdigiIssue", back_populates="status", cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, status_data: Union[ProdigiStatusSpace, Dict[str, Any]],
@@ -639,6 +866,33 @@ class ProdigiStatus(Base):
     def create_namespace(status_data: Dict[str, Any]) -> ProdigiStatusSpace:
         return ProdigiStatusSpace(status_data)
 
+    def update(self, status_data: Union[ProdigiStatusSpace, Dict[str, Any]],
+               order: List[ProdigiOrder] = None,
+               issues: List[ProdigiIssue] = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(status_data, ProdigiStatusSpace):
+            status_data = self.create_namespace(status_data)
+
+        if self.stage != status_data.stage:
+            self.stage = status_data.stage
+        if self.download_assets != status_data.download_assets:
+            self.download_assets = status_data.download_assets
+        if self.print_ready_assets_prepared != status_data.print_ready_assets_prepared:
+            self.print_ready_assets_prepared = status_data.print_ready_assets_prepared
+        if self.allocate_production_location != status_data.allocate_production_location:
+            self.allocate_production_location = status_data.allocate_production_location
+        if self.in_production != status_data.allocate_production_location:
+            self.in_production = status_data.allocate_production_location
+        if self.shipping != status_data.shipping:
+            self.shipping = status_data.shipping
+
+        if order is not None and self.order != order:
+            self.order = order
+
+        if issues is not None:
+            self.issues = issues if overwrite_list else merge_lists(self.issues, issues)
+
 
 class ProdigiIssue(Base):
     """
@@ -651,15 +905,19 @@ class ProdigiIssue(Base):
     description = Column(String)
 
     # relationships
+
+    # many to one
     _status_id = Column(Integer, ForeignKey('prodigi_status.id'))
     status = relationship("ProdigiStatus", uselist=False, back_populates="issues")
-    _authorization_details_id = Column(Integer, ForeignKey('prodigi_authorization_details.id'))
-    authorization_details = relationship("ProdigiAuthorizationDetail", uselist=False, back_populates='issues')
+
+    # one to one
+    authorization_details = relationship("ProdigiAuthorizationDetails", uselist=False, back_populates='issue',
+                                         cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, issue_data: Union[ProdigiIssueSpace, Dict[str, Any]],
                status: ProdigiStatus = None,
-               authorization_details: ProdigiAuthorizationDetail = None
+               authorization_details: ProdigiAuthorizationDetails = None
                ) -> ProdigiIssue:
         if not isinstance(issue_data, ProdigiIssueSpace):
             issue_data = cls.create_namespace(issue_data)
@@ -688,8 +946,28 @@ class ProdigiIssue(Base):
         alert_string += f'Error code: {self.error_code}\n' if self.error_code else ''
         alert_string += f'Description: {self.description}\n' if self.description else ''
 
+    def update(self, issue_data: Union[ProdigiIssueSpace, Dict[str, Any]],
+               status: ProdigiStatus = None,
+               authorization_details: ProdigiAuthorizationDetails = None
+               ):
+        if not isinstance(issue_data, ProdigiIssueSpace):
+            issue_data = self.create_namespace(issue_data)
 
-class ProdigiAuthorizationDetail(Base):
+        if self.object_id != issue_data.object_id:
+            self.object_id = issue_data.object_id
+        if self.error_code != issue_data.error_code:
+            self.error_code = issue_data.error_code
+        if self.description != issue_data.description:
+            self.description = issue_data.description
+
+        if status is not None and self.status != status:
+            self.status = status
+
+        if authorization_details is not None and self.authorization_details != authorization_details:
+            self.authorization_details = authorization_details
+
+
+class ProdigiAuthorizationDetails(Base):
     """
     API Reference: https://www.prodigi.com/print-api/docs/reference/#status-status-authorisation-details
     """
@@ -698,15 +976,20 @@ class ProdigiAuthorizationDetail(Base):
     authorization_url = Column(String)
 
     # relationships
-    issues = relationship("ProdigiIssue", back_populates="authorization_details")
-    payment_details = relationship("ProdigiCost", uselist=False, back_populates="authorization")
+
+    # one to one
+    _issue_id = Column(Integer, ForeignKey('prodigi_issue.id'))
+    issue = relationship("ProdigiIssue", uselist=False, back_populates="authorization_details")
+
+    payment_details = relationship("ProdigiCost", uselist=False, back_populates="authorization",
+                                   cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, authorization_detail_data: Union[ProdigiAuthorizationDetailsSpace, Dict[str, Any]],
                issues: List[ProdigiIssue] = None,
-               payment_details: List[ProdigiCost] = None
-               ) -> ProdigiAuthorizationDetail:
-        if not isinstance(authorization_detail_data, ProdigiAuthorizationDetail):
+               payment_details: ProdigiCost = None
+               ) -> ProdigiAuthorizationDetails:
+        if not isinstance(authorization_detail_data, ProdigiAuthorizationDetails):
             authorization_detail_data = cls.create_namespace(authorization_detail_data)
 
         authorization_detail = cls(
@@ -722,8 +1005,25 @@ class ProdigiAuthorizationDetail(Base):
         return authorization_detail
 
     @staticmethod
-    def create_namespace(authorization_detail_data: Dict[str, Any]) -> ProdigiAuthorizationDetail:
-        return ProdigiAuthorizationDetail(authorization_detail_data)
+    def create_namespace(authorization_detail_data: Dict[str, Any]) -> ProdigiAuthorizationDetails:
+        return ProdigiAuthorizationDetails(authorization_detail_data)
+
+    def update(self, authorization_detail_data: Union[ProdigiAuthorizationDetailsSpace, Dict[str, Any]],
+               issue: ProdigiIssue = None,
+               payment_details: ProdigiCost = None,
+               overwrite_list: bool = False
+               ):
+        if not isinstance(authorization_detail_data, ProdigiAuthorizationDetails):
+            authorization_detail_data = self.create_namespace(authorization_detail_data)
+
+        if self.authorization_url != authorization_detail_data.authorization_url:
+            self.authorization_url = authorization_detail_data.authorization_url
+
+        if issue is not None and self.issue != issue:
+            self.issue = issue
+
+        if payment_details is not None and self.payment_details != payment_details:
+            self.payment_details = payment_details
 
 
 class ProdigiCost(Base):
@@ -736,8 +1036,10 @@ class ProdigiCost(Base):
     currency = Column(String)
 
     # relationships
+
+    # one to one
     _authorization_id = Column(Integer, ForeignKey('prodigi_authorization_details.id'))
-    authorization = relationship("ProdigiAuthorizationDetail", back_populates="payment_details")
+    authorization = relationship("ProdigiAuthorizationDetails", back_populates="payment_details")
     _charge_id = Column(Integer, ForeignKey('prodigi_charge.id'))
     charge = relationship("ProdigiCharge", back_populates="total_cost")
     _charge_item_id = Column(Integer, ForeignKey('prodigi_charge_item.id'))
@@ -747,7 +1049,7 @@ class ProdigiCost(Base):
 
     @classmethod
     def create(cls, cost_data: Union[ProdigiCostSpace, Dict[str, Any]],
-               authorization: ProdigiAuthorizationDetail = None,
+               authorization: ProdigiAuthorizationDetails = None,
                charge: ProdigiCharge = None,
                charge_item: ProdigiChargeItem = None,
                item: ProdigiItem = None
@@ -777,3 +1079,29 @@ class ProdigiCost(Base):
     @staticmethod
     def create_namespace(cost_data: Dict[str, Any]) -> ProdigiCostSpace:
         return ProdigiCostSpace(cost_data)
+
+    def update(self, cost_data: Union[ProdigiCostSpace, Dict[str, Any]],
+               authorization: ProdigiAuthorizationDetails = None,
+               charge: ProdigiCharge = None,
+               charge_item: ProdigiChargeItem = None,
+               item: ProdigiItem = None
+               ):
+        if not isinstance(cost_data, ProdigiCostSpace):
+            cost_data = self.create_namespace(cost_data)
+
+        if self.amount != cost_data.amount:
+            self.amount = cost_data.amount
+        if self.currency != cost_data.currency:
+            self.currency = cost_data.currency
+
+        if authorization is not None and self.authorization != authorization:
+            self.authorization = authorization
+
+        if charge is not None and self.charge != charge:
+            self.charge = charge
+
+        if charge_item is not None and self.charge_item != charge_item:
+            self.charge_item = charge_item
+
+        if item is not None and self.item != item:
+            self.item = item

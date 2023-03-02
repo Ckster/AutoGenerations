@@ -102,7 +102,8 @@ class EtsyReceipt(Base):
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                transactions: List[EtsyTransaction] = None,
-               receipt_shipments: List[EtsyReceiptShipment] = None
+               receipt_shipments: List[EtsyReceiptShipment] = None,
+               prodigi_orders: List[ProdigiOrder] = None
                ) -> EtsyReceipt:
         if not isinstance(receipt_data, EtsyReceiptSpace):
             receipt_data = cls.create_namespace(receipt_data)
@@ -150,6 +151,9 @@ class EtsyReceipt(Base):
 
         if receipt_shipments is not None:
             receipt.receipt_shipments = receipt_shipments
+
+        if prodigi_orders is not None:
+            receipt.prodigi_orders = prodigi_orders
 
         return receipt
 
