@@ -406,6 +406,16 @@ class ProdigiAsset(Base):
     def create_namespace(asset_data: Dict[str, Any]) -> ProdigiAssetSpace:
         return ProdigiAssetSpace(asset_data)
 
+    @staticmethod
+    def get_existing(session, asset_data: Union[ProdigiAssetSpace, Dict[str, Any]]):
+        if not isinstance(asset_data, ProdigiAssetSpace):
+            asset_data = ProdigiAsset.create_namespace(asset_data)
+        return session.query(ProdigiAsset).filter(
+            ProdigiAsset.print_area == asset_data.print_area
+        ).filter(
+            ProdigiAsset.url == asset_data.url
+        ).first()
+
     def update(self, asset_data: Union[ProdigiAssetSpace, Dict[str, Any]],
                items: List[ProdigiItem] = None,
                overwrite_list: bool = False
@@ -675,7 +685,7 @@ class ProdigiCharge(Base):
     # relationships
 
     # one to many
-    items = relationship("ProdigiChargeItem", back_populates="charge", cascade="all, delete, delete-orphan")
+    charge_items = relationship("ProdigiChargeItem", back_populates="charge", cascade="all, delete, delete-orphan")
 
     # many to one
     _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
@@ -689,7 +699,7 @@ class ProdigiCharge(Base):
     def create(cls, charge_data: Union[ProdigiChargeSpace, Dict[str, Any]],
                order: ProdigiOrder = None,
                total_cost: ProdigiCost = None,
-               items: List[ProdigiItem] = None) -> ProdigiCharge:
+               charge_items: List[ProdigiChargeItem] = None) -> ProdigiCharge:
         if not isinstance(charge_data, ProdigiChargeSpace):
             charge_data = cls.create_namespace(charge_data)
 
@@ -704,8 +714,8 @@ class ProdigiCharge(Base):
         if total_cost is not None:
             charge.total_cost = total_cost
 
-        if items is not None:
-            charge.items = items
+        if charge_items is not None:
+            charge.charge_items = charge_items
 
         return charge
 
@@ -720,7 +730,7 @@ class ProdigiCharge(Base):
     def update(self, charge_data: Union[ProdigiChargeSpace, Dict[str, Any]],
                order: ProdigiOrder = None,
                total_cost: ProdigiCost = None,
-               items: List[ProdigiItem] = None,
+               charge_items: List[ProdigiChargeItem] = None,
                overwrite_list: bool = False
                ):
         if not isinstance(charge_data, ProdigiChargeSpace):
@@ -735,8 +745,8 @@ class ProdigiCharge(Base):
         if total_cost is not None and self.total_cost != total_cost:
             self.total_cost = total_cost
 
-        if items is not None:
-            self.items = items if overwrite_list else merge_lists(self.items, items)
+        if charge_items is not None:
+            self.charge_items = charge_items if overwrite_list else merge_lists(self.charge_items, charge_items)
 
 
 class ProdigiChargeItem(Base):
@@ -756,7 +766,7 @@ class ProdigiChargeItem(Base):
 
     # many to one
     _charge_id = Column(Integer, ForeignKey('prodigi_charge.id'))
-    charge = relationship("ProdigiCharge", uselist=False, back_populates="items")
+    charge = relationship("ProdigiCharge", uselist=False, back_populates="charge_items")
 
     @classmethod
     def create(cls, charge_item_data: Union[ProdigiChargeItemSpace, Dict[str, Any]],
