@@ -6,7 +6,7 @@ from database.utils import make_engine
 from database.etsy_tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
     EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination, EtsyOffering
-from database.enums import Etsy as EtsyEnums, OrderStatus, TransactionFulfillmentStatus
+from database.enums import OrderStatus, TransactionFulfillmentStatus
 
 from sqlalchemy.orm import Session
 
@@ -83,8 +83,6 @@ product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': Fals
                                  'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}}],
                   'property_values': []}
 
-
-# TODO: Need to find a way to map listing to products... not sure why inventory field returns None for current listing
 # TODO: Communicate any changes to existing Prodigi Orders - shipping changes, cancellations etc.
 
 
@@ -194,7 +192,7 @@ def get_new_orders():
                     session.add(shop)
                     session.flush()
                 else:
-                    shop.update(shop_space, seller=seller, listings=[listing], overwrite_list=True)
+                    shop.update(shop_space, seller=seller, listings=[listing])
                     session.flush()
 
                 # Listing should be part of a section but possible that it isn't
@@ -245,28 +243,29 @@ def get_new_orders():
                         session,
                         production_partner_space.production_partner_id)
                     if production_partner is None:
-                        production_partner = EtsyProductionPartner.create(production_partner_space, listings=[listing])
+                        production_partner = EtsyProductionPartner.create(production_partner_space)
                         session.add(production_partner)
                         session.flush()
                     else:
-                        production_partner.update(production_partner, listings=[listing])
+                        production_partner.update(production_partner)
                         session.flush()
                     production_partners.append(production_partner)
 
+                listing.update(production_partners=production_partners, overwrite_list=True)
+
                 shipping_upgrades = []
-                shipping_upgrades_repsonse = etsy_api.get_shop_shipping_profile_upgrades(
+                shipping_upgrades_response = etsy_api.get_shop_shipping_profile_upgrades(
                     listing_space.shop_id, listing_space.shipping_profile_id)
-                for shipping_upgrade in shipping_upgrades_repsonse['results']:
+                for shipping_upgrade in shipping_upgrades_response['results']:
                     shipping_upgrade_space = EtsyShippingProfileUpgradeSpace(shipping_upgrade)
                     shipping_upgrade = EtsyShippingProfileUpgrade.get_existing(session,
                                                                                shipping_upgrade_space.upgrade_id)
                     if shipping_upgrade is None:
-                        shipping_upgrade = EtsyShippingProfileUpgrade.create(shipping_upgrade_space,
-                                                                             shipping_profile=shipping_profile)
+                        shipping_upgrade = EtsyShippingProfileUpgrade.create(shipping_upgrade_space)
                         session.add(shipping_upgrade)
                         session.flush()
                     else:
-                        shipping_upgrade.update(shipping_upgrade_space, shipping_profile=shipping_profile)
+                        shipping_upgrade.update(shipping_upgrade_space)
                         session.flush()
                     shipping_upgrades.append(shipping_upgrade)
 
@@ -278,14 +277,16 @@ def get_new_orders():
                     shipping_destination = EtsyShippingProfileDestination.get_existing(
                         session, shipping_destination_space.shipping_profile_destination_id)
                     if shipping_destination is None:
-                        shipping_destination = EtsyShippingProfileDestination.create(shipping_destination_space,
-                                                                                     shipping_profile=shipping_profile)
+                        shipping_destination = EtsyShippingProfileDestination.create(shipping_destination_space)
                         session.add(shipping_destination)
                         session.flush()
                     else:
-                        shipping_destination.update(shipping_destination_space, shipping_profile=shipping_profile)
+                        shipping_destination.update(shipping_destination_space)
                         session.flush()
                     shipping_destinations.append(shipping_destination)
+
+                shipping_profile.update(upgrades=shipping_upgrades, destinations=shipping_destinations,
+                                        overwrite_lists=True)
 
                 # Call endpoint to get more info about the product, then update / create a product record
                 product_response = etsy_api.get_listing_product(transaction_space.listing_id,
@@ -312,8 +313,8 @@ def get_new_orders():
                     session.add(product)
                     session.flush()
                 else:
-                    product.update(product_space, properties=product_properties, listings=[listing],
-                                   offerings=offerings)
+                    product.update(product_space, listings=[listing])
+                    product.update(properties=product_properties, offerings=offerings, overwrite_lists=True)
                     session.flush()
 
                 # Check for existing transaction
@@ -327,7 +328,8 @@ def get_new_orders():
                     session.flush()
                 else:
                     transaction.update(transaction_space, buyer=buyer, seller=seller, product=product,
-                                       shipping_profile=shipping_profile, product_properties=product_properties)
+                                       shipping_profile=shipping_profile)
+                    transaction.update(product_properties=product_properties, overwrite_list=True)
                     session.flush()
                 transactions.append(transaction)
 
@@ -341,8 +343,8 @@ def get_new_orders():
                 session.flush()
             else:
                 receipt_c.update(receipt_space, order_status=OrderStatus.INCOMPLETE,
-                                 address=address, buyer=buyer, seller=seller, transactions=transactions,
-                                 receipt_shipments=receipt_shipments)
+                                 address=address, buyer=buyer, seller=seller)
+                receipt_c.update(transactions=transactions, receipt_shipments=receipt_shipments, overwrite_list=True)
                 session.flush()
 
         session.commit()

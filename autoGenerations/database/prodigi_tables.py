@@ -691,7 +691,7 @@ class ProdigiCharge(Base):
     _order_id = Column(Integer, ForeignKey('prodigi_order.id'))
     order = relationship("ProdigiOrder", uselist=False, back_populates="charges")
 
-    # one to
+    # one to one
     total_cost = relationship("ProdigiCost", uselist=False, back_populates="charge",
                               cascade="all, delete, delete-orphan")
 
@@ -762,7 +762,8 @@ class ProdigiChargeItem(Base):
     # relationships
 
     # one to one
-    cost = relationship("ProdigiCost", uselist=False, back_populates="charge_item", cascade="all, delete, delete-orphan")
+    cost = relationship("ProdigiCost", uselist=False, back_populates="charge_item",
+                        cascade="all, delete, delete-orphan")
 
     # many to one
     _charge_id = Column(Integer, ForeignKey('prodigi_charge.id'))

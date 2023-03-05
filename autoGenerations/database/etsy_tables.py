@@ -45,8 +45,6 @@ buyer_address_association_table = Table(
 # still marks the disk record as dirty and sends an update... maybe. So have to do check in all of the update methods to
 # make most efficient transaction. Better safe than inefficient
 
-# TODO: Overwriting any of the many-to-one or many-to-many relationships with the update method and overwrite_lists=True
-#  will probably result in a lot of orphaned objects. Think about getting rid of that option
 
 def merge_lists(list1, list2):
     return list1 + [i for i in list2 if i not in list1]
@@ -84,16 +82,20 @@ class EtsyReceipt(Base):
     gift_wrap_price = Column(Float)
 
     # relationships
+
+    # many to one
     _address_id = Column(Integer, ForeignKey('address.id'))
     address = relationship("Address", uselist=False, back_populates='receipts')
     _buyer_id = Column(Integer, ForeignKey('etsy_buyer.id'))
     buyer = relationship("EtsyBuyer", uselist=False, back_populates='receipts')
     _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates='receipts')
-    prodigi_orders = relationship("ProdigiOrder", back_populates="etsy_receipt")
 
-    transactions = relationship("EtsyTransaction", back_populates='receipt')
-    receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt')
+    # one to many
+    prodigi_orders = relationship("ProdigiOrder", back_populates="etsy_receipt", cascade="all, delete, delete-orphan")
+    transactions = relationship("EtsyTransaction", back_populates='receipt', cascade="all, delete, delete-orphan")
+    receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt',
+                                     cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
@@ -254,6 +256,8 @@ class EtsySeller(Base):
     email = Column(String)
 
     # relationships
+
+    # one to many
     receipts = relationship('EtsyReceipt', back_populates='seller')
     transactions = relationship("EtsyTransaction", back_populates='seller')
     listings = relationship("EtsyListing", back_populates='seller')
@@ -350,8 +354,12 @@ class EtsyBuyer(Base):
     name = Column(String)
 
     # relationships
+
+    # one to many
     receipts = relationship('EtsyReceipt', back_populates='buyer')
     transactions = relationship("EtsyTransaction", back_populates='buyer')
+
+    # many to many
     addresses: Mapped[List[Address]] = relationship(
         secondary=buyer_address_association_table, back_populates='buyers')
 
@@ -426,7 +434,11 @@ class Address(Base):
     formatted = Column(String)
 
     # relationships
+
+    # one to many
     receipts = relationship('EtsyReceipt', back_populates='address')
+
+    # many to many
     buyers: Mapped[List[EtsyBuyer]] = relationship(
         secondary=buyer_address_association_table, back_populates='addresses')
     prodigi_recipients: Mapped[List[ProdigiRecipient]] = relationship(
@@ -507,6 +519,8 @@ class EtsyTransaction(Base):
     shop_coupon = Column(Integer)
 
     # relationships
+
+    # many to one
     _shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship('EtsyShippingProfile', uselist=False, back_populates='transactions')
     _receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
@@ -518,7 +532,7 @@ class EtsyTransaction(Base):
     _product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship('EtsyProduct', uselist=False, back_populates='transactions')
 
-    # Many to Many relationship
+    # many to many
     product_properties: Mapped[List[EtsyProductProperty]] = relationship(
         secondary=transaction_product_data_association_table, back_populates='transactions')
 
@@ -589,7 +603,7 @@ class EtsyTransaction(Base):
             EtsyTransaction.transaction_id == int(transaction_id)
         ).first()
 
-    def update(self, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]],
+    def update(self, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]] = None,
                fulfillment_status: TransactionFulfillmentStatus = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
@@ -598,45 +612,47 @@ class EtsyTransaction(Base):
                receipt: EtsyReceipt = None,
                product_properties: List[EtsyProductProperty] = None,
                overwrite_list: bool = False):
-        if not isinstance(transaction_data, EtsyTransactionSpace):
-            transaction_data = self.create_namespace(transaction_data)
 
-        if self.title != transaction_data.title:
-            self.title = transaction_data.title
-        if self.description != transaction_data.description:
-            self.description = transaction_data.description
-        if self.create_timestamp != transaction_data.create_timestamp:
-            self.create_timestamp = transaction_data.create_timestamp
-        if self.paid_timestamp != transaction_data.paid_timestamp:
-            self.paid_timestamp = transaction_data.paid_timestamp
-        if self.shipped_timestamp != transaction_data.shipped_timestamp:
-            self.shipped_timestamp = transaction_data.shipped_timestamp
-        if self.quantity != transaction_data.quantity:
-            self.quantity = transaction_data.quantity
-        if self.is_digital != transaction_data.is_digital:
-            self.is_digital = transaction_data.is_digital
-        if self.file_data != transaction_data.file_date:
-            self.file_data = transaction_data.file_date
-        if self.transaction_type != transaction_data.transaction_type:
-            self.transaction_type = transaction_data.transaction_type
-        if self.price != transaction_data.price:
-            self.price = transaction_data.price
-        if self.shipping_cost != transaction_data.shipping_cost:
-            self.shipping_cost = transaction_data.shipping_cost
-        if self.min_processing_days != transaction_data.min_processing_days:
-            self.min_processing_days = transaction_data.min_processing_days
-        if self.max_processing_days != transaction_data.max_processing_days:
-            self.max_processing_days = transaction_data.max_processing_days
-        if self.shipping_method != transaction_data.shipping_method:
-            self.shipping_method = transaction_data.shipping_method
-        if self.shipping_upgrade != transaction_data.shipping_upgrade:
-            self.shipping_upgrade = transaction_data.shipping_upgrade
-        if self.expected_ship_date != transaction_data.expected_ship_date:
-            self.expected_ship_date = transaction_data.expected_ship_date
-        if self.buyer_coupon != transaction_data.buyer_coupon:
-            self.buyer_coupon = transaction_data.buyer_coupon
-        if self.shop_coupon != transaction_data.shop_coupon:
-            self.shop_coupon = transaction_data.shop_coupon
+        if transaction_data is not None:
+            if not isinstance(transaction_data, EtsyTransactionSpace):
+                transaction_data = self.create_namespace(transaction_data)
+
+            if self.title != transaction_data.title:
+                self.title = transaction_data.title
+            if self.description != transaction_data.description:
+                self.description = transaction_data.description
+            if self.create_timestamp != transaction_data.create_timestamp:
+                self.create_timestamp = transaction_data.create_timestamp
+            if self.paid_timestamp != transaction_data.paid_timestamp:
+                self.paid_timestamp = transaction_data.paid_timestamp
+            if self.shipped_timestamp != transaction_data.shipped_timestamp:
+                self.shipped_timestamp = transaction_data.shipped_timestamp
+            if self.quantity != transaction_data.quantity:
+                self.quantity = transaction_data.quantity
+            if self.is_digital != transaction_data.is_digital:
+                self.is_digital = transaction_data.is_digital
+            if self.file_data != transaction_data.file_data:
+                self.file_data = transaction_data.file_data
+            if self.transaction_type != transaction_data.transaction_type:
+                self.transaction_type = transaction_data.transaction_type
+            if self.price != transaction_data.price:
+                self.price = transaction_data.price
+            if self.shipping_cost != transaction_data.shipping_cost:
+                self.shipping_cost = transaction_data.shipping_cost
+            if self.min_processing_days != transaction_data.min_processing_days:
+                self.min_processing_days = transaction_data.min_processing_days
+            if self.max_processing_days != transaction_data.max_processing_days:
+                self.max_processing_days = transaction_data.max_processing_days
+            if self.shipping_method != transaction_data.shipping_method:
+                self.shipping_method = transaction_data.shipping_method
+            if self.shipping_upgrade != transaction_data.shipping_upgrade:
+                self.shipping_upgrade = transaction_data.shipping_upgrade
+            if self.expected_ship_date != transaction_data.expected_ship_date:
+                self.expected_ship_date = transaction_data.expected_ship_date
+            if self.buyer_coupon != transaction_data.buyer_coupon:
+                self.buyer_coupon = transaction_data.buyer_coupon
+            if self.shop_coupon != transaction_data.shop_coupon:
+                self.shop_coupon = transaction_data.shop_coupon
 
         if fulfillment_status is not None and self.fulfillment_status != fulfillment_status:
             self.fulfillment_status = fulfillment_status
@@ -673,9 +689,15 @@ class EtsyProduct(Base):
     is_deleted = Column(Boolean)
 
     # relationships
+
+    # one to many
     transactions = relationship("EtsyTransaction", back_populates='product')
-    offerings = relationship("EtsyOffering", back_populates='product')
-    properties = relationship("EtsyProductProperty", back_populates='product')
+    offerings = relationship("EtsyOffering", back_populates='product',
+                             cascade="all, delete, delete-orphan")
+    properties = relationship("EtsyProductProperty", back_populates='product',
+                              cascade="all, delete, delete-orphan")
+
+    # many to many
     listings: Mapped[List[EtsyListing]] = relationship(
         secondary=listing_product_association_table, back_populates="products"
     )
@@ -718,20 +740,22 @@ class EtsyProduct(Base):
     def get_existing(session, product_id: int) -> Union[None, EtsyProduct]:
         return session.query(EtsyProduct).filter(EtsyProduct.product_id == int(product_id)).first()
 
-    def update(self, product_data: Union[EtsyProductSpace, Dict[str, Any]],
+    def update(self, product_data: Union[EtsyProductSpace, Dict[str, Any]] = None,
                transactions: List[EtsyTransaction] = None,
                offerings: List[EtsyOffering] = None,
                properties: List[EtsyProductProperty] = None,
                listings: List[EtsyListing] = None,
-               overwrite_lists: Boolean = False
+               overwrite_lists: bool = False
                ):
-        if not isinstance(product_data, EtsyProductSpace):
-            product_data = self.create_namespace(product_data)
 
-        if self.sku != product_data.sku:
-            self.sku = product_data.sku
-        if self.is_deleted != product_data.is_deleted:
-            self.is_deleted = product_data.is_deleted
+        if product_data is not None:
+            if not isinstance(product_data, EtsyProductSpace):
+                product_data = self.create_namespace(product_data)
+
+            if self.sku != product_data.sku:
+                self.sku = product_data.sku
+            if self.is_deleted != product_data.is_deleted:
+                self.is_deleted = product_data.is_deleted
 
         if transactions is not None:
             self.transactions = transactions if overwrite_lists else merge_lists(self.transactions, transactions)
@@ -765,10 +789,16 @@ class EtsyShippingProfile(Base):
     internation_handling_fee = Column(Float)
 
     # relationships
+
+    # many to one
     _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates="shipping_profiles")
-    destinations = relationship("EtsyShippingProfileDestination", back_populates='shipping_profile')
-    upgrades = relationship("EtsyShippingProfileUpgrade", back_populates='shipping_profile')
+
+    # one to many
+    destinations = relationship("EtsyShippingProfileDestination", back_populates='shipping_profile',
+                                cascade="all, delete, delete-orphan")
+    upgrades = relationship("EtsyShippingProfileUpgrade", back_populates='shipping_profile',
+                            cascade="all, delete, delete-orphan")
     transactions = relationship("EtsyTransaction", back_populates='shipping_profile')
     listings = relationship("EtsyListing", back_populates="shipping_profile")
 
@@ -824,37 +854,39 @@ class EtsyShippingProfile(Base):
             EtsyShippingProfile.shipping_profile_id == int(shipping_profile_id)
         ).first()
 
-    def update(self, shipping_profile_data: Union[EtsyShippingProfile, Dict[str, Any]],
+    def update(self, shipping_profile_data: Union[EtsyShippingProfile, Dict[str, Any]] = None,
                seller: EtsySeller = None,
                destinations: List[EtsyShippingProfileDestination] = None,
                upgrades: List[EtsyShippingProfileUpgrade] = None,
                transactions: List[EtsyTransaction] = None,
                listings: List[EtsyListing] = None,
-               overwrite_lists: Boolean = False
+               overwrite_lists: bool = False
                ):
-        if not isinstance(shipping_profile_data, EtsyShippingProfileSpace):
-            shipping_profile_data = self.create_namespace(shipping_profile_data)
 
-        if self.title != shipping_profile_data.title:
-            self.title = shipping_profile_data.title
-        if self.min_processing_days != shipping_profile_data.min_processing_days:
-            self.min_processing_days = shipping_profile_data.min_processing_days
-        if self.max_processing_days != shipping_profile_data.max_processing_days:
-            self.max_processing_days = shipping_profile_data.max_processing_days
-        if self.processing_days_display_label != shipping_profile_data.processing_days_display_label:
-            self.processing_days_display_label = shipping_profile_data.processing_days_display_label
-        if self.origin_country_iso != shipping_profile_data.origin_country_iso:
-            self.origin_country_iso = shipping_profile_data.origin_country_iso
-        if self.is_deleted != shipping_profile_data.is_deleted:
-            self.is_deleted = shipping_profile_data.is_deleted
-        if self.origin_postal_code != shipping_profile_data.origin_postal_code:
-            self.origin_postal_code = shipping_profile_data.origin_postal_code
-        if self.profile_type != shipping_profile_data.profile_type:
-            self.profile_type = shipping_profile_data.profile_type
-        if self.domestic_handling_fee != shipping_profile_data.domestic_handling_fee:
-            self.domestic_handling_fee = shipping_profile_data.domestic_handling_fee
-        if self.internation_handling_fee != shipping_profile_data.international_handling_fee:
-            self.internation_handling_fee = shipping_profile_data.international_handling_fee
+        if shipping_profile_data is not None:
+            if not isinstance(shipping_profile_data, EtsyShippingProfileSpace):
+                shipping_profile_data = self.create_namespace(shipping_profile_data)
+
+            if self.title != shipping_profile_data.title:
+                self.title = shipping_profile_data.title
+            if self.min_processing_days != shipping_profile_data.min_processing_days:
+                self.min_processing_days = shipping_profile_data.min_processing_days
+            if self.max_processing_days != shipping_profile_data.max_processing_days:
+                self.max_processing_days = shipping_profile_data.max_processing_days
+            if self.processing_days_display_label != shipping_profile_data.processing_days_display_label:
+                self.processing_days_display_label = shipping_profile_data.processing_days_display_label
+            if self.origin_country_iso != shipping_profile_data.origin_country_iso:
+                self.origin_country_iso = shipping_profile_data.origin_country_iso
+            if self.is_deleted != shipping_profile_data.is_deleted:
+                self.is_deleted = shipping_profile_data.is_deleted
+            if self.origin_postal_code != shipping_profile_data.origin_postal_code:
+                self.origin_postal_code = shipping_profile_data.origin_postal_code
+            if self.profile_type != shipping_profile_data.profile_type:
+                self.profile_type = shipping_profile_data.profile_type
+            if self.domestic_handling_fee != shipping_profile_data.domestic_handling_fee:
+                self.domestic_handling_fee = shipping_profile_data.domestic_handling_fee
+            if self.internation_handling_fee != shipping_profile_data.international_handling_fee:
+                self.internation_handling_fee = shipping_profile_data.international_handling_fee
 
         if seller is not None and self.seller != seller:
             self.seller = seller
@@ -894,6 +926,8 @@ class EtsyShippingProfileDestination(Base):
     max_delivery_days = Column(Integer)
 
     # relationships
+
+    # many to one
     _shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="destinations")
 
@@ -984,6 +1018,8 @@ class EtsyShippingProfileUpgrade(Base):
     max_delivery_days = Column(Integer)
 
     # relationships
+
+    # many to one
     _shipping_profile_id = Column(Integer, ForeignKey('etsy_shipping_profile.id'))
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="upgrades")
 
@@ -1066,6 +1102,8 @@ class EtsyReceiptShipment(Base):
     tracking_code = Column(String)
 
     # relationships
+
+    # many to one
     _receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
     receipt = relationship('EtsyReceipt', uselist=False, back_populates='receipt_shipments')
 
@@ -1132,8 +1170,12 @@ class EtsyProductProperty(Base):
     scale_name = Column(String)
 
     # relationships
+
+    # many to one
     _product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship("EtsyProduct", uselist=False, back_populates='properties')
+
+    # many to many
     transactions: Mapped[List[EtsyTransaction]] = relationship(
         secondary=transaction_product_data_association_table, back_populates="product_properties"
     )
@@ -1242,6 +1284,8 @@ class EtsyListing(Base):
     views = Column(Integer)
 
     # relationships
+
+    # many to one
     _shipping_profile_id = Column(Integer, ForeignKey("etsy_shipping_profile.id"))
     shipping_profile = relationship("EtsyShippingProfile", uselist=False, back_populates="listings")
     _seller_id = Column(Integer, ForeignKey("etsy_seller.id"))
@@ -1253,11 +1297,13 @@ class EtsyListing(Base):
     _return_policy_id = Column(Integer, ForeignKey('etsy_return_policy.id'))
     return_policy = relationship("EtsyReturnPolicy", uselist=False, back_populates="listings")
 
+    # many to many
     products: Mapped[List[EtsyProduct]] = relationship(
         secondary=listing_product_association_table, back_populates="listings"
     )
     production_partners: Mapped[List[EtsyProductionPartner]] = relationship(
-        secondary=listing_production_partner_association_table, back_populates="listings"
+        secondary=listing_production_partner_association_table, back_populates="listings",
+        cascade="all, delete-orphan"
     )
 
     @classmethod
@@ -1355,7 +1401,7 @@ class EtsyListing(Base):
             EtsyListing.listing_id == int(listing_id)
         ).first()
 
-    def update(self, listing_data: Union[EtsyListingSpace, Dict[str, Any]],
+    def update(self, listing_data: Union[EtsyListingSpace, Dict[str, Any]] = None,
                shipping_profile: EtsyShippingProfile = None,
                seller: EtsySeller = None,
                shop: EtsyShop = None,
@@ -1365,99 +1411,101 @@ class EtsyListing(Base):
                production_partners: List[EtsyProductionPartner] = None,
                overwrite_list: bool = False
                ):
-        if not isinstance(listing_data, EtsyListingSpace):
-            listing_data = self.create_namespace(listing_data)
 
-        if self.title != listing_data.title:
-            self.title = listing_data.title
-        if self.description != listing_data.description:
-            self.description = listing_data.description
-        if self.state != listing_data.state:
-            self.state = listing_data.state
-        if self.creation_timestamp != listing_data.creation_timestamp:
-            self.creation_timestamp = listing_data.creation_timestamp
-        if self.created_timestamp != listing_data.created_timestamp:
-            self.created_timestamp = listing_data.created_timestamp
-        if self.ending_timestamp != listing_data.ending_timestamp:
-            self.ending_timestamp = listing_data.ending_timestamp
-        if self.original_creation_timestamp != listing_data.original_creation_timestamp:
-            self.original_creation_timestamp = listing_data.original_creation_timestamp
-        if self.last_modified_timestamp != listing_data.last_modified_timestamp:
-            self.last_modified_timestamp = listing_data.last_modified_timestamp
-        if self.updated_timestamp != listing_data.updated_timestamp:
-            self.updated_timestamp = listing_data.updated_timestamp
-        if self.state_timestamp != listing_data.state_timestamp:
-            self.state_timestamp = listing_data.state_timestamp
-        if self.quantity != listing_data.quantity:
-            self.quantity = listing_data.quantity
-        if self.featured_rank != listing_data.featured_rank:
-            self.featured_rank = listing_data.featured_rank
-        if self.url != listing_data.url:
-            self.url = listing_data.url
-        if self.num_favorers != listing_data.num_favorers:
-            self.num_favorers = listing_data.num_favorers
-        if self.non_taxable != listing_data.non_taxable:
-            self.non_taxable = listing_data.non_taxable
-        if self.is_taxable != listing_data.is_taxable:
-            self.is_taxable = listing_data.is_taxable
-        if self.is_customizable != listing_data.is_customizable:
-            self.is_customizable = listing_data.is_customizable
-        if self.is_personalizable != listing_data.is_personalizable:
-            self.is_personalizable = listing_data.is_personalizable
-        if self.personalization_is_required != listing_data.personalization_is_required:
-            self.personalization_is_required = listing_data.personalization_is_required
-        if self.personalization_char_count_max != listing_data.personalization_char_count_max:
-            self.personalization_char_count_max = listing_data.personalization_char_count_max
-        if self.personalization_instructions != listing_data.personalization_instructions:
-            self.personalization_instructions = listing_data.personalization_instructions
-        if self.listing_type != listing_data.listing_type:
-            self.listing_type = listing_data.listing_type
-        if self.tags != listing_data.tags:
-            self.tags = listing_data.tags
-        if self.materials != listing_data.materials:
-            self.materials = listing_data.materials
-        if self.processing_min != listing_data.processing_min:
-            self.processing_min = listing_data.processing_min
-        if self.processing_max != listing_data.processing_max:
-            self.processing_max = listing_data.processing_max
-        if self.who_made != listing_data.who_made:
-            self.who_made = listing_data.who_made
-        if self.when_made != listing_data.when_made:
-            self.when_made = listing_data.when_made
-        if self.is_supply != listing_data.is_supply:
-            self.is_supply = listing_data.is_supply
-        if self.item_weight != listing_data.item_weight:
-            self.item_weight = listing_data.item_weight
-        if self.item_weight_unit != listing_data.item_weight_unit:
-            self.item_weight_unit = listing_data.item_weight_unit
-        if self.item_length != listing_data.item_length:
-            self.item_length = listing_data.item_length
-        if self.item_width != listing_data.item_width:
-            self.item_width = listing_data.item_width
-        if self.item_height != listing_data.item_height:
-            self.item_height = listing_data.item_height
-        if self.item_dimensions_unit != listing_data.item_dimensions_unit:
-            self.item_dimensions_unit = listing_data.item_dimensions_unit
-        if self.is_private != listing_data.is_private:
-            self.is_private = listing_data.is_private
-        if self.style != listing_data.style:
-            self.style = listing_data.style
-        if self.file_data != listing_data.file_data:
-            self.file_data = listing_data.file_data
-        if self.has_variations != listing_data.has_variations:
-            self.has_variations = listing_data.has_variations
-        if self.should_auto_renew != listing_data.should_auto_renew:
-            self.should_auto_renew = listing_data.should_auto_renew
-        if self.language != listing_data.language:
-            self.language = listing_data.language
-        if self.price != listing_data.price:
-            self.price = listing_data.price
-        if self.taxonomy_id != listing_data.taxonomy_id:
-            self.taxonomy_id = listing_data.taxonomy_id
-        if self.skus != listing_data.skus:
-            self.skus = listing_data.skus
-        if self.views != listing_data.views:
-            self.views = listing_data.views
+        if listing_data is not None:
+            if not isinstance(listing_data, EtsyListingSpace):
+                listing_data = self.create_namespace(listing_data)
+
+            if self.title != listing_data.title:
+                self.title = listing_data.title
+            if self.description != listing_data.description:
+                self.description = listing_data.description
+            if self.state != listing_data.state:
+                self.state = listing_data.state
+            if self.creation_timestamp != listing_data.creation_timestamp:
+                self.creation_timestamp = listing_data.creation_timestamp
+            if self.created_timestamp != listing_data.created_timestamp:
+                self.created_timestamp = listing_data.created_timestamp
+            if self.ending_timestamp != listing_data.ending_timestamp:
+                self.ending_timestamp = listing_data.ending_timestamp
+            if self.original_creation_timestamp != listing_data.original_creation_timestamp:
+                self.original_creation_timestamp = listing_data.original_creation_timestamp
+            if self.last_modified_timestamp != listing_data.last_modified_timestamp:
+                self.last_modified_timestamp = listing_data.last_modified_timestamp
+            if self.updated_timestamp != listing_data.updated_timestamp:
+                self.updated_timestamp = listing_data.updated_timestamp
+            if self.state_timestamp != listing_data.state_timestamp:
+                self.state_timestamp = listing_data.state_timestamp
+            if self.quantity != listing_data.quantity:
+                self.quantity = listing_data.quantity
+            if self.featured_rank != listing_data.featured_rank:
+                self.featured_rank = listing_data.featured_rank
+            if self.url != listing_data.url:
+                self.url = listing_data.url
+            if self.num_favorers != listing_data.num_favorers:
+                self.num_favorers = listing_data.num_favorers
+            if self.non_taxable != listing_data.non_taxable:
+                self.non_taxable = listing_data.non_taxable
+            if self.is_taxable != listing_data.is_taxable:
+                self.is_taxable = listing_data.is_taxable
+            if self.is_customizable != listing_data.is_customizable:
+                self.is_customizable = listing_data.is_customizable
+            if self.is_personalizable != listing_data.is_personalizable:
+                self.is_personalizable = listing_data.is_personalizable
+            if self.personalization_is_required != listing_data.personalization_is_required:
+                self.personalization_is_required = listing_data.personalization_is_required
+            if self.personalization_char_count_max != listing_data.personalization_char_count_max:
+                self.personalization_char_count_max = listing_data.personalization_char_count_max
+            if self.personalization_instructions != listing_data.personalization_instructions:
+                self.personalization_instructions = listing_data.personalization_instructions
+            if self.listing_type != listing_data.listing_type:
+                self.listing_type = listing_data.listing_type
+            if self.tags != listing_data.tags:
+                self.tags = listing_data.tags
+            if self.materials != listing_data.materials:
+                self.materials = listing_data.materials
+            if self.processing_min != listing_data.processing_min:
+                self.processing_min = listing_data.processing_min
+            if self.processing_max != listing_data.processing_max:
+                self.processing_max = listing_data.processing_max
+            if self.who_made != listing_data.who_made:
+                self.who_made = listing_data.who_made
+            if self.when_made != listing_data.when_made:
+                self.when_made = listing_data.when_made
+            if self.is_supply != listing_data.is_supply:
+                self.is_supply = listing_data.is_supply
+            if self.item_weight != listing_data.item_weight:
+                self.item_weight = listing_data.item_weight
+            if self.item_weight_unit != listing_data.item_weight_unit:
+                self.item_weight_unit = listing_data.item_weight_unit
+            if self.item_length != listing_data.item_length:
+                self.item_length = listing_data.item_length
+            if self.item_width != listing_data.item_width:
+                self.item_width = listing_data.item_width
+            if self.item_height != listing_data.item_height:
+                self.item_height = listing_data.item_height
+            if self.item_dimensions_unit != listing_data.item_dimensions_unit:
+                self.item_dimensions_unit = listing_data.item_dimensions_unit
+            if self.is_private != listing_data.is_private:
+                self.is_private = listing_data.is_private
+            if self.style != listing_data.style:
+                self.style = listing_data.style
+            if self.file_data != listing_data.file_data:
+                self.file_data = listing_data.file_data
+            if self.has_variations != listing_data.has_variations:
+                self.has_variations = listing_data.has_variations
+            if self.should_auto_renew != listing_data.should_auto_renew:
+                self.should_auto_renew = listing_data.should_auto_renew
+            if self.language != listing_data.language:
+                self.language = listing_data.language
+            if self.price != listing_data.price:
+                self.price = listing_data.price
+            if self.taxonomy_id != listing_data.taxonomy_id:
+                self.taxonomy_id = listing_data.taxonomy_id
+            if self.skus != listing_data.skus:
+                self.skus = listing_data.skus
+            if self.views != listing_data.views:
+                self.views = listing_data.views
 
         if shipping_profile is not None and self.shipping_profile != shipping_profile:
             self.shipping_profile = shipping_profile
@@ -1494,8 +1542,12 @@ class EtsyReturnPolicy(Base):
     return_deadline = Column(Integer)
 
     # relationships
+
+    # many to one
     _shop_id = Column(Integer, ForeignKey("etsy_shop.id"))
     shop = relationship("EtsyShop", uselist=False, back_populates="return_policies")
+
+    # one to many
     listings = relationship("EtsyListing", back_populates="return_policy")
 
     @classmethod
@@ -1563,10 +1615,14 @@ class EtsyShopSection(Base):
     active_listing_count = Column(Integer)
 
     # relationships
+
+    # many to one
     _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates="shop_sections")
     _shop_id = Column(Integer, ForeignKey('etsy_shop.id'))
     shop = relationship("EtsyShop", uselist=False, back_populates="shop_sections")
+
+    # one to many
     listings = relationship("EtsyListing", back_populates="shop_section")
 
     @classmethod
@@ -1639,6 +1695,8 @@ class EtsyProductionPartner(Base):
     location = Column(String)
 
     # relationships
+
+    # many to many
     listings: Mapped[List[EtsyListing]] = relationship(
         secondary=listing_production_partner_association_table, back_populates="production_partners"
     )
@@ -1737,11 +1795,15 @@ class EtsyShop(Base):
     review_average = Column(Float)
 
     # relationships
+
+    # many to one
     _seller_id = Column(Integer, ForeignKey('etsy_seller.id'))
     seller = relationship("EtsySeller", uselist=False, back_populates="shops")
-    listings = relationship("EtsyListing", back_populates="shop")
-    return_policies = relationship("EtsyReturnPolicy", back_populates="shop")
-    shop_sections = relationship("EtsyShopSection", back_populates="shop")
+
+    # one to many
+    listings = relationship("EtsyListing", back_populates="shop", cascade="all, delete, delete-orphan")
+    return_policies = relationship("EtsyReturnPolicy", back_populates="shop", cascade="all, delete, delete-orphan")
+    shop_sections = relationship("EtsyShopSection", back_populates="shop", cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, shop_data: Union[EtsyShopSpace, Dict[str, Any]],
@@ -1947,7 +2009,9 @@ class EtsyOffering(Base):
     price = Column(Float)
 
     # relationships
-    product_id = Column(Integer, ForeignKey('etsy_product.id'))
+
+    # many to one
+    _product_id = Column(Integer, ForeignKey('etsy_product.id'))
     product = relationship("EtsyProduct", uselist=False, back_populates='offerings')
 
     @classmethod

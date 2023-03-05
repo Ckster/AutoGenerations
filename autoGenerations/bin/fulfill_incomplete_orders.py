@@ -6,7 +6,7 @@ from database.utils import make_engine
 from database.etsy_tables import EtsyReceipt, Address
 from database.prodigi_tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost, ProdigiShipment, \
     ProdigiItem, ProdigiRecipient, ProdigiPackingSlip, ProdigiShipmentItem, ProdigiFulfillmentLocation, ProdigiAsset, \
-    ProdigiIssue, ProdigiAuthorizationDetail, ProdigiChargeItem
+    ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem
 from database.enums import Prodigi, OrderStatus, TransactionFulfillmentStatus
 from apis.prodigi import API
 from alerts.email import send_mail
