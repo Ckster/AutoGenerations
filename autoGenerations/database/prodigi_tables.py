@@ -416,21 +416,6 @@ class ProdigiAsset(Base):
             ProdigiAsset.url == asset_data.url
         ).first()
 
-    def update(self, asset_data: Union[ProdigiAssetSpace, Dict[str, Any]],
-               items: List[ProdigiItem] = None,
-               overwrite_list: bool = False
-               ):
-        if not isinstance(asset_data, ProdigiAssetSpace):
-            asset_data = self.create_namespace(asset_data)
-
-        if self.print_area != asset_data.print_area:
-            self.print_area = asset_data.print_area
-        if self.url != asset_data.url:
-            self.url = asset_data.url
-
-        if items is not None:
-            self.items = items if overwrite_list else merge_lists(self.items, items)
-
 
 class ProdigiRecipient(Base):
     """
@@ -478,9 +463,10 @@ class ProdigiRecipient(Base):
     def create_namespace(recipient_data: Dict[str, Any]) -> ProdigiRecipientSpace:
         return ProdigiRecipientSpace(recipient_data)
 
-    def get_existing(self, session, recipient_data: Union[ProdigiRecipientSpace, Dict[str, Any]]):
+    @staticmethod
+    def get_existing(session, recipient_data: Union[ProdigiRecipientSpace, Dict[str, Any]]):
         if not isinstance(recipient_data, ProdigiRecipientSpace):
-            recipient_data = self.create_namespace(recipient_data)
+            recipient_data = ProdigiRecipient.create_namespace(recipient_data)
         return session.query(ProdigiRecipient).filter(
             ProdigiRecipient.name == recipient_data.name
         ).filter(

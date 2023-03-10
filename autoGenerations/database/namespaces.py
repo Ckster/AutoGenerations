@@ -7,6 +7,9 @@ from datetime import datetime
 _SPECIAL_CHAR = '|'
 
 
+# TODO: Add divisor and currency code for each amount
+
+
 def list_string_encode(list_of_strings: List[str]) -> str:
     """
     sqlite does not support array column types (postgres does), so in order to keep development db the same as
@@ -55,13 +58,32 @@ class EtsyReceiptSpace:
         self.is_gift = receipt['is_gift']
         self.gift_message = receipt['gift_message']
         self.grand_total = receipt['grandtotal']['amount']
+        self.grand_total_divisor = receipt['grandtotal']['divisor']
+        self.grand_total_currency_code = receipt['grandtotal']['currency_code']
         self.sub_total = receipt['subtotal']['amount']
+        self.sub_total_divisor = receipt['subtotal']['divisor']
+        self.sub_total_currency_code = receipt['subtotal']['currency_code']
         self.total_price = receipt['total_price']['amount']
+        self.total_price_divisor = receipt['total_price']['divisor']
+        self.total_price_currency_code = receipt['total_price']['currency_code']
         self.shipping_cost = receipt['total_shipping_cost']['amount']
+        self.shipping_cost_divisor = receipt['total_shipping_cost']['divisor']
+        self.shipping_cost_currency_code = receipt['total_shipping_cost']['currency_code']
         self.tax_cost = receipt['total_tax_cost']['amount']
+        self.tax_cost_divisor = receipt['total_tax_cost']['divisor']
+        self.tax_cost_currency_code = receipt['total_tax_cost']['currency_code']
         self.vat_cost = receipt['total_vat_cost']['amount']
+        self.vat_cost_divisor = receipt['total_vat_cost']['divisor']
+        self.vat_cost_currency_code = receipt['total_vat_cost']['currency_code']
         self.discount = receipt['discount_amt']['amount']
+        self.discount_divisor = receipt['discount_amt']['divisor']
+        self.discount_currency_code = receipt['discount_amt']['currency_code']
         self.gift_wrap_price = receipt['gift_wrap_price']['amount']
+        self.gift_wrap_price_divisor = receipt['gift_wrap_price']['divisor']
+        self.gift_wrap_price_currency_code = receipt['gift_wrap_price']['currency_code']
+        self.refunds = receipt['refunds']
+        self.shipments = receipt['shipments']
+        self.transactions = receipt['transactions']
 
 
 class EtsyBuyerSpace:
@@ -344,6 +366,17 @@ class EtsyOfferingSpace:
         self.is_enabled = offering_data['is_enabled']
         self.is_deleted = offering_data['is_deleted']
         self.price = offering_data['price']['amount']
+
+
+class EtsyRefundSpace:
+    def __init__(self, refund_data: Dict):
+        self.amount = refund_data['amount']['amount']
+        self.amount_divisor = refund_data['amount']['divisor']
+        self.amount_currency_code = refund_data['amount']['currency_code']
+        self.created_timestamp = datetime.utcfromtimestamp(refund_data['created_timestamp'])
+        self.reason = refund_data['reason']
+        self.note_from_issuer = refund_data['note_from_issuer']
+        self.status = refund_data['status']
 
 
 class ProdigiOrderSpace:

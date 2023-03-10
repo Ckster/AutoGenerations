@@ -1,12 +1,13 @@
 from apis.etsy import API as EtsyAPI
 from database.namespaces import EtsyReceiptShipmentSpace, EtsyProductPropertySpace, EtsyListingSpace, EtsyShopSpace, \
     EtsyShopSectionSpace, EtsyReturnPolicySpace, EtsyShippingProfileSpace, EtsyProductionPartnerSpace, \
-    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyProductSpace, EtsyOfferingSpace
+    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyProductSpace, EtsyOfferingSpace, \
+    EtsyRefundSpace
 from database.utils import make_engine
 from database.etsy_tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
-    EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination, EtsyOffering
-from database.enums import OrderStatus, TransactionFulfillmentStatus
+    EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination, EtsyOffering, EtsyRefund
+from database.enums import OrderStatus, Etsy
 
 from sqlalchemy.orm import Session
 
@@ -83,7 +84,8 @@ product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': Fals
                                  'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}}],
                   'property_values': []}
 
-# TODO: Communicate any changes to existing Prodigi Orders - shipping changes, cancellations etc.
+# TODO: Handle digital products differently here
+# TODO: Add refunds table
 
 
 def get_new_orders():
@@ -94,7 +96,7 @@ def get_new_orders():
 
         # Our database
         earliest_incomplete_order = session.query(EtsyReceipt).filter(
-            EtsyReceipt.order_status != OrderStatus.INCOMPLETE
+            EtsyReceipt.order_status == OrderStatus.INCOMPLETE
         ).order_by(
             EtsyReceipt.create_timestamp.asc()
         ).first()
@@ -106,6 +108,14 @@ def get_new_orders():
         print(f"Processing {orders['count']} orders")
         for receipt in orders['results']:
             receipt_space = EtsyReceipt.create_namespace(receipt)
+
+            # Check if receipt exists
+            receipt_c = EtsyReceipt.get_existing(session, receipt_space.receipt_id)
+
+            # Skip any complete or canceled orders
+            if receipt_c is not None:
+                if receipt_c.order_status != OrderStatus.INCOMPLETE:
+                    continue
 
             # Check if the address exists
             address = Address.get_existing(session, receipt_space.zip, receipt_space.city, receipt_space.state,
@@ -140,7 +150,7 @@ def get_new_orders():
 
             # Create new shipments
             receipt_shipments = []
-            for shipment in receipt['shipments']:
+            for shipment in receipt.shipments:
                 shipment_space = EtsyReceiptShipmentSpace(shipment)
                 receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
                 if receipt_shipment is None:
@@ -152,9 +162,16 @@ def get_new_orders():
                     session.flush()
                 receipt_shipments.append(receipt_shipment)
 
+            # Create new refunds
+            refunds = []
+            for refund_dict in receipt_space.refunds:
+                refund_space = EtsyRefundSpace(refund_dict)
+                refund = EtsyRefund.create(refund_space)
+                refunds.append(refund)
+
             # Create new transactions
             transactions = []
-            for transaction in receipt['transactions']:
+            for transaction in receipt.transactions:
                 transaction_space = EtsyTransaction.create_namespace(transaction)
 
                 # Get list of existing / created product properties
@@ -251,6 +268,7 @@ def get_new_orders():
                         session.flush()
                     production_partners.append(production_partner)
 
+                # overwrite_list=True will solve the problem of removed production partners
                 listing.update(production_partners=production_partners, overwrite_list=True)
 
                 shipping_upgrades = []
@@ -285,6 +303,7 @@ def get_new_orders():
                         session.flush()
                     shipping_destinations.append(shipping_destination)
 
+                # overwrite_lists=True solves the problem of removed shipping upgrades or destinations
                 shipping_profile.update(upgrades=shipping_upgrades, destinations=shipping_destinations,
                                         overwrite_lists=True)
 
@@ -314,6 +333,8 @@ def get_new_orders():
                     session.flush()
                 else:
                     product.update(product_space, listings=[listing])
+
+                    # overwrite_lists=True solves the problem of removed product properties or offerings
                     product.update(properties=product_properties, offerings=offerings, overwrite_lists=True)
                     session.flush()
 
@@ -321,7 +342,7 @@ def get_new_orders():
                 transaction = EtsyTransaction.get_existing(session, transaction_space.transaction_id)
                 if transaction is None:
                     transaction = EtsyTransaction.create(
-                        transaction_space, fulfillment_status=TransactionFulfillmentStatus.NEEDS_FULFILLMENT,
+                        transaction_space,
                         buyer=buyer, seller=seller, product=product, shipping_profile=shipping_profile,
                         product_properties=product_properties)
                     session.add(transaction)
@@ -329,22 +350,31 @@ def get_new_orders():
                 else:
                     transaction.update(transaction_space, buyer=buyer, seller=seller, product=product,
                                        shipping_profile=shipping_profile)
+
+                    # overwrite_lists=True solves the problem of removed product properties
                     transaction.update(product_properties=product_properties, overwrite_list=True)
                     session.flush()
                 transactions.append(transaction)
 
-            # Check if receipt exists
-            receipt_c = EtsyReceipt.get_existing(session, receipt_space.receipt_id)
+            # If the existing order is complete then we will have already gone on to the next item in the loop i.e. we
+            # change a COMPLETE order to INCOMPLETE here
+            order_status = OrderStatus.INCOMPLETE if receipt_space.status != Etsy.OrderStatus.CANCELED else\
+                OrderStatus.CANCELED
+            needs_fulfillment = order_status == OrderStatus.INCOMPLETE
             if receipt_c is None:
-                receipt_c = EtsyReceipt.create(receipt_space, order_status=OrderStatus.INCOMPLETE,
-                                               address=address, buyer=buyer, seller=seller,
-                                               transactions=transactions, receipt_shipments=receipt_shipments)
+                receipt_c = EtsyReceipt.create(receipt_space, needs_fulfillment=needs_fulfillment,
+                                               order_status=order_status, address=address, buyer=buyer, seller=seller,
+                                               transactions=transactions, refunds=refunds,
+                                               receipt_shipments=receipt_shipments)
                 session.add(receipt_c)
                 session.flush()
             else:
-                receipt_c.update(receipt_space, order_status=OrderStatus.INCOMPLETE,
-                                 address=address, buyer=buyer, seller=seller)
-                receipt_c.update(transactions=transactions, receipt_shipments=receipt_shipments, overwrite_list=True)
+                # Updating of the address and cancellation status will be communicated to Prodigi semi-manually
+                receipt_c.update(receipt_space, order_status=order_status, address=address, buyer=buyer, seller=seller,
+                                 transactions=transactions, receipt_shipments=receipt_shipments)
+
+                # Refunds don't have an ID so just going to overwrite them every time and delete the orphaned ones
+                receipt_c.update(refunds=refunds, overwrite_list=True)
                 session.flush()
 
         session.commit()

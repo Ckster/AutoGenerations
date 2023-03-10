@@ -1,13 +1,6 @@
 import enum
 
 
-class TransactionFulfillmentStatus(enum.Enum):
-    NEEDS_FULFILLMENT = 'needs_fulfillment'
-    IN_PROGRESS = 'in_progress'
-    COMPLETED = 'completed'
-    ORDER_CANCELED = 'order_canceled'
-
-
 class OrderStatus(enum.Enum):
     INCOMPLETE = 'incomplete'
     COMPLETE = 'complete'
@@ -92,8 +85,6 @@ class Prodigi:
         COMPLETED = "completed"
         PARTIALLY_COMPLETE = "partiallyComplete"
         FAILED = "failed"
-
-
 
 
 class Etsy:

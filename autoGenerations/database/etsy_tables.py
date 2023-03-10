@@ -1,11 +1,12 @@
 from __future__ import annotations
 from typing import List, Union, Dict, Any
 from database.utils import Base, make_engine
-from database.enums import Etsy, OrderStatus, TransactionFulfillmentStatus
+from database.enums import Etsy, OrderStatus
 from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, EtsySellerSpace, EtsyBuyerSpace, \
     EtsyTransactionSpace, AddressSpace, EtsyProductPropertySpace, EtsyProductSpace, EtsyShippingProfileSpace, \
     EtsyProductionPartnerSpace, EtsyListingSpace, EtsyOfferingSpace, EtsyShopSectionSpace, EtsyReturnPolicySpace, \
-    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace, ProdigiAddressSpace
+    EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyShopSpace, ProdigiAddressSpace, \
+    EtsyRefundSpace
 from database.prodigi_tables import recipient_address_association_table, ProdigiRecipient, ProdigiOrder
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -60,6 +61,7 @@ class EtsyReceipt(Base):
     receipt_type = Column(Integer)
     status = Column(Enum(Etsy.OrderStatus))
     order_status = Column(Enum(OrderStatus))
+    needs_fulfillment = Column(Boolean, default=False)
     payment_method = Column(String)
     message_from_seller = Column(String)
     message_from_buyer = Column(String)
@@ -72,14 +74,30 @@ class EtsyReceipt(Base):
     updated_timestamp = Column(DateTime)
     is_gift = Column(Boolean)
     gift_message = Column(String)
-    grand_total = Column(Float)
-    sub_total = Column(Float)
-    total_price = Column(Float)
-    shipping_cost = Column(Float)
-    tax_cost = Column(Float)
-    vat_cost = Column(Float)
-    discount = Column(Float)
-    gift_wrap_price = Column(Float)
+    grand_total = Column(Integer)
+    grand_total_divisor = Column(Integer)
+    grand_total_currency_code = Column(String)
+    sub_total = Column(Integer)
+    sub_total_divisor = Column(Integer)
+    sub_total_currency_code = Column(String)
+    total_price = Column(Integer)
+    total_price_divisor = Column(Integer)
+    total_price_currency_code = Column(String)
+    shipping_cost = Column(Integer)
+    shipping_cost_divisor = Column(Integer)
+    shipping_cost_currency_code = Column(String)
+    tax_cost = Column(Integer)
+    tax_cost_divisor = Column(Integer)
+    tax_cost_currency_code = Column(String)
+    vat_cost = Column(Integer)
+    vat_cost_divisor = Column(Integer)
+    vat_cost_currency_code = Column(String)
+    discount = Column(Integer)
+    discount_divisor = Column(Integer)
+    discount_currency_code = Column(String)
+    gift_wrap_price = Column(Integer)
+    gift_wrap_price_divisor = Column(Integer)
+    gift_wrap_price_currency_code = Column(String)
 
     # relationships
 
@@ -96,16 +114,19 @@ class EtsyReceipt(Base):
     transactions = relationship("EtsyTransaction", back_populates='receipt', cascade="all, delete, delete-orphan")
     receipt_shipments = relationship("EtsyReceiptShipment", back_populates='receipt',
                                      cascade="all, delete, delete-orphan")
+    refunds = relationship("EtsyRefund", back_populates="receipt", cascade="all, delete, delete-orphan")
 
     @classmethod
     def create(cls, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]],
                order_status: OrderStatus = None,
+               needs_fulfillment: bool = None,
                address: Address = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                transactions: List[EtsyTransaction] = None,
                receipt_shipments: List[EtsyReceiptShipment] = None,
-               prodigi_orders: List[ProdigiOrder] = None
+               prodigi_orders: List[ProdigiOrder] = None,
+               refunds: List[EtsyRefund] = None
                ) -> EtsyReceipt:
         if not isinstance(receipt_data, EtsyReceiptSpace):
             receipt_data = cls.create_namespace(receipt_data)
@@ -127,17 +148,36 @@ class EtsyReceipt(Base):
             is_gift=receipt_data.is_gift,
             gift_message=receipt_data.gift_message,
             grand_total=receipt_data.grand_total,
+            grand_total_divisor=receipt_data.grand_total_divisor,
+            grand_total_currency_code=receipt_data.grand_total_currency_code,
             sub_total=receipt_data.sub_total,
+            sub_total_divisor=receipt_data.sub_total_divisor,
+            sub_total_currency_code=receipt_data.sub_total_currency_code,
             total_price=receipt_data.total_price,
+            total_price_divisor=receipt_data.total_price_divisor,
+            total_price_currency_code=receipt_data.total_price_currency_code,
             shipping_cost=receipt_data.shipping_cost,
+            shipping_cost_divisor=receipt_data.shipping_cost_divisor,
+            shipping_cost_currency_code=receipt_data.shipping_cost_currency_code,
             tax_cost=receipt_data.tax_cost,
+            tax_cost_divisor=receipt_data.tax_cost_divisor,
+            tax_cost_currency_code=receipt_data.tax_cost_currency_code,
             vat_cost=receipt_data.vat_cost,
+            vat_cost_divisor=receipt_data.vat_cost_divisor,
+            vat_cost_currency_code=receipt_data.vat_cost_currency_code,
             discount=receipt_data.discount,
-            gift_wrap_price=receipt_data.gift_wrap_price
+            discount_divisor=receipt_data.discount_divisor,
+            discount_currency_code=receipt_data.discount_currency_code,
+            gift_wrap_price=receipt_data.gift_wrap_price,
+            gift_wrap_price_divisor=receipt_data.gift_wrap_price_divisor,
+            gift_wrap_price_currency_code=receipt_data.gift_wrap_price_currency_code
         )
 
         if order_status is not None:
             receipt.order_status = order_status
+
+        if needs_fulfillment is not None:
+            receipt.needs_fulfillment = needs_fulfillment
 
         if address is not None:
             receipt.address = address
@@ -157,6 +197,9 @@ class EtsyReceipt(Base):
         if prodigi_orders is not None:
             receipt.prodigi_orders = prodigi_orders
 
+        if refunds is not None:
+            receipt.refunds = refunds
+
         return receipt
 
     @staticmethod
@@ -169,12 +212,14 @@ class EtsyReceipt(Base):
 
     def update(self, receipt_data: Union[EtsyReceiptSpace, Dict[str, Any]] = None,
                order_status: OrderStatus = None,
+               needs_fulfillment: bool = None,
                address: Address = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                transactions: List[EtsyTransaction] = None,
                receipt_shipments: List[EtsyReceiptShipment] = None,
                prodigi_orders: List[ProdigiOrder] = None,
+               refunds: List[EtsyRefund] = None,
                overwrite_list: bool = False
                ):
         if receipt_data is not None:
@@ -211,23 +256,58 @@ class EtsyReceipt(Base):
                 self.gift_message = receipt_data.gift_message
             if self.grand_total != receipt_data.grand_total:
                 self.grand_total = receipt_data.grand_total
+            if self.grand_total_divisor != receipt_data.grand_total_divisor:
+                self.grand_total_divisor = receipt_data.grand_total_divisor
+            if self.grand_total_currency_code != receipt_data.grand_total_currency_code:
+                self.grand_total_currency_code = receipt_data.grand_total_currency_code
             if self.sub_total != receipt_data.sub_total:
                 self.sub_total = receipt_data.sub_total
+            if self.sub_total_divisor != receipt_data.sub_total_divisor:
+                self.sub_total_divisor = receipt_data.sub_total_divisor
+            if self.sub_total_currency_code != receipt_data.sub_total_currency_code:
+                self.sub_total_currency_code = receipt_data.sub_total_currency_code
             if self.total_price != receipt_data.total_price:
                 self.total_price = receipt_data.total_price
+            if self.total_price_divisor != receipt_data.total_price_divisor:
+                self.total_price_divisor = receipt_data.total_price_divisor
+            if self.total_price_currency_code != receipt_data.total_price_currency_code:
+                self.total_price_currency_code = receipt_data.total_price_currency_code
             if self.shipping_cost != receipt_data.shipping_cost:
                 self.shipping_cost = receipt_data.shipping_cost
+            if self.shipping_cost_divisor != receipt_data.shipping_cost_divisor:
+                self.shipping_cost_divisor = receipt_data.shipping_cost_divisor
+            if self.shipping_cost_currency_code != receipt_data.shipping_cost_currency_code:
+                self.shipping_cost_currency_code = receipt_data.shipping_cost_currency_code
             if self.tax_cost != receipt_data.tax_cost:
                 self.tax_cost = receipt_data.tax_cost
+            if self.tax_cost_divisor != receipt_data.tax_cost_divisor:
+                self.tax_cost_divisor = receipt_data.tax_cost_divisor
+            if self.tax_cost_currency_code != receipt_data.tax_cost_currency_code:
+                self.tax_cost_currency_code = receipt_data.tax_cost_currency_code
             if self.vat_cost != receipt_data.vat_cost:
                 self.vat_cost = receipt_data.vat_cost
+            if self.vat_cost_divisor != receipt_data.vat_cost_divisor:
+                self.vat_cost_divisor = receipt_data.vat_cost_divisor
+            if self.vat_cost_currency_code != receipt_data.vat_cost_currency_code:
+                self.vat_cost_currency_code = receipt_data.vat_cost_currency_code
             if self.discount != receipt_data.discount:
                 self.discount = receipt_data.discount
+            if self.discount_divisor != receipt_data.discount_divisor:
+                self.discount_divisor = receipt_data.discount_divisor
+            if self.discount_currency_code != receipt_data.discount_currency_code:
+                self.discount_currency_code = receipt_data.discount_currency_code
             if self.gift_wrap_price != receipt_data.gift_wrap_price:
                 self.gift_wrap_price = receipt_data.gift_wrap_price
+            if self.gift_wrap_price_divisor != receipt_data.gift_wrap_price_divisor:
+                self.gift_wrap_price_divisor = receipt_data.gift_wrap_price_divisor
+            if self.gift_wrap_price_currency_code != receipt_data.gift_wrap_price_currency_code:
+                self.gift_wrap_price_currency_code = receipt_data.gift_wrap_price_currency_code
 
         if order_status is not None and self.order_status != order_status:
             self.order_status = order_status
+
+        if needs_fulfillment is not None and self.needs_fulfillment != needs_fulfillment:
+            self.needs_fulfillment = needs_fulfillment
 
         if address is not None and self.address != address:
             self.address = address
@@ -247,6 +327,9 @@ class EtsyReceipt(Base):
 
         if prodigi_orders is not None:
             self.prodigi_orders = prodigi_orders if overwrite_list else merge_lists(self.prodigi_orders, prodigi_orders)
+
+        if refunds is not None:
+            self.refunds = refunds if overwrite_list else merge_lists(self.refunds, refunds)
 
 
 class EtsySeller(Base):
@@ -499,7 +582,6 @@ class EtsyTransaction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     transaction_id = Column(BigInteger, unique=True)
     title = Column(String)
-    fulfillment_status = Column(Enum(TransactionFulfillmentStatus))
     description = Column(String)
     create_timestamp = Column(DateTime)
     paid_timestamp = Column(DateTime)
@@ -538,7 +620,6 @@ class EtsyTransaction(Base):
 
     @classmethod
     def create(cls, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]],
-               fulfillment_status: TransactionFulfillmentStatus = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                product: EtsyProduct = None,
@@ -569,9 +650,6 @@ class EtsyTransaction(Base):
             buyer_coupon=transaction_data.buyer_coupon,
             shop_coupon=transaction_data.shop_coupon
         )
-
-        if fulfillment_status is not None:
-            transaction.fulfillment_status = fulfillment_status
 
         if buyer is not None:
             transaction.buyer = buyer
@@ -604,7 +682,6 @@ class EtsyTransaction(Base):
         ).first()
 
     def update(self, transaction_data: Union[EtsyTransactionSpace, Dict[str, Any]] = None,
-               fulfillment_status: TransactionFulfillmentStatus = None,
                buyer: EtsyBuyer = None,
                seller: EtsySeller = None,
                shipping_profile: EtsyShippingProfile = None,
@@ -653,9 +730,6 @@ class EtsyTransaction(Base):
                 self.buyer_coupon = transaction_data.buyer_coupon
             if self.shop_coupon != transaction_data.shop_coupon:
                 self.shop_coupon = transaction_data.shop_coupon
-
-        if fulfillment_status is not None and self.fulfillment_status != fulfillment_status:
-            self.fulfillment_status = fulfillment_status
 
         if buyer is not None and self.buyer != buyer:
             self.buyer = buyer
@@ -2059,6 +2133,49 @@ class EtsyOffering(Base):
 
         if product is not None and self.product != product:
             self.product = product
+
+
+class EtsyRefund(Base):
+    __tablename__ = 'etsy_refund'
+    id = Column(Integer, primary_key=True)
+    amount = Column(Float)
+    amount_divisor = Column(Integer)
+    amount_currency_code = Column(String)
+    created_timestamp = Column(DateTime)
+    reason = Column(String)
+    note_from_issuer = Column(String)
+    status = Column(String)
+
+    # relationships
+
+    # many to one
+    _receipt_id = Column(Integer, ForeignKey('etsy_receipt.id'))
+    receipt = relationship("EtsyReceipt", uselist=False, back_populates='refunds')
+
+    @classmethod
+    def create(cls, refund_data: Union[EtsyRefundSpace, Dict[str, Any]],
+               receipt: EtsyReceipt = None) -> EtsyRefund:
+        if not isinstance(refund_data, EtsyRefundSpace):
+            refund_data = cls.create_namespace(refund_data)
+
+        refund = cls(
+            amount=refund_data.amount,
+            amount_divisor=refund_data.amount_divisor,
+            amount_currency_code=refund_data.amount_currency_code,
+            created_timestamp=refund_data.created_timestamp,
+            reason=refund_data.reason,
+            note_from_issuer=refund_data.note_from_issuer,
+            status=refund_data.status
+        )
+
+        if receipt is not None:
+            refund.receipt = receipt
+
+        return receipt
+
+    @staticmethod
+    def create_namespace(receipt_data: Dict[str, Any]):
+        return EtsyReceiptSpace(receipt_data)
 
 
 def create_database():

@@ -7,7 +7,7 @@ from database.etsy_tables import EtsyReceipt, Address
 from database.prodigi_tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost, ProdigiShipment, \
     ProdigiItem, ProdigiRecipient, ProdigiPackingSlip, ProdigiShipmentItem, ProdigiFulfillmentLocation, ProdigiAsset, \
     ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem
-from database.enums import Prodigi, OrderStatus, TransactionFulfillmentStatus
+from database.enums import Prodigi, OrderStatus, Etsy
 from apis.prodigi import API
 from alerts.email import send_mail
 
@@ -19,34 +19,36 @@ def main():
     with Session(make_engine()) as session:
 
         # Receipts will become complete when all transactions for that receipt have been completed
-        incomplete_receipts = session.query(EtsyReceipt).filter(
+        unfulfilled_paid_receipts = session.query(EtsyReceipt).filter(
             EtsyReceipt.order_status == OrderStatus.INCOMPLETE
+        ).filter(
+            EtsyReceipt.needs_fulfillment
+        ).filter(
+            EtsyReceipt.status == Etsy.OrderStatus.PAID
         ).all()
 
-        for receipt in incomplete_receipts:
+        for receipt in unfulfilled_paid_receipts:
 
             # TODO: Add support for gifts
             items_to_order = []
             for transaction in receipt.transactions:
-                if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
 
-                    # TODO: Use transaction SKU to get prodigi SKU
-                    sku = transaction.product.sku.split('%')[-1]
+                # TODO: Use transaction SKU to get prodigi SKU
+                sku_split = transaction.product.sku.split('%')
+                sku = sku_split[-2]
+                url = sku_split[-1]
 
-                    # TODO: Customize any more stuff here
-                    # TODO: Make the merchantReference the product name that the customer will see
-                    items_to_order.append({
-                        "merchantReference": 'Product name',
-                        "sku": sku,
-                        "copies": transaction.quantity,
-                        "sizing": "fillPrintArea",
-                        "assets": [
-                            {
-                                "printArea": "default",
-                                "url": "https://your-image-url/image.png"  # TODO: Get asset url from SKU
-                            }
-                        ]
-                    })
+                items_to_order.append({
+                    "sku": sku,
+                    "copies": transaction.quantity,
+                    "sizing": "fillPrintArea",
+                    "assets": [
+                        {
+                            "printArea": "default",
+                            "url": url
+                        }
+                    ]
+                })
 
             if not items_to_order:
                 continue
@@ -56,10 +58,8 @@ def main():
 
             if outcome == Prodigi.CreateOrderOutcome.CREATED.value:
 
-                # Order was successful so each transaction should be updated to IN_PROGRESS
-                for transaction in receipt.transactions:
-                    if transaction.fulfillment_status == TransactionFulfillmentStatus.NEEDS_FULFILLMENT:
-                        transaction.fulfillment_status = TransactionFulfillmentStatus.IN_PROGRESS
+                # Order was successful so receipt no longer needs fulfillment
+                receipt.needs_fulfillment = False
 
                 prodigi_order_space = ProdigiOrderSpace(order_response['order'])
 
@@ -79,7 +79,7 @@ def main():
                     cost_space = ProdigiCostSpace(charge_space.total_cost)
                     cost = ProdigiCost.create(cost_space)
 
-                    charge = ProdigiCharge.create(charge_space, items=charge_items, total_cost=cost)
+                    charge = ProdigiCharge.create(charge_space, charge_items=charge_items, total_cost=cost)
                     session.add(charge)
                     charges.append(charge)
 
@@ -97,11 +97,9 @@ def main():
 
                     fulfillment_location_space = ProdigiFulfillmentLocationSpace(
                         shipment_space.fulfillment_location)
-                    fulfillment_location = ProdigiFulfillmentLocation.get_existing(fulfillment_location_space)
-                    if fulfillment_location is None:
-                        fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
+                    fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
 
-                    shipment = ProdigiShipment.create(shipment_space, items=shipment_items,
+                    shipment = ProdigiShipment.create(shipment_space, shipment_items=shipment_items,
                                                       fulfillment_location=fulfillment_location)
                     session.add(shipment)
                     shipments.append(shipment)
@@ -114,13 +112,11 @@ def main():
                     assets = []
                     for asset_dict in item_space.assets:
                         asset_space = ProdigiAssetSpace(asset_dict)
-                        asset = ProdigiAsset.get_existing(asset_space)
+                        asset = ProdigiAsset.get_existing(session, asset_space)
                         if asset is None:
                             asset = ProdigiAsset.create(asset_space)
                             session.add(asset)
                             session.flush()
-                        else:
-                            asset.update(asset_space)
                         assets.append(asset)
 
                     cost_space = ProdigiCostSpace(item_space.recipient_cost)
@@ -135,7 +131,7 @@ def main():
                 issues = []
                 for issue_dict in status_space.issues:
                     authorization_space = ProdigiAuthorizationDetailsSpace(issue_space.authorization_details)
-                    authorization = ProdigiAuthorizationDetail.create(authorization_space)
+                    authorization = ProdigiAuthorizationDetails.create(authorization_space)
 
                     issue_space = ProdigiIssueSpace(issue_dict)
                     issue = ProdigiIssue.create(issue_space, authorization_details=authorization)
@@ -156,7 +152,7 @@ def main():
                     session.add(address)
                     session.flush()
 
-                recipient = ProdigiRecipient.get_existing(recipient_space)
+                recipient = ProdigiRecipient.get_existing(session, recipient_space)
                 if receipt is None:
                     recipient = ProdigiRecipient.create(recipient_space, addresses=[address])
                     session.add(recipient)
@@ -179,3 +175,5 @@ def main():
             else:
                 error_string = f"For Etsy receipt id: {receipt.etsy_id} \nProdigi Outcome: {outcome}"
                 send_mail('Prodigi Order Creation Error', error_string)
+
+            session.commit()
