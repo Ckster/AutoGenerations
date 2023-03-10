@@ -356,8 +356,8 @@ def get_new_orders():
                     session.flush()
                 transactions.append(transaction)
 
-            # If the existing order is complete then we will have already gone on to the next item in the loop i.e. we
-            # change a COMPLETE order to INCOMPLETE here
+            # If the existing order is complete then we will have already gone on to the next item in the loop so we
+            # don't change a COMPLETE order to INCOMPLETE here
             order_status = OrderStatus.INCOMPLETE if receipt_space.status != Etsy.OrderStatus.CANCELED else\
                 OrderStatus.CANCELED
             needs_fulfillment = order_status == OrderStatus.INCOMPLETE

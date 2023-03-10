@@ -238,6 +238,7 @@ def main():
 
                 session.commit()
 
+        # Cancellations will be handled semi-manually
         if all(order.status.stage == Prodigi.StatusStage.COMPLETE for order in etsy_receipt.prodigi_orders):
             etsy_receipt.order_status = OrderStatus.COMPLETE
 
