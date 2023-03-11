@@ -24,3 +24,7 @@ def overwrite_relationship_list(session, parent_table, relationship_attr: str, n
 
     # Set the new relationship
     setattr(parent_table, relationship_attr, new_objects)
+
+
+def merge_lists(list1, list2):
+    return list1 + [i for i in list2 if i not in list1]

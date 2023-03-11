@@ -59,6 +59,7 @@ class API(Secrets):
 
     def __init__(self):
         super(API, self).__init__()
+        self._get_new_access_token()
         self._signed_header = {
             "Content-Type": "application/x-www-form-urlencoded",
             "x-api-key": self.keystring,
@@ -103,7 +104,6 @@ class API(Secrets):
             }
 
         response = requests.post(url, headers=headers, json=body)
-        print(response.json())
         if response.status_code == 200:
             data = response.json()
             new_access_token = data['access_token']
@@ -132,6 +132,16 @@ class API(Secrets):
             params['min_created'] = str(min_created)
 
         response = requests.get(url, headers=self._signed_header, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_receipt(self, receipt_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', str(receipt_id))
+
+        response = requests.get(url, headers=self._signed_header)
 
         if response.status_code == 200:
             return response.json()
@@ -263,13 +273,13 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def create_receipt_shipment(self, receipt_id: str, carrier: Carrier, tracking_code: str, note_to_buyer: str,
+    def create_receipt_shipment(self, receipt_id: str, carrier: str, tracking_code: str, note_to_buyer: str,
                                 send_bcc: bool = True):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', self.store_id, 'receipts', receipt_id,
                            'tracking')
 
         body = {
-            "carrier_name": carrier.name,
+            "carrier_name": carrier,
             "tracking_code": tracking_code,
             "send_bcc": send_bcc,
             "note_to_buyer": note_to_buyer

@@ -1,12 +1,12 @@
+from typing import List
 from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace, \
     ProdigiFulfillmentLocationSpace, ProdigiRecipientSpace, ProdigiItemSpace, ProdigiCostSpace, ProdigiAssetSpace, \
     ProdigiPackingSlipSpace, ProdigiStatusSpace, ProdigiAuthorizationDetailsSpace, ProdigiIssueSpace, \
-    ProdigiChargeItemSpace, ProdigiAddressSpace
+    ProdigiChargeItemSpace, ProdigiAddressSpace, EtsyReceiptSpace
 from database.utils import make_engine
-from database.etsy_tables import Address, EtsyReceipt
-from database.prodigi_tables import ProdigiCharge, ProdigiCost, ProdigiShipment, \
+from database.tables import ProdigiCharge, ProdigiCost, ProdigiShipment, \
     ProdigiItem, ProdigiRecipient, ProdigiPackingSlip, ProdigiShipmentItem, ProdigiFulfillmentLocation, ProdigiAsset, \
-    ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem
+    ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem, Address, EtsyReceipt
 from database.enums import Prodigi, OrderStatus, Etsy
 from apis.prodigi import API as ProdigiAPI
 from apis.etsy import API as EtsyAPI
@@ -15,7 +15,17 @@ from alerts.email import send_mail
 from sqlalchemy.orm import Session
 
 
-def main():
+def check_if_new_issue(input_issue: ProdigiIssue, existing_issues: List[ProdigiIssue]) -> bool:
+    new_issue = True
+    for issue in existing_issues:
+        if issue.object_id == input_issue.object_id and issue.error_code == input_issue.error_code and \
+                issue.description == input_issue.description:
+            new_issue = False
+            break
+    return new_issue
+
+
+def update_incomplete_orders():
     """
 
 
@@ -40,31 +50,48 @@ def main():
     etsy_api = EtsyAPI()
     with Session(make_engine()) as session:
         incomplete_fulfilled_receipts = session.query(EtsyReceipt).filter(
-            EtsyReceipt.order_status == Etsy.OrderStatus.INCOMPLETE
+            EtsyReceipt.order_status == OrderStatus.INCOMPLETE
         ).filter(
-            EtsyReceipt.needs_fulfillment == False  # TODO: Fix this
+            EtsyReceipt.needs_fulfillment == False
         ).all()
+
+        print(f'Updating {len(incomplete_fulfilled_receipts)} receipts')
 
         for etsy_receipt in incomplete_fulfilled_receipts:
 
             for prodigi_order in etsy_receipt.prodigi_orders:
                 order_information = prodigi_api.get_order(prodigi_order.prodigi_id)
-                order_information_space = ProdigiOrderSpace(order_information)
+                order_information_space = ProdigiOrderSpace(order_information['order'])
 
                 # Update the status attributes
+                status_space = ProdigiStatusSpace(order_information_space.status)
+
                 issues = []
+                new_issues = []
                 for new_issue_dict in status_space.issues:
                     new_issue_space = ProdigiIssueSpace(new_issue_dict)
-                    authorization_details_space = ProdigiAuthorizationDetailsSpace(new_issue_space.authorization_details)
-                    payment_details_space = ProdigiCostSpace(authorization_details_space.payment_details)
 
-                    payment_details = ProdigiCost.create(payment_details_space)
-                    authorization_details = ProdigiAuthorizationDetails.create(authorization_details_space,
-                                                                               payment_details=payment_details)
+                    authorization_details = None
+                    if new_issue_space.authorization_details is not None:
+                        authorization_details_space = ProdigiAuthorizationDetailsSpace(
+                            new_issue_space.authorization_details)
+                        payment_details_space = ProdigiCostSpace(authorization_details_space.payment_details)
+                        payment_details = ProdigiCost.create(payment_details_space)
+                        authorization_details = ProdigiAuthorizationDetails.create(authorization_details_space,
+                                                                                   payment_details=payment_details)
+
                     issue = ProdigiIssue.create(new_issue_space, authorization_details=authorization_details)
                     issues.append(issue)
+                    if check_if_new_issue(issue, prodigi_order.status.issues):
+                        new_issues.append(issue)
 
-                status_space = ProdigiStatusSpace(order_information_space.status)
+                send_download_assets = prodigi_order.status.download_assets != Prodigi.DetailStatus.ERROR
+                send_print_ready = prodigi_order.status.print_ready_assets_prepared != Prodigi.DetailStatus.ERROR
+                send_allocate_production = prodigi_order.status.allocate_production_location != \
+                                           Prodigi.DetailStatus.ERROR
+                send_in_production = prodigi_order.status.in_production != Prodigi.DetailStatus.ERROR
+                send_shipping = prodigi_order.status.shipping != Prodigi.DetailStatus.ERROR
+
                 prodigi_order.status.update(status_space, issues=issues, overwrite_list=True)
 
                 # Update / create charges
@@ -104,6 +131,7 @@ def main():
                 # Update / create shipments
                 received_shipments = []
                 for shipment_dict in order_information_space.shipments:
+                    print(shipment_dict)
                     shipment_space = ProdigiShipmentSpace(shipment_dict)
 
                     shipment_items = []
@@ -126,11 +154,6 @@ def main():
                         session.add(shipment)
                         session.flush()
 
-                        # Update the Etsy Receipt with shipment
-                        note_to_buyer = 'Your order has been shipped. Thank you!'
-                        etsy_api.create_receipt_shipment(receipt_id=prodigi_order.receipt.etsy_id,
-                                                         carrier=shipment.carrier, tracking_code=shipment.tracking,
-                                                         note_to_buyer=note_to_buyer, send_bcc=True)
                     else:
                         shipment.update(shipment_space, shipment_items=shipment_items, overwrite_list=True)
                         fulfillment_location = shipment.fulfillment_location
@@ -143,12 +166,29 @@ def main():
                             fulfillment_location.update(fulfillment_location_space)
                     received_shipments.append(shipment)
 
+                # When the order stage is complete then all of the orders have been sent and we can post the shipping
+                # information
+                if status_space.stage == Prodigi.StatusStage.COMPLETE:
+
+                    # Only post shipping if there are no shipments for the receipt. Don't want to duplicate shipping
+                    # information
+                    receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
+                    receipt_space = EtsyReceiptSpace(receipt_response)
+                    if not receipt_space.shipments:
+                        for shipment in received_shipments:
+                            # Update the Etsy Receipt with shipment
+                            note_to_buyer = 'Your order has been shipped. Thank you!'
+                            etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
+                                                             carrier=shipment.carrier, tracking_code=shipment.tracking,
+                                                             note_to_buyer=note_to_buyer, send_bcc=True)
+
                 # Update / create items
                 received_items = []
                 for item_dict in order_information_space.items:
                     item_space = ProdigiItemSpace(item_dict)
 
-                    recipient_cost_space = ProdigiCostSpace(item_space.recipient_cost)
+                    recipient_cost_space = ProdigiCostSpace(item_space.recipient_cost) if item_space.recipient_cost is \
+                                                                                          not None else None
 
                     assets = []
                     for asset_dict in item_space.assets:
@@ -162,29 +202,32 @@ def main():
 
                     item = ProdigiItem.get_existing(session, item_space.prodigi_id)
                     if item is None:
-                        recipient_cost = ProdigiCost.create(recipient_cost_space)
+                        recipient_cost = ProdigiCost.create(recipient_cost_space) if recipient_cost_space is not None \
+                            else None
                         item = ProdigiItem.create(item_space, recipient_cost=recipient_cost, assets=assets)
                         session.add(item)
                         session.flush()
                     else:
                         item.update(item_space, assets=assets, overwrite_list=True)
-                        recipient_cost = item.recipient_cost
-                        if recipient_cost is None:
-                            recipient_cost = ProdigiCost.create(recipient_cost_space)
-                            item.recipient_cost = recipient_cost
-                        else:
-                            recipient_cost.update(recipient_cost_space)
+                        if recipient_cost_space is not None:
+                            recipient_cost = item.recipient_cost
+                            if recipient_cost is None:
+                                recipient_cost = ProdigiCost.create(recipient_cost_space)
+                                item.recipient_cost = recipient_cost
+                            else:
+                                recipient_cost.update(recipient_cost_space)
                     received_items.append(item)
 
                 # Update / create packing slip
-                packing_slip_space = ProdigiPackingSlipSpace(order_information_space.packing_slip)
-                packing_slip = prodigi_order.packing_slip
-                if packing_slip is None:
-                    packing_slip = ProdigiPackingSlip.create(packing_slip_space)
-                    prodigi_order.packing_slip = packing_slip
-                else:
-                    packing_slip.update(packing_slip_space)
-                prodigi_order.packing_slip.update(packing_slip_space)
+                if order_information_space.packing_slip is not None:
+                    packing_slip_space = ProdigiPackingSlipSpace(order_information_space.packing_slip)
+                    packing_slip = prodigi_order.packing_slip
+                    if packing_slip is None:
+                        packing_slip = ProdigiPackingSlip.create(packing_slip_space)
+                        prodigi_order.packing_slip = packing_slip
+                    else:
+                        packing_slip.update(packing_slip_space)
+                    prodigi_order.packing_slip.update(packing_slip_space)
 
                 # Update order
                 prodigi_order.update(order_information_space, charges=received_charges, shipments=received_shipments,
@@ -208,40 +251,33 @@ def main():
                                                                  addresses=[address])
                     session.add(received_recipient)
                 else:
-                    recipient.udpdate(recipient_space, orders=[prodigi_order], addresses=[address])
+                    recipient.update(orders=[prodigi_order], addresses=[address])
 
                 status = prodigi_order.status
 
                 # Send error report if there are new errors
-                # TODO: Only send for new errors
                 email_alert = ''
-                if status.download_assets == Prodigi.DetailStatus.ERROR:
+                if status.download_assets == Prodigi.DetailStatus.ERROR and send_download_assets:
                     email_alert += 'Error downloading assets for one or more items\n'
 
-                if status.print_ready_assets_prepared == Prodigi.DetailStatus.ERROR:
+                if status.print_ready_assets_prepared == Prodigi.DetailStatus.ERROR and send_print_ready:
                     email_alert += 'Error preparing print ready assets\n'
 
-                if status.allocate_production_location == Prodigi.DetailStatus.ERROR:
+                if status.allocate_production_location == Prodigi.DetailStatus.ERROR and send_allocate_production:
                     email_alert += 'Error allocating production location\n'
 
-                if status.in_production == Prodigi.DetailStatus.ERROR:
+                if status.in_production == Prodigi.DetailStatus.ERROR and send_in_production:
                     email_alert += 'Error in production\n'
 
-                if status.shipping == Prodigi.DetailStatus.ERROR:
+                if status.shipping == Prodigi.DetailStatus.ERROR and send_shipping:
                     email_alert += 'Error with shipping\n'
 
-                if email_alert != '':
+                if new_issues:
                     email_alert += 'Issues:\n'
-                    for issue in status.issues:
+                    for issue in new_issues:
                         email_alert += issue.alert_string()
+
+                if email_alert != '':
                     send_mail(f'Order #{prodigi_order.prodigi_id} Error Report', email_alert)
 
                 session.commit()
-
-        # Cancellations will be handled semi-manually
-        if all(order.status.stage == Prodigi.StatusStage.COMPLETE for order in etsy_receipt.prodigi_orders):
-            etsy_receipt.order_status = OrderStatus.COMPLETE
-
-        # TODO: Send request to Etsy API updating the receipt to complete
-
-        session.commit()

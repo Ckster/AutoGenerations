@@ -9,81 +9,81 @@ class OrderStatus(enum.Enum):
 
 class Prodigi:
     class ShippingMethod(enum.Enum):
-        BUDGET = "Budget"
-        STANDARD = "Standard"
-        EXPRESS = "Express"
-        OVERNIGHT = "Overnight"
+        BUDGET = "budget"
+        STANDARD = "standard"
+        EXPRESS = "express"
+        OVERNIGHT = "overnight"
 
     class StatusStage(enum.Enum):
-        IN_PROGRESS = "InProgress"
-        COMPLETE = "Complete"
-        CANCELLED = "Cancelled"
+        IN_PROGRESS = "inprogress"
+        COMPLETE = "complete"
+        CANCELLED = "cancelled"
 
     class DetailStatus(enum.Enum):
-        NOT_STARTED = "NotStarted"
-        IN_PROGRESS = "InProgress"
-        COMPLETE = "Complete"
-        ERROR = "Error"
+        NOT_STARTED = "notstarted"
+        IN_PROGRESS = "inprogress"
+        COMPLETE = "complete"
+        ERROR = "error"
 
     class IssueErrorCode(enum.Enum):
-        NOT_DOWNLOADED = "order.items.assets.NotDownloaded"
-        FAILED_TO_DOWNLOAD = "order.items.assets.FailedToDownloaded"
-        ITEM_UNAVAILABLE = "order.items.assets.ItemUnavailable"
+        NOT_DOWNLOADED = "order.items.assets.notdownloaded"
+        FAILED_TO_DOWNLOAD = "order.items.assets.failedtodownloaded"
+        ITEM_UNAVAILABLE = "order.items.assets.itemunavailable"
 
     class Sizing(enum.Enum):
-        FILL_PRINT_AREA = 'fillPrintArea'
-        FIT_PRINT_AREA = 'fitPrintArea'
-        STRETCH_TO_PRINT_AREA = 'stretchToPrintArea'
+        FILL_PRINT_AREA = 'fillprintarea'
+        FIT_PRINT_AREA = 'fitprintarea'
+        STRETCH_TO_PRINT_AREA = 'stretchtoprintarea'
 
     class CreateOrderOutcome(enum.Enum):
         CREATED = "created"
-        CREATED_WITH_ISSUES = "createdWithIssues"
-        ALREADY_EXISTS = "alreadyExists"
+        CREATED_WITH_ISSUES = "createdwithissues"
+        ALREADY_EXISTS = "alreadyexists"
 
     class GetOrderOutcome(enum.Enum):
         OK = "ok"
 
     class GeneralOutcome(enum.Enum):
-        VALIDATION_FAILED = "validationFailed"
-        ENTITY_NOT_FOUND = "entityNotFound"
-        ENDPOINT_DOES_NOT_EXIST = "endpointDoesNotExist"
-        METHOD_NOT_ALLOWED = "methodNotAllowed"
-        INVALID_CONTENT_TYPE = "invalidContentType"
-        INTERNAL_SERVER_ERROR = "internalServerError"
-        TIMED_OUT = "timedOut"
+        VALIDATION_FAILED = "validationfailed"
+        ENTITY_NOT_FOUND = "entitynotfound"
+        ENDPOINT_DOES_NOT_EXIST = "endpointdoesnotexist"
+        METHOD_NOT_ALLOWED = "methodnotallowed"
+        INVALID_CONTENT_TYPE = "invalidcontenttype"
+        INTERNAL_SERVER_ERROR = "internalservererror"
+        TIMED_OUT = "timedout"
 
     class OrderStatus(enum.Enum):
         DRAFT = "draft"
-        AWAITING_PAYMENT = "awaitingPayment"
-        IN_PROGRESS = "inProgress"
+        AWAITING_PAYMENT = "awaitingpayment"
+        IN_PROGRESS = "inprogress"
         COMPLETE = "complete"
         CANCELLED = "cancelled"
 
     class CancelOrderOutcome(enum.Enum):
         CANCELLED = "cancelled"
-        FAILED_TO_CANCEL = "failedToCancel"
-        ACTION_NOT_AVAILABLE = "actionNotAvailable"
+        FAILED_TO_CANCEL = "failedtocancel"
+        ACTION_NOT_AVAILABLE = "actionnotavailable"
 
     class ShipmentUpdateErrorCode(enum.Enum):
-        UPDATE_FAILED = "order.shipments.updateFailed"
+        UPDATE_FAILED = "order.shipments.updatefailed"
         INVALID = "order.shipments.invalid"
-        NOT_AVAILABLE = "order.shipments.notAvailable"
+        NOT_AVAILABLE = "order.shipments.notavailable"
 
     class UpdateShippingMethodOutcome(enum.Enum):
         UPDATED = "updated"
-        PARTIALLY_UPDATED = "partiallyUpdated"
-        FAILED_TO_UPDATE = "failedToUpdate"
-        ACTION_NOT_AVAILABLE = "actionNotAvailable"
+        PARTIALLY_UPDATED = "partiallyupdated"
+        FAILED_TO_UPDATE = "failedtoupdate"
+        ACTION_NOT_AVAILABLE = "actionnotavailable"
 
     class UpdateRecipientOutcome(enum.Enum):
         UPDATED = "updated"
-        PARTIALLY_UPDATED = "partiallyUpdated"
-        FAILED_TO_UPDATE = "failedToUpdate"
-        ACTION_NOT_AVAILABLE = "actionNotAvailable"
+        PARTIALLY_UPDATED = "partiallyupdated"
+        FAILED_TO_UPDATE = "failedtoupdate"
+        ACTION_NOT_AVAILABLE = "actionnotavailable"
 
     class UpdateRecipientResponse(enum.Enum):
         COMPLETED = "completed"
-        PARTIALLY_COMPLETE = "partiallyComplete"
+        PARTIALLY_COMPLETE = "partiallycomplete"
         FAILED = "failed"
 
 

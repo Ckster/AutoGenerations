@@ -2,8 +2,7 @@ import os
 import json
 import requests
 from typing import List, Dict
-from database.etsy_tables import Address, EtsyBuyer, EtsyProduct, EtsyOffering, EtsySeller, EtsyTransaction
-from database.prodigi_tables import ProdigiRecipient
+from database.tables import Address, EtsyTransaction, ProdigiRecipient
 from database.enums import Prodigi
 
 from datetime import datetime
@@ -94,11 +93,10 @@ class API(Secrets):
         API Reference: https://www.prodigi.com/print-api/docs/reference/#get-order-by-id
         :return:
         """
-        url = os.path.join(BASE_URL, "order", order_id)
+        url = os.path.join(BASE_URL, "orders", order_id)
 
         headers = {
             "X-API-Key": self.access_key,
-            "Content-Type": "application/json"
         }
 
         response = requests.get(url, headers=headers)
@@ -244,7 +242,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def get_quote(self,  items: List[Dict[str]],
+    def get_quote(self,  items: List[Dict[str, str]],
                   shipping_method: Prodigi.ShippingMethod = Prodigi.ShippingMethod.BUDGET,
                   destination_country: str = 'US', currency_code: str = 'USD'):
         url = os.path.join(BASE_URL, "quotes")

@@ -4,12 +4,13 @@ from database.namespaces import EtsyReceiptShipmentSpace, EtsyProductPropertySpa
     EtsyShippingProfileUpgradeSpace, EtsyShippingProfileDestinationSpace, EtsyProductSpace, EtsyOfferingSpace, \
     EtsyRefundSpace
 from database.utils import make_engine
-from database.etsy_tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
+from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTransaction, EtsySeller, EtsyBuyer, \
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
     EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination, EtsyOffering, EtsyRefund
 from database.enums import OrderStatus, Etsy
 
 from sqlalchemy.orm import Session
+from datetime import timezone
 
 response = {'count': 1,
             'results': [{
@@ -84,11 +85,8 @@ product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': Fals
                                  'price': {'amount': 20, 'divisor': 100, 'currency_code': 'USD'}}],
                   'property_values': []}
 
-# TODO: Handle digital products differently here
-# TODO: Add refunds table
 
-
-def get_new_orders():
+def get_etsy_orders():
     etsy_api = EtsyAPI()
 
     # First get the last order that we have received that has not yet been completed
@@ -104,7 +102,8 @@ def get_new_orders():
         min_created = None if earliest_incomplete_order is None else earliest_incomplete_order.create_timestamp
 
         # Etsy API
-        orders = etsy_api.get_receipts(min_created=min_created)
+        orders = etsy_api.get_receipts(min_created=min_created.replace(tzinfo=timezone.utc).timestamp() if min_created
+                                                                                                is not None else None)
         print(f"Processing {orders['count']} orders")
         for receipt in orders['results']:
             receipt_space = EtsyReceipt.create_namespace(receipt)
@@ -150,17 +149,19 @@ def get_new_orders():
 
             # Create new shipments
             receipt_shipments = []
-            for shipment in receipt.shipments:
-                shipment_space = EtsyReceiptShipmentSpace(shipment)
-                receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
-                if receipt_shipment is None:
-                    receipt_shipment = EtsyReceiptShipment.create(shipment)
-                    session.add(receipt_shipment)
-                    session.flush()
-                else:
-                    receipt_shipment.update(shipment)
-                    session.flush()
-                receipt_shipments.append(receipt_shipment)
+            for shipment_dict in receipt_space.shipments:
+                print(shipment_dict)
+                shipment_space = EtsyReceiptShipmentSpace(shipment_dict)
+                if shipment_space.receipt_shipping_id is not None:
+                    receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
+                    if receipt_shipment is None:
+                        receipt_shipment = EtsyReceiptShipment.create(shipment_space)
+                        session.add(receipt_shipment)
+                        session.flush()
+                    else:
+                        receipt_shipment.update(shipment_space)
+                        session.flush()
+                    receipt_shipments.append(receipt_shipment)
 
             # Create new refunds
             refunds = []
@@ -171,8 +172,8 @@ def get_new_orders():
 
             # Create new transactions
             transactions = []
-            for transaction in receipt.transactions:
-                transaction_space = EtsyTransaction.create_namespace(transaction)
+            for transaction_dict in receipt_space.transactions:
+                transaction_space = EtsyTransaction.create_namespace(transaction_dict)
 
                 # Get list of existing / created product properties
                 product_properties = []
@@ -356,11 +357,12 @@ def get_new_orders():
                     session.flush()
                 transactions.append(transaction)
 
-            # If the existing order is complete then we will have already gone on to the next item in the loop so we
-            # don't change a COMPLETE order to INCOMPLETE here
-            order_status = OrderStatus.INCOMPLETE if receipt_space.status != Etsy.OrderStatus.CANCELED else\
-                OrderStatus.CANCELED
-            needs_fulfillment = order_status == OrderStatus.INCOMPLETE
+            order_status = OrderStatus.INCOMPLETE
+            if receipt_space.status == Etsy.OrderStatus.CANCELED:
+                order_status = OrderStatus.CANCELED
+            elif receipt_space.status == Etsy.OrderStatus.COMPLETED:
+                order_status = OrderStatus.COMPLETE
+            needs_fulfillment = order_status == OrderStatus.INCOMPLETE and listing.listing_type.value == 'physical'
             if receipt_c is None:
                 receipt_c = EtsyReceipt.create(receipt_space, needs_fulfillment=needs_fulfillment,
                                                order_status=order_status, address=address, buyer=buyer, seller=seller,
@@ -370,8 +372,9 @@ def get_new_orders():
                 session.flush()
             else:
                 # Updating of the address and cancellation status will be communicated to Prodigi semi-manually
-                receipt_c.update(receipt_space, order_status=order_status, address=address, buyer=buyer, seller=seller,
-                                 transactions=transactions, receipt_shipments=receipt_shipments)
+                receipt_c.update(receipt_space, order_status=order_status,
+                                 address=address, buyer=buyer, seller=seller, transactions=transactions,
+                                 receipt_shipments=receipt_shipments)
 
                 # Refunds don't have an ID so just going to overwrite them every time and delete the orphaned ones
                 receipt_c.update(refunds=refunds, overwrite_list=True)

@@ -3,10 +3,9 @@ from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiSh
     ProdigiPackingSlipSpace, ProdigiStatusSpace, ProdigiAuthorizationDetailsSpace, ProdigiIssueSpace, \
     ProdigiChargeItemSpace, ProdigiAddressSpace
 from database.utils import make_engine
-from database.etsy_tables import EtsyReceipt, Address
-from database.prodigi_tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost, ProdigiShipment, \
+from database.tables import ProdigiOrder, ProdigiStatus, ProdigiCharge, ProdigiCost, ProdigiShipment, \
     ProdigiItem, ProdigiRecipient, ProdigiPackingSlip, ProdigiShipmentItem, ProdigiFulfillmentLocation, ProdigiAsset, \
-    ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem
+    ProdigiIssue, ProdigiAuthorizationDetails, ProdigiChargeItem, EtsyReceipt, Address
 from database.enums import Prodigi, OrderStatus, Etsy
 from apis.prodigi import API
 from alerts.email import send_mail
@@ -14,7 +13,7 @@ from alerts.email import send_mail
 from sqlalchemy.orm import Session
 
 
-def main():
+def fulfill_orders():
     prodigy_api = API()
     with Session(make_engine()) as session:
 
@@ -27,14 +26,16 @@ def main():
             EtsyReceipt.status == Etsy.OrderStatus.PAID
         ).all()
 
+        print(f'Fulfilling {len(unfulfilled_paid_receipts)} orders')
+
         for receipt in unfulfilled_paid_receipts:
 
             # TODO: Add support for gifts
             items_to_order = []
             for transaction in receipt.transactions:
 
-                # TODO: Use transaction SKU to get prodigi SKU
-                sku_split = transaction.product.sku.split('%')
+                # TODO: idempotency key
+                sku_split = transaction.product.sku.split('*')
                 sku = sku_split[-2]
                 url = sku_split[-1]
 
@@ -56,7 +57,7 @@ def main():
             order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order)
             outcome = order_response['outcome']
 
-            if outcome == Prodigi.CreateOrderOutcome.CREATED.value:
+            if outcome.lower() == Prodigi.CreateOrderOutcome.CREATED.value:
 
                 # Order was successful so receipt no longer needs fulfillment
                 receipt.needs_fulfillment = False
@@ -76,8 +77,10 @@ def main():
                         session.flush()
                         charge_items.append(charge_item)
 
-                    cost_space = ProdigiCostSpace(charge_space.total_cost)
-                    cost = ProdigiCost.create(cost_space)
+                    cost = None
+                    if charge_space.total_cost is not None:
+                        cost_space = ProdigiCostSpace(charge_space.total_cost)
+                        cost = ProdigiCost.create(cost_space)
 
                     charge = ProdigiCharge.create(charge_space, charge_items=charge_items, total_cost=cost)
                     session.add(charge)
@@ -119,8 +122,10 @@ def main():
                             session.flush()
                         assets.append(asset)
 
-                    cost_space = ProdigiCostSpace(item_space.recipient_cost)
-                    cost = ProdigiCost.create(cost_space)
+                    cost = None
+                    if item_space.recipient_cost is not None:
+                        cost_space = ProdigiCostSpace(item_space.recipient_cost)
+                        cost = ProdigiCost.create(cost_space)
 
                     item = ProdigiItem.create(item_space, assets=assets, recipient_cost=cost)
                     session.add(item)
@@ -153,7 +158,7 @@ def main():
                     session.flush()
 
                 recipient = ProdigiRecipient.get_existing(session, recipient_space)
-                if receipt is None:
+                if recipient is None:
                     recipient = ProdigiRecipient.create(recipient_space, addresses=[address])
                     session.add(recipient)
                     session.flush()
@@ -161,9 +166,11 @@ def main():
                     recipient.update(recipient_space, addresses=[address])
 
                 # Create packing slip
-                packing_slip_space = ProdigiPackingSlipSpace(prodigi_order_space.packing_slip)
-                packing_slip = ProdigiPackingSlip.create(packing_slip_space)
-                session.add(packing_slip)
+                packing_slip = None
+                if prodigi_order_space.packing_slip is not None:
+                    packing_slip_space = ProdigiPackingSlipSpace(prodigi_order_space.packing_slip)
+                    packing_slip = ProdigiPackingSlip.create(packing_slip_space)
+                    session.add(packing_slip)
 
                 # Create the order object
                 prodigi_order = ProdigiOrder.create(prodigi_order_space, status=status, recipient=recipient,
@@ -173,7 +180,7 @@ def main():
                 receipt.update(prodigi_orders=[prodigi_order])
 
             else:
-                error_string = f"For Etsy receipt id: {receipt.etsy_id} \nProdigi Outcome: {outcome}"
+                error_string = f"For Etsy receipt id: {receipt.receipt_id} \nProdigi Outcome: {outcome}"
                 send_mail('Prodigi Order Creation Error', error_string)
 
             session.commit()
