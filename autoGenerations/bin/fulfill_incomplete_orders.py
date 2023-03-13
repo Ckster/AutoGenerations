@@ -1,3 +1,6 @@
+import os
+import json
+
 from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace, \
     ProdigiFulfillmentLocationSpace, ProdigiRecipientSpace, ProdigiItemSpace, ProdigiCostSpace, ProdigiAssetSpace, \
     ProdigiPackingSlipSpace, ProdigiStatusSpace, ProdigiAuthorizationDetailsSpace, ProdigiIssueSpace, \
@@ -13,8 +16,15 @@ from alerts.email import send_mail
 from sqlalchemy.orm import Session
 
 
+PROJECT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)))
+
+
 def fulfill_orders():
     prodigy_api = API()
+
+    with open(os.path.join(PROJECT_DIR, 'sku_map.json'), 'r') as f:
+        sku_map = json.load(f)
+
     with Session(make_engine()) as session:
 
         # Receipts will become complete when all transactions for that receipt have been completed
@@ -35,18 +45,18 @@ def fulfill_orders():
             for transaction in receipt.transactions:
 
                 # TODO: idempotency key
-                sku_split = transaction.product.sku.split('*')
-                sku = sku_split[-2]
-                url = sku_split[-1]
+                etsy_sku = transaction.product.sku
+                prodigi_sku = sku_map[etsy_sku]['prodigi_sku']
+                asset_url = sku_map[etsy_sku]['asset_url']
 
                 items_to_order.append({
-                    "sku": sku,
+                    "sku": prodigi_sku,
                     "copies": transaction.quantity,
                     "sizing": "fillPrintArea",
                     "assets": [
                         {
                             "printArea": "default",
-                            "url": url
+                            "url": asset_url
                         }
                     ]
                 })
