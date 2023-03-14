@@ -2761,8 +2761,8 @@ class ProdigiShipment(Base):
         return shipment
 
     @staticmethod
-    def create_namespace(order_data: Dict[str, Any]) -> ProdigiOrderSpace:
-        return ProdigiOrderSpace(order_data)
+    def create_namespace(order_data: Dict[str, Any]) -> ProdigiShipmentSpace:
+        return ProdigiShipmentSpace(order_data)
 
     @staticmethod
     def get_existing(session, prodigi_id: str) -> Union[None, ProdigiShipment]:
