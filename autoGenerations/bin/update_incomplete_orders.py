@@ -102,7 +102,6 @@ def update_incomplete_orders():
 
                     charge_items = []
                     for charge_item_dict in charge_space.items:
-                        print('cid', charge_item_dict)
                         charge_item_space = ProdigiChargeItemSpace(charge_item_dict)
                         charge_item = ProdigiChargeItem.get_existing(session, charge_item_space.prodigi_id)
                         if charge_item is None:
@@ -155,9 +154,6 @@ def update_incomplete_orders():
                         session.flush()
 
                     else:
-                        print(vars(shipment))
-                        for item in shipment_items:
-                            print(vars(item))
                         shipment.update(shipment_space, shipment_items=shipment_items)
                         fulfillment_location = shipment.fulfillment_location
                         if fulfillment_location is None:
@@ -177,14 +173,15 @@ def update_incomplete_orders():
                     # information
                     receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
                     receipt_space = EtsyReceiptSpace(receipt_response)
-                    #if not receipt_space.shipments:
-                    for shipment in received_shipments:
-                        print(shipment.tracking_number, shipment.carrier)
-                        continue
+                    if not receipt_space.shipments:
+
+                        # TODO: Map the carrier from a prodigi name to an etsy name so the tracking info is actually
+                        #  posted
+
                         # Update the Etsy Receipt with shipment
                         note_to_buyer = 'Your order has been shipped. Thank you!'
                         etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
-                                                         carrier=shipment.carrier,
+                                                         carrier=shipment.carrier.lower(),
                                                          tracking_code=shipment.tracking_number,
                                                          note_to_buyer=note_to_buyer, send_bcc=True)
 
