@@ -42,7 +42,8 @@ class API(Secrets):
         super(API, self).__init__()
         self.access_key = self.sandbox_key if sandbox_mode else self.prod_key
 
-    def create_order(self, address: Address, transaction: EtsyTransaction, items: List[Dict[str, str]]):
+    def create_order(self, address: Address, transaction: EtsyTransaction, items: List[Dict[str, str]],
+                     idempotency_key: str = None):
         """
         API Reference: https://www.prodigi.com/print-api/docs/reference/#create-order
         :param address:
@@ -58,9 +59,6 @@ class API(Secrets):
 
         # TODO: Map the shipping upgrades if we are going to do that
         shipping_method = 'Budget' if transaction.shipping_upgrade is None else transaction.shipping_upgrade
-
-        # TODO: Create a unique key for this order so prodigi can detect duplicate orders
-        idempotency_key = None
 
         body = {
             "shippingMethod": shipping_method,

@@ -8,6 +8,7 @@ from database.tables import EtsyReceipt, Address, EtsyReceiptShipment, EtsyTrans
     EtsyProduct, EtsyProductProperty, EtsyListing, EtsyShop, EtsyShopSection, EtsyReturnPolicy, EtsyShippingProfile, \
     EtsyProductionPartner, EtsyShippingProfileUpgrade, EtsyShippingProfileDestination, EtsyOffering, EtsyRefund
 from database.enums import OrderStatus, Etsy
+from alerts.email import send_mail
 
 from sqlalchemy.orm import Session
 from datetime import timezone
@@ -383,4 +384,7 @@ def get_etsy_orders():
 
 
 if __name__ == '__main__':
-    get_etsy_orders()
+    try:
+        get_etsy_orders()
+    except Exception as e:
+        send_mail('Get Etsy Orders Error', str(e))

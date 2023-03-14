@@ -2710,11 +2710,11 @@ class ProdigiShipment(Base):
     """
     API Reference: https://www.prodigi.com/print-api/docs/reference/#order-object-shipment
     """
-    # TODO: Add carrier service
     __tablename__ = 'prodigi_shipment'
     id = Column(Integer, primary_key=True)
     prodigi_id = Column(String, unique=True)
-    carrier = Column(String)
+    carrier_name = Column(String)
+    carrier_service = Column(String)
     tracking_number = Column(String)
     tracking_url = Column(String)
     dispatch_date = Column(DateTime)
@@ -2745,7 +2745,8 @@ class ProdigiShipment(Base):
 
         shipment = cls(
             prodigi_id=shipment_data.prodigi_id,
-            carrier=shipment_data.carrier,
+            carrier_name=shipment_data.carrier_name,
+            carrier_service=shipment_data.carrier_service,
             tracking_number=shipment_data.tracking_number,
             tracking_url=shipment_data.tracking_url,
             dispatch_date=shipment_data.dispatch_date
@@ -2779,8 +2780,10 @@ class ProdigiShipment(Base):
         if not isinstance(shipment_data, ProdigiShipmentSpace):
             shipment_data = self.create_namespace(shipment_data)
 
-        if self.carrier != shipment_data.carrier:
-            self.carrier = shipment_data.carrier
+        if self.carrier_name != shipment_data.carrier_name:
+            self.carrier_name = shipment_data.carrier_name
+        if self.carrier_service != shipment_data.carrier_service:
+            self.carrier_service = shipment_data.carrier_service
         if self.tracking_number != shipment_data.tracking_number:
             self.tracking_number = shipment_data.tracking_number
         if self.tracking_url != shipment_data.tracking_url:

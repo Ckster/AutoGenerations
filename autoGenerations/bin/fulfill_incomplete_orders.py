@@ -39,12 +39,9 @@ def fulfill_orders():
         print(f'Fulfilling {len(unfulfilled_paid_receipts)} orders')
 
         for receipt in unfulfilled_paid_receipts:
-
-            # TODO: Add support for gifts
             items_to_order = []
             for transaction in receipt.transactions:
 
-                # TODO: idempotency key
                 etsy_sku = transaction.product.sku
                 prodigi_sku = sku_map[etsy_sku]['prodigi_sku']
                 asset_url = sku_map[etsy_sku]['asset_url']
@@ -64,7 +61,8 @@ def fulfill_orders():
             if not items_to_order:
                 continue
 
-            order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order)
+            order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order,
+                                                      idempotency_key=receipt.receipt_id)
             outcome = order_response['outcome']
 
             if outcome.lower() == Prodigi.CreateOrderOutcome.CREATED.value:
@@ -197,4 +195,7 @@ def fulfill_orders():
 
 
 if __name__ == '__main__':
-    fulfill_orders()
+    try:
+        fulfill_orders()
+    except Exception as e:
+        send_mail('Fulfill Orders Error', str(e))

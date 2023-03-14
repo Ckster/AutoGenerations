@@ -6,9 +6,6 @@ from datetime import datetime
 _SPECIAL_CHAR = '|'
 
 
-# TODO: Add divisor and currency code for each amount
-
-
 def list_string_encode(list_of_strings: List[str]) -> str:
     """
     sqlite does not support array column types (postgres does), so in order to keep development db the same as
@@ -546,7 +543,8 @@ class ProdigiChargeItemSpace:
 class ProdigiShipmentSpace:
     def __init__(self, shipment_data: Dict):
         self.prodigi_id = parse_value(shipment_data, 'id')
-        self.carrier = parse_value(shipment_data, 'carrier', 'name')
+        self.carrier_name = parse_value(shipment_data, 'carrier', 'name')
+        self.carrier_service = parse_value(shipment_data, 'carrier', 'service')
         self.service = parse_value(shipment_data, 'carrier', 'service')
         self.tracking_number = parse_value(shipment_data, 'tracking', 'number')
         self.tracking_url = parse_value(shipment_data, 'tracking', 'url')

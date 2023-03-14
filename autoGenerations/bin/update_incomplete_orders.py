@@ -287,4 +287,7 @@ def update_incomplete_orders():
 
 
 if __name__ == '__main__':
-    update_incomplete_orders()
+    try:
+        update_incomplete_orders()
+    except Exception as e:
+        send_mail('Update Incomplete Orders Error', str(e))
