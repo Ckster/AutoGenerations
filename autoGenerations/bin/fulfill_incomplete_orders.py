@@ -63,6 +63,7 @@ def fulfill_orders():
 
             order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order,
                                                       idempotency_key=receipt.receipt_id)
+            print(order_response)
             outcome = order_response['outcome']
 
             if outcome.lower() == Prodigi.CreateOrderOutcome.CREATED.value:
@@ -186,6 +187,8 @@ def fulfill_orders():
                                                     items=items)
                 session.add(prodigi_order)
                 receipt.update(prodigi_orders=[prodigi_order])
+
+            # TODO: See if order already exists in prodigi database
 
             else:
                 error_string = f"For Etsy receipt id: {receipt.receipt_id} \nProdigi Outcome: {outcome}"
