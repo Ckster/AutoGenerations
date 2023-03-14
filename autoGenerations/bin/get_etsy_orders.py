@@ -87,6 +87,8 @@ product_sample = {'product_id': 13311969728, 'sku': 'SKU101', 'is_deleted': Fals
                   'property_values': []}
 
 
+# TODO: Restock listings when they get low. Use listing state SOLD_OUT or quantity below a certain amount
+
 def get_etsy_orders():
     etsy_api = EtsyAPI()
 

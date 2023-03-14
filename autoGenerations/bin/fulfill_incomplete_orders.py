@@ -171,7 +171,7 @@ def fulfill_orders():
                     session.add(recipient)
                     session.flush()
                 else:
-                    recipient.update(recipient_space, addresses=[address])
+                    recipient.update(addresses=[address])
 
                 # Create packing slip
                 packing_slip = None
