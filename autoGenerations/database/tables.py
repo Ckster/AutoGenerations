@@ -2791,7 +2791,7 @@ class ProdigiShipment(Base):
             self.fulfillment_location = fulfillment_location
 
         if shipment_items is not None:
-            self.shipment_items = shipment_items if overwrite_list else merge_lists(self.items, shipment_items)
+            self.shipment_items = shipment_items if overwrite_list else merge_lists(self.shipment_items, shipment_items)
 
 
 class ProdigiFulfillmentLocation(Base):
