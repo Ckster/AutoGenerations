@@ -94,17 +94,29 @@ def get_etsy_orders():
     with Session(make_engine()) as session:
 
         # Our database
+        min_created = None
+
         earliest_incomplete_order = session.query(EtsyReceipt).filter(
             EtsyReceipt.order_status == OrderStatus.INCOMPLETE
         ).order_by(
             EtsyReceipt.create_timestamp.asc()
         ).first()
 
-        min_created = None if earliest_incomplete_order is None else earliest_incomplete_order.create_timestamp
+        if earliest_incomplete_order is None:
+            last_order = session.query(EtsyReceipt).order_by(
+                EtsyReceipt.create_timestamp.desc()
+            ).first()
+
+            if last_order is not None:
+                min_created = last_order.create_timestamp
+
+        else:
+            min_created = earliest_incomplete_order.create_timestamp
 
         # Etsy API
-        orders = etsy_api.get_receipts(min_created=min_created.replace(tzinfo=timezone.utc).timestamp() if min_created
-                                                                                                is not None else None)
+        orders = etsy_api.get_receipts(min_created=min_created.replace(tzinfo=timezone.utc).timestamp()
+            if min_created is not None else None)
+
         print(f"Processing {orders['count']} orders")
         for receipt in orders['results']:
             receipt_space = EtsyReceipt.create_namespace(receipt)
