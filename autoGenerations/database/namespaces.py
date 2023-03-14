@@ -504,7 +504,7 @@ class ProdigiChargeSpace:
 class ProdigiChargeItemSpace:
     def __init__(self, charge_item_data: Dict):
         self.prodigi_id = charge_item_data['id']
-        self.description = charge_item_data['description']
+        self.description = charge_item_data['description'] if 'description' in charge_item_data else None
         self.item_sku = charge_item_data['itemSku']
         self.shipment_id = charge_item_data['shipmentId']
         self.item_id = charge_item_data['itemId']

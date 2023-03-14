@@ -150,7 +150,6 @@ def get_etsy_orders():
             # Create new shipments
             receipt_shipments = []
             for shipment_dict in receipt_space.shipments:
-                print(shipment_dict)
                 shipment_space = EtsyReceiptShipmentSpace(shipment_dict)
                 if shipment_space.receipt_shipping_id is not None:
                     receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
