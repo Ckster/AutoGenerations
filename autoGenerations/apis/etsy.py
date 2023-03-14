@@ -285,7 +285,10 @@ class API(Secrets):
             "note_to_buyer": note_to_buyer
         }
 
-        response = requests.post(url, headers=self._signed_header, json=body)
+        header = self._signed_header
+        header['Content-Type'] = 'application/json'
+
+        response = requests.post(url, headers=header, json=body)
 
         if response.status_code == 200:
             return response.json()
