@@ -194,3 +194,7 @@ def fulfill_orders():
                 send_mail('Prodigi Order Creation Error', error_string)
 
             session.commit()
+
+
+if __name__ == '__main__':
+    fulfill_orders()

@@ -381,3 +381,7 @@ def get_etsy_orders():
                 session.flush()
 
         session.commit()
+
+
+if __name__ == '__main__':
+    get_etsy_orders()

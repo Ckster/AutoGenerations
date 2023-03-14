@@ -281,3 +281,7 @@ def update_incomplete_orders():
                     send_mail(f'Order #{prodigi_order.prodigi_id} Error Report', email_alert)
 
                 session.commit()
+
+
+if __name__ == '__main__':
+    update_incomplete_orders()
