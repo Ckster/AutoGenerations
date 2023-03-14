@@ -101,6 +101,7 @@ class Etsy:
         SOLD_OUT = "sold_out"
         DRAFT = "draft"
         EXPIRED = "expired"
+        EDIT = "edit"
 
     class ListingType(enum.Enum):
         PHYSICAL = "physical"

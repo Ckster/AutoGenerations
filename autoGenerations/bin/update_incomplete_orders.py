@@ -131,7 +131,6 @@ def update_incomplete_orders():
                 # Update / create shipments
                 received_shipments = []
                 for shipment_dict in order_information_space.shipments:
-                    print(shipment_dict)
                     shipment_space = ProdigiShipmentSpace(shipment_dict)
 
                     shipment_items = []
