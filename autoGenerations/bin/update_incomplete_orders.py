@@ -155,6 +155,9 @@ def update_incomplete_orders():
                         session.flush()
 
                     else:
+                        print(vars(shipment))
+                        for item in shipment_items:
+                            print(vars(item))
                         shipment.update(shipment_space, shipment_items=shipment_items)
                         fulfillment_location = shipment.fulfillment_location
                         if fulfillment_location is None:
