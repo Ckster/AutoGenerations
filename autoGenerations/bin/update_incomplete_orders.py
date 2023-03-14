@@ -155,7 +155,7 @@ def update_incomplete_orders():
                         session.flush()
 
                     else:
-                        shipment.update(shipment_space, shipment_items=shipment_items, overwrite_list=True)
+                        shipment.update(shipment_space, shipment_items=shipment_items)
                         fulfillment_location = shipment.fulfillment_location
                         if fulfillment_location is None:
                             fulfillment_location = ProdigiFulfillmentLocation.create(fulfillment_location_space)
