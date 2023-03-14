@@ -30,7 +30,7 @@ def list_string_decode(enc: str) -> List[str]:
 
 
 def prodigi_timestamp_to_datetime(timestamp: str) -> datetime:
-    return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+    return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
 
 
 class EtsyReceiptSpace:
@@ -436,9 +436,9 @@ class ProdigiOrderSpace:
     def __init__(self, order_data: Dict):
         print(order_data)
         self.prodigi_id = order_data['id']
-        self.created = prodigi_timestamp_to_datetime(order_data['created']) if order_data['created'] is not None else\
+        self.created = prodigi_timestamp_to_datetime(order_data['created'].split('.')[0]) if order_data['created'] is not None else\
             None
-        self.last_updated = prodigi_timestamp_to_datetime(order_data['lastUpdated'][:-2]+'Z') if \
+        self.last_updated = prodigi_timestamp_to_datetime(order_data['lastUpdated'].split('.')[0]) if \
             order_data['lastUpdated'] is not None else None
         self.callback_url = order_data['callbackUrl']
         self.merchant_reference = order_data['merchantReference']
@@ -518,7 +518,7 @@ class ProdigiShipmentSpace:
         self.carrier = shipment_data['carrier']['name']
         self.service = shipment_data['carrier']['service']
         self.tracking = shipment_data['tracking']
-        self.dispatch_date = prodigi_timestamp_to_datetime(shipment_data['dispatchDate']) if \
+        self.dispatch_date = prodigi_timestamp_to_datetime(shipment_data['dispatchDate'].split('.')[0]) if \
             shipment_data['dispatchDate'] is not None else None
         self.items = shipment_data['items']
         self.fulfillment_location = shipment_data['fulfillmentLocation']
