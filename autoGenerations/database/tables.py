@@ -2715,7 +2715,8 @@ class ProdigiShipment(Base):
     id = Column(Integer, primary_key=True)
     prodigi_id = Column(String, unique=True)
     carrier = Column(String)
-    tracking = Column(String)
+    tracking_number = Column(String)
+    tracking_url = Column(String)
     dispatch_date = Column(DateTime)
 
     # relationships
@@ -2745,7 +2746,8 @@ class ProdigiShipment(Base):
         shipment = cls(
             prodigi_id=shipment_data.prodigi_id,
             carrier=shipment_data.carrier,
-            tracking=shipment_data.tracking,
+            tracking_number=shipment_data.tracking_number,
+            tracking_url=shipment_data.tracking_url,
             dispatch_date=shipment_data.dispatch_date
         )
 
@@ -2779,8 +2781,10 @@ class ProdigiShipment(Base):
 
         if self.carrier != shipment_data.carrier:
             self.carrier = shipment_data.carrier
-        if self.tracking != shipment_data.tracking:
-            self.tracking = shipment_data.tracking
+        if self.tracking_number != shipment_data.tracking_number:
+            self.tracking_number = shipment_data.tracking_number
+        if self.tracking_url != shipment_data.tracking_url:
+            self.tracking_url = shipment_data.tracking_url
         if self.dispatch_date != shipment_data.dispatch_date:
             self.dispatch_date = shipment_data.dispatch_date
 

@@ -517,7 +517,8 @@ class ProdigiShipmentSpace:
         self.prodigi_id = shipment_data['id']
         self.carrier = shipment_data['carrier']['name']
         self.service = shipment_data['carrier']['service']
-        self.tracking = shipment_data['tracking']
+        self.tracking_number = shipment_data['tracking']['number']
+        self.tracking_url = shipment_data['tracking']['url']
         self.dispatch_date = prodigi_timestamp_to_datetime(shipment_data['dispatchDate'].split('.')[0]) if \
             shipment_data['dispatchDate'] is not None else None
         self.items = shipment_data['items']
