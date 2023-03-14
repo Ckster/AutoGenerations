@@ -102,6 +102,7 @@ def update_incomplete_orders():
 
                     charge_items = []
                     for charge_item_dict in charge_space.items:
+                        print('cid', charge_item_dict)
                         charge_item_space = ProdigiChargeItemSpace(charge_item_dict)
                         charge_item = ProdigiChargeItem.get_existing(session, charge_item_space.prodigi_id)
                         if charge_item is None:
