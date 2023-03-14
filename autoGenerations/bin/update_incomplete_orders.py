@@ -177,14 +177,16 @@ def update_incomplete_orders():
                     # information
                     receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
                     receipt_space = EtsyReceiptSpace(receipt_response)
-                    if not receipt_space.shipments:
-                        for shipment in received_shipments:
-                            # Update the Etsy Receipt with shipment
-                            note_to_buyer = 'Your order has been shipped. Thank you!'
-                            etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
-                                                             carrier=shipment.carrier,
-                                                             tracking_code=shipment.tracking_number,
-                                                             note_to_buyer=note_to_buyer, send_bcc=True)
+                    #if not receipt_space.shipments:
+                    for shipment in received_shipments:
+                        print(shipment.tracking_number, shipment.carrier)
+                        continue
+                        # Update the Etsy Receipt with shipment
+                        note_to_buyer = 'Your order has been shipped. Thank you!'
+                        etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
+                                                         carrier=shipment.carrier,
+                                                         tracking_code=shipment.tracking_number,
+                                                         note_to_buyer=note_to_buyer, send_bcc=True)
 
                 # Update / create items
                 received_items = []
