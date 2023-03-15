@@ -181,7 +181,7 @@ def update_incomplete_orders():
                             # Update the Etsy Receipt with shipment
                             note_to_buyer = 'Your order has been shipped. Thank you!'
                             etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
-                                                             carrier=shipment.carrier.lower(),
+                                                             carrier=shipment.carrier_name,
                                                              tracking_code=shipment.tracking_number,
                                                              note_to_buyer=note_to_buyer, send_bcc=True)
 
