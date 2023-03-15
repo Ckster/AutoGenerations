@@ -39,39 +39,50 @@ def fulfill_orders():
         print(f'Fulfilling {len(unfulfilled_paid_receipts)} orders')
 
         for receipt in unfulfilled_paid_receipts:
-            items_to_order = []
-            for transaction in receipt.transactions:
+            try:
+                items_to_order = []
+                for transaction in receipt.transactions:
 
-                etsy_sku = transaction.product.sku
-                prodigi_sku = sku_map[etsy_sku]['prodigi_sku']
-                asset_url = sku_map[etsy_sku]['asset_url']
+                    etsy_sku = transaction.product.sku
+                    prodigi_sku = sku_map[etsy_sku]['prodigi_sku']
+                    asset_url = sku_map[etsy_sku]['asset_url']
 
-                items_to_order.append({
-                    "sku": prodigi_sku,
-                    "copies": transaction.quantity,
-                    "sizing": "fillPrintArea",
-                    "assets": [
-                        {
-                            "printArea": "default",
-                            "url": asset_url
-                        }
-                    ]
-                })
+                    items_to_order.append({
+                        "sku": prodigi_sku,
+                        "copies": transaction.quantity,
+                        "sizing": "fillPrintArea",
+                        "assets": [
+                            {
+                                "printArea": "default",
+                                "url": asset_url
+                            }
+                        ]
+                    })
 
-            if not items_to_order:
-                continue
+                if not items_to_order:
+                    continue
 
-            order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order,
-                                                      idempotency_key=receipt.receipt_id)
-            print(order_response)
-            outcome = order_response['outcome']
+                order_response = prodigy_api.create_order(receipt.address, transaction, items_to_order,
+                                                          idempotency_key=receipt.receipt_id)
+                outcome = order_response['outcome']
+                prodigi_order_space = ProdigiOrderSpace(order_response['order'])
 
-            if outcome.lower() == Prodigi.CreateOrderOutcome.CREATED.value:
+                if outcome.lower() == Prodigi.CreateOrderOutcome.ALREADY_EXISTS.value:
+                    existing_order = session.query(ProdigiOrder).fiter(
+                        ProdigiOrder.prodigi_id == prodigi_order_space.prodigi_id
+                    ).first()
+
+                    if existing_order is not None:
+                        continue
+
+                elif outcome.lower() == Prodigi.CreateOrderOutcome.CREATED_WITH_ISSUES.value:
+                    error_string = f"For Etsy receipt id: {receipt.receipt_id} \nProdigi Outcome: {outcome}"
+                    send_mail('Prodigi Order Creation Error', error_string)
+                    receipt.order_status = OrderStatus.ERROR
+                    continue
 
                 # Order was successful so receipt no longer needs fulfillment
                 receipt.needs_fulfillment = False
-
-                prodigi_order_space = ProdigiOrderSpace(order_response['order'])
 
                 # Create the charges
                 charges = []
@@ -187,14 +198,10 @@ def fulfill_orders():
                                                     items=items)
                 session.add(prodigi_order)
                 receipt.update(prodigi_orders=[prodigi_order])
+                session.commit()
 
-            # TODO: See if order already exists in prodigi database
-
-            else:
-                error_string = f"For Etsy receipt id: {receipt.receipt_id} \nProdigi Outcome: {outcome}"
-                send_mail('Prodigi Order Creation Error', error_string)
-
-            session.commit()
+            except Exception as e:
+                send_mail(f'Fulfill Orders Error for Receipt {receipt.receipt_id}', str(e))
 
 
 if __name__ == '__main__':

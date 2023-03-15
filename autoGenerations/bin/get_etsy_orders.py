@@ -121,278 +121,282 @@ def get_etsy_orders():
 
         print(f"Processing {orders['count']} orders")
         for receipt in orders['results']:
-            receipt_space = EtsyReceipt.create_namespace(receipt)
+            try:
+                receipt_space = EtsyReceipt.create_namespace(receipt)
 
-            # Check if receipt exists
-            receipt_c = EtsyReceipt.get_existing(session, receipt_space.receipt_id)
+                # Check if receipt exists
+                receipt_c = EtsyReceipt.get_existing(session, receipt_space.receipt_id)
 
-            # Skip any complete or canceled orders
-            if receipt_c is not None:
-                if receipt_c.order_status != OrderStatus.INCOMPLETE:
-                    continue
+                # Skip any complete or canceled orders
+                if receipt_c is not None:
+                    if receipt_c.order_status != OrderStatus.INCOMPLETE:
+                        continue
 
-            # Check if the address exists
-            address = Address.get_existing(session, receipt_space.zip, receipt_space.city, receipt_space.state,
-                                           receipt_space.country, receipt_space.first_line, receipt_space.second_line)
-            if address is None:
-                address = Address.create(receipt)
-                session.add(address)
-                session.flush()
-            else:
-                # Nothing to update, if anything changes it becomes a different address
-                address = address
-
-            # Check if the buyer exists
-            buyer = EtsyBuyer.get_existing(session, receipt_space.buyer_id)
-            if buyer is None:
-                buyer = EtsyBuyer.create(receipt, addresses=[address])
-                session.add(buyer)
-                session.flush()
-            else:
-                buyer.update(receipt, addresses=[address])
-                session.flush()
-
-            # Check if the seller exists
-            seller = EtsySeller.get_existing(session, receipt_space.seller_id)
-            if seller is None:
-                seller = EtsySeller.create(receipt)
-                session.add(seller)
-                session.flush()
-            else:
-                seller.update(receipt)
-                session.flush()
-
-            # Create new shipments
-            receipt_shipments = []
-            for shipment_dict in receipt_space.shipments:
-                shipment_space = EtsyReceiptShipmentSpace(shipment_dict)
-                if shipment_space.receipt_shipping_id is not None:
-                    receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
-                    if receipt_shipment is None:
-                        receipt_shipment = EtsyReceiptShipment.create(shipment_space)
-                        session.add(receipt_shipment)
-                        session.flush()
-                    else:
-                        receipt_shipment.update(shipment_space)
-                        session.flush()
-                    receipt_shipments.append(receipt_shipment)
-
-            # Create new refunds
-            refunds = []
-            for refund_dict in receipt_space.refunds:
-                refund_space = EtsyRefundSpace(refund_dict)
-                refund = EtsyRefund.create(refund_space)
-                refunds.append(refund)
-
-            # Create new transactions
-            transactions = []
-            for transaction_dict in receipt_space.transactions:
-                transaction_space = EtsyTransaction.create_namespace(transaction_dict)
-
-                # Get list of existing / created product properties
-                product_properties = []
-                for property_data in transaction_space.product_property_data:
-                    property_data_space = EtsyProductPropertySpace(property_data)
-                    product_property = EtsyProductProperty.get_existing(session, property_data_space.property_id,
-                                                                        property_data_space.property_name)
-                    if product_property is None:
-                        product_property = EtsyProductProperty.create(property_data)
-                        session.add(product_property)
-                        session.flush()
-                    else:
-                        product_property.update(property_data)
-                        session.flush()
-                    product_properties.append(product_property)
-
-                # Call endpoint to get more info about listing, then update / create a listing record
-                listing_response = etsy_api.get_listing(transaction_space.listing_id)
-                listing_space = EtsyListingSpace(listing_response)
-                listing = EtsyListing.get_existing(session, listing_space.listing_id)
-                if listing is None:
-                    listing = EtsyListing.create(listing_space, seller=seller)
-                    session.add(listing)
+                # Check if the address exists
+                address = Address.get_existing(session, receipt_space.zip, receipt_space.city, receipt_space.state,
+                                               receipt_space.country, receipt_space.first_line, receipt_space.second_line)
+                if address is None:
+                    address = Address.create(receipt)
+                    session.add(address)
                     session.flush()
                 else:
-                    listing.update(listing_space, seller=seller)
-                    session.flush()
+                    # Nothing to update, if anything changes it becomes a different address
+                    address = address
 
-                shop_response = etsy_api.get_shop(listing_space.shop_id)
-                shop_space = EtsyShopSpace(shop_response)
-                shop = EtsyShop.get_existing(session, shop_space.shop_id)
-                if shop is None:
-                    shop = EtsyShop.create(shop_space, seller=seller, listings=[listing])
-                    session.add(shop)
-                    session.flush()
-                else:
-                    shop.update(shop_space, seller=seller, listings=[listing])
-                    session.flush()
-
-                # Listing should be part of a section but possible that it isn't
-                if listing_space.shop_section_id is not None:
-                    shop_section_response = etsy_api.get_shop_section(listing_space.shop_id,
-                                                                      listing_space.shop_section_id)
-                    shop_section_space = EtsyShopSectionSpace(shop_section_response)
-                    shop_section = EtsyShopSection.get_existing(session, shop_section_space.shop_section_id)
-                    if shop_section is None:
-                        shop_section = EtsyShopSection.create(shop_section_space, seller=seller, listings=[listing],
-                                                              shop=shop)
-                        session.add(shop_section)
-                        session.flush()
-                    else:
-                        shop_section.update(shop_section_space, seller=seller, listings=[listing], shop=shop)
-                        session.flush()
-
-                return_policy_response = etsy_api.get_return_policy(listing_space.shop_id,
-                                                                    listing_space.return_policy_id)
-                return_policy_space = EtsyReturnPolicySpace(return_policy_response)
-                return_policy = EtsyReturnPolicy.get_existing(session, return_policy_space.return_policy_id)
-                if return_policy is None:
-                    return_policy = EtsyReturnPolicy.create(return_policy_space, shop=shop, listings=[listing])
-                    session.add(return_policy)
+                # Check if the buyer exists
+                buyer = EtsyBuyer.get_existing(session, receipt_space.buyer_id)
+                if buyer is None:
+                    buyer = EtsyBuyer.create(receipt, addresses=[address])
+                    session.add(buyer)
                     session.flush()
                 else:
-                    return_policy.update(return_policy_space, listings=[listing], shop=shop)
+                    buyer.update(receipt, addresses=[address])
                     session.flush()
 
-                shipping_profile_response = etsy_api.get_shipping_profile(listing_space.shop_id,
-                                                                          listing_space.shipping_profile_id)
-                shipping_profile_space = EtsyShippingProfileSpace(shipping_profile_response)
-                shipping_profile = EtsyShippingProfile.get_existing(session, shipping_profile_space.shipping_profile_id)
-                if shipping_profile is None:
-                    shipping_profile = EtsyShippingProfile.create(shipping_profile_space, seller=seller,
-                                                                  listings=[listing])
-                    session.add(shipping_profile)
+                # Check if the seller exists
+                seller = EtsySeller.get_existing(session, receipt_space.seller_id)
+                if seller is None:
+                    seller = EtsySeller.create(receipt)
+                    session.add(seller)
                     session.flush()
                 else:
-                    shipping_profile.update(shipping_profile_response, listings=[listing], seller=seller)
+                    seller.update(receipt)
                     session.flush()
 
-                production_partners = []
-                production_partners_response = etsy_api.get_production_partners(listing_space.shop_id)
-                for production_partner in production_partners_response['results']:
-                    production_partner_space = EtsyProductionPartnerSpace(production_partner)
-                    production_partner = EtsyProductionPartner.get_existing(
-                        session,
-                        production_partner_space.production_partner_id)
-                    if production_partner is None:
-                        production_partner = EtsyProductionPartner.create(production_partner_space)
-                        session.add(production_partner)
+                # Create new shipments
+                receipt_shipments = []
+                for shipment_dict in receipt_space.shipments:
+                    shipment_space = EtsyReceiptShipmentSpace(shipment_dict)
+                    if shipment_space.receipt_shipping_id is not None:
+                        receipt_shipment = EtsyReceiptShipment.get_existing(session, shipment_space.receipt_shipping_id)
+                        if receipt_shipment is None:
+                            receipt_shipment = EtsyReceiptShipment.create(shipment_space)
+                            session.add(receipt_shipment)
+                            session.flush()
+                        else:
+                            receipt_shipment.update(shipment_space)
+                            session.flush()
+                        receipt_shipments.append(receipt_shipment)
+
+                # Create new refunds
+                refunds = []
+                for refund_dict in receipt_space.refunds:
+                    refund_space = EtsyRefundSpace(refund_dict)
+                    refund = EtsyRefund.create(refund_space)
+                    refunds.append(refund)
+
+                # Create new transactions
+                transactions = []
+                for transaction_dict in receipt_space.transactions:
+                    transaction_space = EtsyTransaction.create_namespace(transaction_dict)
+
+                    # Get list of existing / created product properties
+                    product_properties = []
+                    for property_data in transaction_space.product_property_data:
+                        property_data_space = EtsyProductPropertySpace(property_data)
+                        product_property = EtsyProductProperty.get_existing(session, property_data_space.property_id,
+                                                                            property_data_space.property_name)
+                        if product_property is None:
+                            product_property = EtsyProductProperty.create(property_data)
+                            session.add(product_property)
+                            session.flush()
+                        else:
+                            product_property.update(property_data)
+                            session.flush()
+                        product_properties.append(product_property)
+
+                    # Call endpoint to get more info about listing, then update / create a listing record
+                    listing_response = etsy_api.get_listing(transaction_space.listing_id)
+                    listing_space = EtsyListingSpace(listing_response)
+                    listing = EtsyListing.get_existing(session, listing_space.listing_id)
+                    if listing is None:
+                        listing = EtsyListing.create(listing_space, seller=seller)
+                        session.add(listing)
                         session.flush()
                     else:
-                        production_partner.update(production_partner)
+                        listing.update(listing_space, seller=seller)
                         session.flush()
-                    production_partners.append(production_partner)
 
-                # overwrite_list=True will solve the problem of removed production partners
-                listing.update(production_partners=production_partners, overwrite_list=True)
-
-                shipping_upgrades = []
-                shipping_upgrades_response = etsy_api.get_shop_shipping_profile_upgrades(
-                    listing_space.shop_id, listing_space.shipping_profile_id)
-                for shipping_upgrade in shipping_upgrades_response['results']:
-                    shipping_upgrade_space = EtsyShippingProfileUpgradeSpace(shipping_upgrade)
-                    shipping_upgrade = EtsyShippingProfileUpgrade.get_existing(session,
-                                                                               shipping_upgrade_space.upgrade_id)
-                    if shipping_upgrade is None:
-                        shipping_upgrade = EtsyShippingProfileUpgrade.create(shipping_upgrade_space)
-                        session.add(shipping_upgrade)
+                    shop_response = etsy_api.get_shop(listing_space.shop_id)
+                    shop_space = EtsyShopSpace(shop_response)
+                    shop = EtsyShop.get_existing(session, shop_space.shop_id)
+                    if shop is None:
+                        shop = EtsyShop.create(shop_space, seller=seller, listings=[listing])
+                        session.add(shop)
                         session.flush()
                     else:
-                        shipping_upgrade.update(shipping_upgrade_space)
+                        shop.update(shop_space, seller=seller, listings=[listing])
                         session.flush()
-                    shipping_upgrades.append(shipping_upgrade)
 
-                shipping_destinations = []
-                shipping_destinations_requests = etsy_api.get_shop_shipping_profile_destinations(
-                    listing_space.shop_id, listing_space.shipping_profile_id)
-                for shipping_destination in shipping_destinations_requests['results']:
-                    shipping_destination_space = EtsyShippingProfileDestinationSpace(shipping_destination)
-                    shipping_destination = EtsyShippingProfileDestination.get_existing(
-                        session, shipping_destination_space.shipping_profile_destination_id)
-                    if shipping_destination is None:
-                        shipping_destination = EtsyShippingProfileDestination.create(shipping_destination_space)
-                        session.add(shipping_destination)
-                        session.flush()
-                    else:
-                        shipping_destination.update(shipping_destination_space)
-                        session.flush()
-                    shipping_destinations.append(shipping_destination)
+                    # Listing should be part of a section but possible that it isn't
+                    if listing_space.shop_section_id is not None:
+                        shop_section_response = etsy_api.get_shop_section(listing_space.shop_id,
+                                                                          listing_space.shop_section_id)
+                        shop_section_space = EtsyShopSectionSpace(shop_section_response)
+                        shop_section = EtsyShopSection.get_existing(session, shop_section_space.shop_section_id)
+                        if shop_section is None:
+                            shop_section = EtsyShopSection.create(shop_section_space, seller=seller, listings=[listing],
+                                                                  shop=shop)
+                            session.add(shop_section)
+                            session.flush()
+                        else:
+                            shop_section.update(shop_section_space, seller=seller, listings=[listing], shop=shop)
+                            session.flush()
 
-                # overwrite_lists=True solves the problem of removed shipping upgrades or destinations
-                shipping_profile.update(upgrades=shipping_upgrades, destinations=shipping_destinations,
-                                        overwrite_lists=True)
-
-                # Call endpoint to get more info about the product, then update / create a product record
-                product_response = etsy_api.get_listing_product(transaction_space.listing_id,
-                                                                transaction_space.product_id)
-                product_space = EtsyProductSpace(product_response)
-
-                offerings = []
-                for offering in product_space.offerings:
-                    offering_space = EtsyOfferingSpace(offering)
-                    offering = EtsyOffering.get_existing(session, offering_space.offering_id)
-                    if offering is None:
-                        offering = EtsyOffering.create(offering_space)
-                        session.add(offering)
+                    return_policy_response = etsy_api.get_return_policy(listing_space.shop_id,
+                                                                        listing_space.return_policy_id)
+                    return_policy_space = EtsyReturnPolicySpace(return_policy_response)
+                    return_policy = EtsyReturnPolicy.get_existing(session, return_policy_space.return_policy_id)
+                    if return_policy is None:
+                        return_policy = EtsyReturnPolicy.create(return_policy_space, shop=shop, listings=[listing])
+                        session.add(return_policy)
                         session.flush()
                     else:
-                        offering.update(offering_space)
+                        return_policy.update(return_policy_space, listings=[listing], shop=shop)
                         session.flush()
-                    offerings.append(offering)
 
-                product = EtsyProduct.get_existing(session, product_space.product_id)
-                if product is None:
-                    product = EtsyProduct.create(product_space, properties=product_properties, listings=[listing],
-                                                 offerings=offerings)
-                    session.add(product)
+                    shipping_profile_response = etsy_api.get_shipping_profile(listing_space.shop_id,
+                                                                              listing_space.shipping_profile_id)
+                    shipping_profile_space = EtsyShippingProfileSpace(shipping_profile_response)
+                    shipping_profile = EtsyShippingProfile.get_existing(session, shipping_profile_space.shipping_profile_id)
+                    if shipping_profile is None:
+                        shipping_profile = EtsyShippingProfile.create(shipping_profile_space, seller=seller,
+                                                                      listings=[listing])
+                        session.add(shipping_profile)
+                        session.flush()
+                    else:
+                        shipping_profile.update(shipping_profile_response, listings=[listing], seller=seller)
+                        session.flush()
+
+                    production_partners = []
+                    production_partners_response = etsy_api.get_production_partners(listing_space.shop_id)
+                    for production_partner in production_partners_response['results']:
+                        production_partner_space = EtsyProductionPartnerSpace(production_partner)
+                        production_partner = EtsyProductionPartner.get_existing(
+                            session,
+                            production_partner_space.production_partner_id)
+                        if production_partner is None:
+                            production_partner = EtsyProductionPartner.create(production_partner_space)
+                            session.add(production_partner)
+                            session.flush()
+                        else:
+                            production_partner.update(production_partner)
+                            session.flush()
+                        production_partners.append(production_partner)
+
+                    # overwrite_list=True will solve the problem of removed production partners
+                    listing.update(production_partners=production_partners, overwrite_list=True)
+
+                    shipping_upgrades = []
+                    shipping_upgrades_response = etsy_api.get_shop_shipping_profile_upgrades(
+                        listing_space.shop_id, listing_space.shipping_profile_id)
+                    for shipping_upgrade in shipping_upgrades_response['results']:
+                        shipping_upgrade_space = EtsyShippingProfileUpgradeSpace(shipping_upgrade)
+                        shipping_upgrade = EtsyShippingProfileUpgrade.get_existing(session,
+                                                                                   shipping_upgrade_space.upgrade_id)
+                        if shipping_upgrade is None:
+                            shipping_upgrade = EtsyShippingProfileUpgrade.create(shipping_upgrade_space)
+                            session.add(shipping_upgrade)
+                            session.flush()
+                        else:
+                            shipping_upgrade.update(shipping_upgrade_space)
+                            session.flush()
+                        shipping_upgrades.append(shipping_upgrade)
+
+                    shipping_destinations = []
+                    shipping_destinations_requests = etsy_api.get_shop_shipping_profile_destinations(
+                        listing_space.shop_id, listing_space.shipping_profile_id)
+                    for shipping_destination in shipping_destinations_requests['results']:
+                        shipping_destination_space = EtsyShippingProfileDestinationSpace(shipping_destination)
+                        shipping_destination = EtsyShippingProfileDestination.get_existing(
+                            session, shipping_destination_space.shipping_profile_destination_id)
+                        if shipping_destination is None:
+                            shipping_destination = EtsyShippingProfileDestination.create(shipping_destination_space)
+                            session.add(shipping_destination)
+                            session.flush()
+                        else:
+                            shipping_destination.update(shipping_destination_space)
+                            session.flush()
+                        shipping_destinations.append(shipping_destination)
+
+                    # overwrite_lists=True solves the problem of removed shipping upgrades or destinations
+                    shipping_profile.update(upgrades=shipping_upgrades, destinations=shipping_destinations,
+                                            overwrite_lists=True)
+
+                    # Call endpoint to get more info about the product, then update / create a product record
+                    product_response = etsy_api.get_listing_product(transaction_space.listing_id,
+                                                                    transaction_space.product_id)
+                    product_space = EtsyProductSpace(product_response)
+
+                    offerings = []
+                    for offering in product_space.offerings:
+                        offering_space = EtsyOfferingSpace(offering)
+                        offering = EtsyOffering.get_existing(session, offering_space.offering_id)
+                        if offering is None:
+                            offering = EtsyOffering.create(offering_space)
+                            session.add(offering)
+                            session.flush()
+                        else:
+                            offering.update(offering_space)
+                            session.flush()
+                        offerings.append(offering)
+
+                    product = EtsyProduct.get_existing(session, product_space.product_id)
+                    if product is None:
+                        product = EtsyProduct.create(product_space, properties=product_properties, listings=[listing],
+                                                     offerings=offerings)
+                        session.add(product)
+                        session.flush()
+                    else:
+                        product.update(product_space, listings=[listing])
+
+                        # overwrite_lists=True solves the problem of removed product properties or offerings
+                        product.update(properties=product_properties, offerings=offerings, overwrite_lists=True)
+                        session.flush()
+
+                    # Check for existing transaction
+                    transaction = EtsyTransaction.get_existing(session, transaction_space.transaction_id)
+                    if transaction is None:
+                        transaction = EtsyTransaction.create(
+                            transaction_space,
+                            buyer=buyer, seller=seller, product=product, shipping_profile=shipping_profile,
+                            product_properties=product_properties)
+                        session.add(transaction)
+                        session.flush()
+                    else:
+                        transaction.update(transaction_space, buyer=buyer, seller=seller, product=product,
+                                           shipping_profile=shipping_profile)
+
+                        # overwrite_lists=True solves the problem of removed product properties
+                        transaction.update(product_properties=product_properties, overwrite_list=True)
+                        session.flush()
+                    transactions.append(transaction)
+
+                order_status = OrderStatus.INCOMPLETE
+                if receipt_space.status == Etsy.OrderStatus.CANCELED:
+                    order_status = OrderStatus.CANCELED
+                elif receipt_space.status == Etsy.OrderStatus.COMPLETED:
+                    order_status = OrderStatus.COMPLETE
+                needs_fulfillment = order_status == OrderStatus.INCOMPLETE and listing.listing_type.value == 'physical'
+                if receipt_c is None:
+                    receipt_c = EtsyReceipt.create(receipt_space, needs_fulfillment=needs_fulfillment,
+                                                   order_status=order_status, address=address, buyer=buyer, seller=seller,
+                                                   transactions=transactions, refunds=refunds,
+                                                   receipt_shipments=receipt_shipments)
+                    session.add(receipt_c)
                     session.flush()
                 else:
-                    product.update(product_space, listings=[listing])
+                    # Updating of the address and cancellation status will be communicated to Prodigi semi-manually
+                    receipt_c.update(receipt_space, order_status=order_status,
+                                     address=address, buyer=buyer, seller=seller, transactions=transactions,
+                                     receipt_shipments=receipt_shipments)
 
-                    # overwrite_lists=True solves the problem of removed product properties or offerings
-                    product.update(properties=product_properties, offerings=offerings, overwrite_lists=True)
+                    # Refunds don't have an ID so just going to overwrite them every time and delete the orphaned ones
+                    receipt_c.update(refunds=refunds, overwrite_list=True)
                     session.flush()
 
-                # Check for existing transaction
-                transaction = EtsyTransaction.get_existing(session, transaction_space.transaction_id)
-                if transaction is None:
-                    transaction = EtsyTransaction.create(
-                        transaction_space,
-                        buyer=buyer, seller=seller, product=product, shipping_profile=shipping_profile,
-                        product_properties=product_properties)
-                    session.add(transaction)
-                    session.flush()
-                else:
-                    transaction.update(transaction_space, buyer=buyer, seller=seller, product=product,
-                                       shipping_profile=shipping_profile)
-
-                    # overwrite_lists=True solves the problem of removed product properties
-                    transaction.update(product_properties=product_properties, overwrite_list=True)
-                    session.flush()
-                transactions.append(transaction)
-
-            order_status = OrderStatus.INCOMPLETE
-            if receipt_space.status == Etsy.OrderStatus.CANCELED:
-                order_status = OrderStatus.CANCELED
-            elif receipt_space.status == Etsy.OrderStatus.COMPLETED:
-                order_status = OrderStatus.COMPLETE
-            needs_fulfillment = order_status == OrderStatus.INCOMPLETE and listing.listing_type.value == 'physical'
-            if receipt_c is None:
-                receipt_c = EtsyReceipt.create(receipt_space, needs_fulfillment=needs_fulfillment,
-                                               order_status=order_status, address=address, buyer=buyer, seller=seller,
-                                               transactions=transactions, refunds=refunds,
-                                               receipt_shipments=receipt_shipments)
-                session.add(receipt_c)
-                session.flush()
-            else:
-                # Updating of the address and cancellation status will be communicated to Prodigi semi-manually
-                receipt_c.update(receipt_space, order_status=order_status,
-                                 address=address, buyer=buyer, seller=seller, transactions=transactions,
-                                 receipt_shipments=receipt_shipments)
-
-                # Refunds don't have an ID so just going to overwrite them every time and delete the orphaned ones
-                receipt_c.update(refunds=refunds, overwrite_list=True)
-                session.flush()
+            except Exception as e:
+                send_mail(f"Get Etsy Orders Error for receipt: {receipt['receipt_id']}", str(e))
 
         session.commit()
 

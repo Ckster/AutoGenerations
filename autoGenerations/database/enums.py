@@ -5,6 +5,7 @@ class OrderStatus(enum.Enum):
     INCOMPLETE = 'incomplete'
     COMPLETE = 'complete'
     CANCELED = 'canceled'
+    ERROR = 'error'
 
 
 class Prodigi:
