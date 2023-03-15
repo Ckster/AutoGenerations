@@ -68,7 +68,7 @@ def fulfill_orders():
                 prodigi_order_space = ProdigiOrderSpace(order_response['order'])
 
                 if outcome.lower() == Prodigi.CreateOrderOutcome.ALREADY_EXISTS.value:
-                    existing_order = session.query(ProdigiOrder).fiter(
+                    existing_order = session.query(ProdigiOrder).filter(
                         ProdigiOrder.prodigi_id == prodigi_order_space.prodigi_id
                     ).first()
 
