@@ -25,6 +25,26 @@ def check_if_new_issue(input_issue: ProdigiIssue, existing_issues: List[ProdigiI
     return new_issue
 
 
+def map_prodigi_carrier_to_etsy(prodigi_carrier: str) -> str:
+    prodigi_carrier = prodigi_carrier.lower()
+    if 'usps' in prodigi_carrier:
+        return 'usps'
+    if 'ups' in prodigi_carrier:
+        return 'ups'
+    if 'fedex' in prodigi_carrier:
+        return 'fedex'
+    if 'royal' in prodigi_carrier:
+        return 'royal-mail'
+    if 'dpd' in prodigi_carrier:
+        return 'dpd'
+    if 'direct' in prodigi_carrier and 'link' in prodigi_carrier:
+        return 'postnord'
+    if 'dhl' in prodigi_carrier:
+        return 'dhl'
+
+    return 'other'
+
+
 def update_incomplete_orders():
     """
 
@@ -174,16 +194,26 @@ def update_incomplete_orders():
                         receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
                         receipt_space = EtsyReceiptSpace(receipt_response)
                         if not receipt_space.shipments:
-
-                            # TODO: Map the carrier from a prodigi name to an etsy name so the tracking info is actually
-                            #  posted
-
                             # Update the Etsy Receipt with shipment
                             note_to_buyer = 'Your order has been shipped. Thank you!'
                             etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
-                                                             carrier=shipment.carrier_name,
+                                                             carrier=map_prodigi_carrier_to_etsy(shipment.carrier_name),
                                                              tracking_code=shipment.tracking_number,
                                                              note_to_buyer=note_to_buyer, send_bcc=True)
+                            try:
+                                shop_name = etsy_receipt.transactions[0].product.listings[0].shop_section.shop.shop_name
+                                body = f'Your order has shipped. Thank you!'
+                                if shipment.tracking_number is not None:
+                                    body += f'\n The carrier shipping your order is {shipment.carrier_name} and the ' \
+                                            f'tracking number is {shipment.tracking_number}'
+
+                                if shipment.tracking_url is not None:
+                                    body += f' You can use the following link to track your order: ' \
+                                            f'{shipment.tracking_url}'
+
+                                send_mail(f'Your Etsy Order from {shop_name} Has Shipped', body)
+                            except Exception as e:
+                                continue
 
                     # Update / create items
                     received_items = []
