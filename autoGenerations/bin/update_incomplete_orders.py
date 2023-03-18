@@ -185,8 +185,8 @@ def update_incomplete_orders():
                                 fulfillment_location.update(fulfillment_location_space)
                         received_shipments.append(shipment)
 
-                    # When the order stage is complete then all of the orders have been sent and we can post the shipping
-                    # information
+                    # When the order stage is complete then all of the orders have been sent and we can post the
+                    # shipping information
                     if status_space.stage == Prodigi.StatusStage.COMPLETE:
 
                         # Only post shipping if there are no shipments for the receipt. Don't want to duplicate shipping

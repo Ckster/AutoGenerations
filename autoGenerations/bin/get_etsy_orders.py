@@ -217,6 +217,11 @@ def get_etsy_orders():
                         listing.update(listing_space, seller=seller)
                         session.flush()
 
+                    if listing_space.state in [Etsy.ListingState.EXPIRED, Etsy.ListingState.INACTIVE,
+                                               Etsy.ListingState.SOLD_OUT]:
+                        send_mail(f'Listing {listing_space.listing_id} {listing_space.state.value}',
+                                  f'The subject listing is {listing_space.state.value}')
+
                     shop_response = etsy_api.get_shop(listing_space.shop_id)
                     shop_space = EtsyShopSpace(shop_response)
                     shop = EtsyShop.get_existing(session, shop_space.shop_id)
