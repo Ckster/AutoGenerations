@@ -51,7 +51,7 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(help='Which action to take on the database: list')
+    subparsers = parser.add_subparsers(help='Which action to take on the database: list', dest='command')
 
     # Add any main arguments here
     #parser.add_argument()
@@ -61,6 +61,8 @@ if __name__ == '__main__':
     list_parser.add_argument("--have_issues", action='store_true')
     args = parser.parse_args()
 
-    main(args.list_orders.in_progress, args.list_orders.complete, args.list_orders.have_issues)
+    if args.command:
+        if args.command == 'list_orders':
+            main(args.in_progress, args.complete, args.have_issues)
 
 
