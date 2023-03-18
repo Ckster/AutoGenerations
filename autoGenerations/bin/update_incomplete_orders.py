@@ -1,3 +1,4 @@
+import traceback
 from typing import List
 from database.namespaces import ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace, \
     ProdigiFulfillmentLocationSpace, ProdigiRecipientSpace, ProdigiItemSpace, ProdigiCostSpace, ProdigiAssetSpace, \
@@ -315,11 +316,12 @@ def update_incomplete_orders():
 
                     session.commit()
             except Exception as e:
-                send_mail(f'Update Incomplete Orders Error for receipt {etsy_receipt.receipt_id}', str(e))
+                send_mail(f'Update Incomplete Orders Error for receipt {etsy_receipt.receipt_id}',
+                          str(traceback.format_exc()))
 
 
 if __name__ == '__main__':
     try:
         update_incomplete_orders()
     except Exception as e:
-        send_mail('Update Incomplete Orders Error', str(e))
+        send_mail('Update Incomplete Orders Error', str(traceback.format_exc()))
