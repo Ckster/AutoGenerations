@@ -27,7 +27,7 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
 
         if have_issues:
             prodigi_orders = prodigi_orders.join(ProdigiStatus).filter(
-                ProdigiStatus.issues != []
+                ProdigiStatus.issues.any()
             )
 
         prodigi_orders = prodigi_orders.all()
