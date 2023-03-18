@@ -45,7 +45,7 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
             for issue in order.status.issues:
                 issues += f'{issue.description} '
 
-            shipping_method = order.shipping_method.value if order.shipping_method.value is not None else 'N/A'
+            shipping_method = order.shipping_method.value if order.shipping_method is not None else 'N/A'
             print(order.created)
             print(order.last_updated)
 
