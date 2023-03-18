@@ -44,8 +44,10 @@ def fulfill_orders():
                 for transaction in receipt.transactions:
 
                     etsy_sku = transaction.product.sku
-                    prodigi_sku = sku_map[etsy_sku]['prodigi_sku']
-                    asset_url = sku_map[etsy_sku]['asset_url']
+                    sku_info = sku_map[etsy_sku]
+                    prodigi_sku = sku_info['prodigi_sku']
+                    asset_url = sku_info['asset_url']
+                    attributes = sku_info['attributes'] if 'attributes' in sku_info else {}
 
                     items_to_order.append({
                         "sku": prodigi_sku,
@@ -56,7 +58,8 @@ def fulfill_orders():
                                 "printArea": "default",
                                 "url": asset_url
                             }
-                        ]
+                        ],
+                        "attributes": attributes
                     })
 
                 if not items_to_order:
