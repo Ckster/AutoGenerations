@@ -67,7 +67,7 @@ def update_incomplete_orders():
     # 5) Make any updates to Prodigi Order database record
     # 6) Alert to any issues
 
-    prodigi_api = ProdigiAPI()
+    prodigi_api = ProdigiAPI(sandbox_mode=False)
     etsy_api = EtsyAPI()
     with Session(make_engine()) as session:
         incomplete_fulfilled_receipts = session.query(EtsyReceipt).filter(

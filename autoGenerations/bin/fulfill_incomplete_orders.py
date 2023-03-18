@@ -20,7 +20,7 @@ PROJECT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)))
 
 
 def fulfill_orders():
-    prodigy_api = API()
+    prodigy_api = API(sandbox_mode=False)
 
     with open(os.path.join(PROJECT_DIR, 'sku_map.json'), 'r') as f:
         sku_map = json.load(f)

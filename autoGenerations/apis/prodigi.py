@@ -9,10 +9,6 @@ from datetime import datetime
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
-# TODO: Change in production
-BASE_URL = "https://api.sandbox.prodigi.com/v4.0/"
-# production URL is https://api.prodigi.com/v4.0
-
 
 class Secrets:
 
@@ -41,6 +37,7 @@ class API(Secrets):
     def __init__(self, sandbox_mode: bool = True):
         super(API, self).__init__()
         self.access_key = self.sandbox_key if sandbox_mode else self.prod_key
+        self.BASE_URL = "https://api.sandbox.prodigi.com/v4.0/" if sandbox_mode else "https://api.prodigi.com/v4.0"
 
     def create_order(self, address: Address, transaction: EtsyTransaction, items: List[Dict[str, str]],
                      idempotency_key: str = None):
@@ -50,7 +47,7 @@ class API(Secrets):
         :param transaction:
         :return:
         """
-        url = os.path.join(BASE_URL, "orders")
+        url = os.path.join(self.BASE_URL, "orders")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -91,7 +88,7 @@ class API(Secrets):
         API Reference: https://www.prodigi.com/print-api/docs/reference/#get-order-by-id
         :return:
         """
-        url = os.path.join(BASE_URL, "orders", order_id)
+        url = os.path.join(self.BASE_URL, "orders", order_id)
 
         headers = {
             "X-API-Key": self.access_key,
@@ -111,7 +108,7 @@ class API(Secrets):
         API Reference: https://www.prodigi.com/print-api/docs/reference/#get-orders
         :return:
         """
-        url = os.path.join(BASE_URL, "orders")
+        url = os.path.join(self.BASE_URL, "orders")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -147,7 +144,7 @@ class API(Secrets):
         :param order_id:
         :return:
         """
-        url = os.path.join(BASE_URL, "orders", order_id, "actions")
+        url = os.path.join(self.BASE_URL, "orders", order_id, "actions")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -167,7 +164,7 @@ class API(Secrets):
         :param order_id:
         :return:
         """
-        url = os.path.join(BASE_URL, "orders", order_id, "actions", "cancel")
+        url = os.path.join(self.BASE_URL, "orders", order_id, "actions", "cancel")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -189,7 +186,7 @@ class API(Secrets):
             new_shipping_method (Prodigi.ShippingMethod):
         :return:
         """
-        url = os.path.join(BASE_URL, "orders", order_id, "actions", "updateShippingMethod")
+        url = os.path.join(self.BASE_URL, "orders", order_id, "actions", "updateShippingMethod")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -212,7 +209,7 @@ class API(Secrets):
         :param new_recipient:
         :return:
         """
-        url = os.path.join(BASE_URL, "orders", order_id, "actions", "updateRecipient")
+        url = os.path.join(self.BASE_URL, "orders", order_id, "actions", "updateRecipient")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -243,7 +240,7 @@ class API(Secrets):
     def get_quote(self,  items: List[Dict[str, str]],
                   shipping_method: Prodigi.ShippingMethod = Prodigi.ShippingMethod.BUDGET,
                   destination_country: str = 'US', currency_code: str = 'USD'):
-        url = os.path.join(BASE_URL, "quotes")
+        url = os.path.join(self.BASE_URL, "quotes")
 
         headers = {
             "X-API-Key": self.access_key,
@@ -270,7 +267,7 @@ class API(Secrets):
         :param sku:
         :return:
         """
-        url = os.path.join(BASE_URL, "quotes", sku)
+        url = os.path.join(self.BASE_URL, "quotes", sku)
 
         headers = {
             "X-API-Key": self.access_key,
