@@ -16,13 +16,13 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
         prodigi_orders = session.query(ProdigiOrder)\
 
         if in_progress:
-            prodigi_orders = prodigi_orders.filter(
-                ProdigiOrder.status == Prodigi.OrderStatus.IN_PROGRESS
-        )
+            prodigi_orders = prodigi_orders.join(ProdigiStatus).filter(
+                ProdigiStatus.stage == Prodigi.OrderStatus.IN_PROGRESS
+            )
 
         if complete:
-            prodigi_orders = prodigi_orders.filter(
-                ProdigiOrder.status == Prodigi.OrderStatus.COMPLETE
+            prodigi_orders = prodigi_orders.join(ProdigiStatus).filter(
+                ProdigiStatus.stage == Prodigi.OrderStatus.COMPLETE
             )
 
         if have_issues:
