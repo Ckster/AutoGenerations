@@ -44,7 +44,7 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
             for issue in order.status.issues:
                 issues += f'{issue.description} '
             print(fmt.format(
-                order.prodigi_id, order.created_time, order.last_updated, order.shipping_method.value,
+                order.prodigi_id, order.created, order.last_updated, order.shipping_method.value,
                 order.status.value, issues
             ))
 
