@@ -34,6 +34,8 @@ def parse_value(input_dict: Dict[str, Any], *args):
     input_dict = input_dict
     value = None
     for arg in args:
+        if input_dict is None:
+            return None
         if arg in input_dict:
             value = input_dict[arg]
             input_dict = value
