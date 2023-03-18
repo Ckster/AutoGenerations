@@ -44,13 +44,14 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
             issues = ''
             for issue in order.status.issues:
                 issues += f'{issue.description} '
+            issues = 'N/A' if issues == '' else issues
 
             shipping_method = order.shipping_method.value if order.shipping_method is not None else 'N/A'
             print(order.created)
             print(order.last_updated)
 
             print(fmt.format(
-                order.prodigi_id, order.created, order.last_updated, shipping_method,
+                order.prodigi_id, str(order.created), str(order.last_updated), shipping_method,
                 order.status.stage.value, issues
             ))
 
