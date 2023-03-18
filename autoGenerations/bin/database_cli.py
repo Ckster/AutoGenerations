@@ -13,16 +13,16 @@ from sqlalchemy.orm import Session
 
 def main(in_progress: bool, complete: bool, have_issues: bool):
     with Session(make_engine()) as session:
-        prodigi_orders = session.query(ProdigiOrder)\
+        prodigi_orders = session.query(ProdigiOrder)
 
         if in_progress:
             prodigi_orders = prodigi_orders.join(ProdigiStatus).filter(
-                ProdigiStatus.stage == Prodigi.OrderStatus.IN_PROGRESS
+                ProdigiStatus.stage == Prodigi.StatusStage.IN_PROGRESS
             )
 
         if complete:
             prodigi_orders = prodigi_orders.join(ProdigiStatus).filter(
-                ProdigiStatus.stage == Prodigi.OrderStatus.COMPLETE
+                ProdigiStatus.stage == Prodigi.StatusStage.COMPLETE
             )
 
         if have_issues:
