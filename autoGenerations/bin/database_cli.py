@@ -33,7 +33,7 @@ def main(in_progress: bool, complete: bool, have_issues: bool):
         prodigi_orders = prodigi_orders.all()
 
         hdrfmt = "{:15s} | {:25s} | {:25s} | {:15s} | {:15s} | {:20s}"
-        fmt = "{:15s} {:25s} {:25s} {:15s} {:15s} {:20s}"
+        fmt = "{:17s} {:27s} {:27s} {:17s} {:17s} {:20s}"
 
         header = hdrfmt.format(
             'Prodigi ID', 'Created Time', 'Last Updated', 'Shipping Method', 'Status', 'Issues'
