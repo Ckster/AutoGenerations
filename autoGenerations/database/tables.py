@@ -3101,10 +3101,9 @@ class ProdigiStatus(Base):
                ):
         if not isinstance(status_data, ProdigiStatusSpace):
             status_data = self.create_namespace(status_data)
-        print('Updating')
+
         if self.stage != status_data.stage:
             self.stage = status_data.stage
-            print('updated stage')
         if self.download_assets != status_data.download_assets:
             self.download_assets = status_data.download_assets
         if self.print_ready_assets_prepared != status_data.print_ready_assets_prepared:

@@ -70,12 +70,11 @@ def update_incomplete_orders():
     prodigi_api = ProdigiAPI(sandbox_mode=False)
     etsy_api = EtsyAPI()
     with Session(make_engine()) as session:
-        incomplete_fulfilled_receipts = session.query(EtsyReceipt).all()
-        #.filter(
-      #      EtsyReceipt.order_status == OrderStatus.INCOMPLETE
-      #  ).filter(
-      #      EtsyReceipt.needs_fulfillment == False
-      #  ).all()
+        incomplete_fulfilled_receipts = session.query(EtsyReceipt).filter(
+            EtsyReceipt.order_status == OrderStatus.INCOMPLETE
+        ).filter(
+            EtsyReceipt.needs_fulfillment == False
+        ).all()
 
         print(f'Updating {len(incomplete_fulfilled_receipts)} receipts')
 
@@ -87,7 +86,6 @@ def update_incomplete_orders():
 
                     # Update the status attributes
                     status_space = ProdigiStatusSpace(order_information_space.status)
-                    print(vars(status_space))
 
                     issues = []
                     new_issues = []
@@ -190,33 +188,33 @@ def update_incomplete_orders():
 
                     # When the order stage is complete then all of the orders have been sent and we can post the
                     # shipping information
-                    # if status_space.stage == Prodigi.StatusStage.COMPLETE:
-                    #
-                    #     # Only post shipping if there are no shipments for the receipt. Don't want to duplicate shipping
-                    #     # information
-                    #     receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
-                    #     receipt_space = EtsyReceiptSpace(receipt_response)
-                    #     if not receipt_space.shipments:
-                    #         # Update the Etsy Receipt with shipment
-                    #         note_to_buyer = 'Your order has been shipped. Thank you!'
-                    #         etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
-                    #                                          carrier=map_prodigi_carrier_to_etsy(shipment.carrier_name),
-                    #                                          tracking_code=shipment.tracking_number,
-                    #                                          note_to_buyer=note_to_buyer, send_bcc=True)
-                    #         try:
-                    #             shop_name = etsy_receipt.transactions[0].product.listings[0].shop_section.shop.shop_name
-                    #             body = f'Your order has shipped. Thank you!'
-                    #             if shipment.tracking_number is not None:
-                    #                 body += f'\n The carrier shipping your order is {shipment.carrier_name} and the ' \
-                    #                         f'tracking number is {shipment.tracking_number}'
-                    #
-                    #             if shipment.tracking_url is not None:
-                    #                 body += f' You can use the following link to track your order: ' \
-                    #                         f'{shipment.tracking_url}'
-                    #
-                    #             send_mail(f'Your Etsy Order from {shop_name} Has Shipped', body)
-                    #         except Exception as e:
-                    #             continue
+                    if status_space.stage == Prodigi.StatusStage.COMPLETE:
+
+                        # Only post shipping if there are no shipments for the receipt. Don't want to duplicate shipping
+                        # information
+                        receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
+                        receipt_space = EtsyReceiptSpace(receipt_response)
+                        if not receipt_space.shipments:
+                            # Update the Etsy Receipt with shipment
+                            note_to_buyer = 'Your order has been shipped. Thank you!'
+                            etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
+                                                             carrier=map_prodigi_carrier_to_etsy(shipment.carrier_name),
+                                                             tracking_code=shipment.tracking_number,
+                                                             note_to_buyer=note_to_buyer, send_bcc=True)
+                            try:
+                                shop_name = etsy_receipt.transactions[0].product.listings[0].shop_section.shop.shop_name
+                                body = f'Your order has shipped. Thank you!'
+                                if shipment.tracking_number is not None:
+                                    body += f'\n The carrier shipping your order is {shipment.carrier_name} and the ' \
+                                            f'tracking number is {shipment.tracking_number}'
+
+                                if shipment.tracking_url is not None:
+                                    body += f' You can use the following link to track your order: ' \
+                                            f'{shipment.tracking_url}'
+
+                                send_mail(f'Your Etsy Order from {shop_name} Has Shipped', body)
+                            except Exception as e:
+                                send_mail('Alert user error', str(traceback.format_exc()))
 
                     # Update / create items
                     received_items = []
