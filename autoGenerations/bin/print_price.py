@@ -6,22 +6,29 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 def calc_price(prodigi_sku: str, price_sheet_path: str = None):
-    if price_sheet_path is None:
-        price_sheet_path = os.path.join(PROJECT_DIR, 'prodigi_price_sheets', 'prodigi-prints-photo-art-prints-us.csv')
-    with open(price_sheet_path, 'r') as f:
-        dict_reader = csv.DictReader(f)
-        for row in dict_reader:
-            if row['SKU'] == prodigi_sku and row['Shipping method'] == 'Budget':
-                total_cost = float(row['Shipping price']) + float(row['Product price'])
+    if price_sheet_path is not None:
+        price_sheet_paths = [price_sheet_path]
+    else:
+        price_sheet_paths = [
+            os.path.join(PROJECT_DIR, 'prodigi_price_sheets', 'prodigi-prints-photo-art-prints-us.csv'),
+            os.path.join(PROJECT_DIR, 'prodigi_price_sheets', 'prodigi-prints-fine-art-prints-us.csv')
+        ]
 
-                # 25% profit
-                selling_price = total_cost * 1.25
+    for price_sheet_path in price_sheet_paths:
+        with open(price_sheet_path, 'r') as f:
+            dict_reader = csv.DictReader(f)
+            for row in dict_reader:
+                if row['SKU'] == prodigi_sku and row['Shipping method'] == 'Budget':
+                    total_cost = float(row['Shipping price']) + float(row['Product price'])
 
-                # pass on 6.5% etsy charge to customer
-                selling_price *= 1.065
+                    # 25% profit
+                    selling_price = total_cost * 1.25
 
-                print(f'${round(selling_price, 2)}')
-                return
+                    # pass on 6.5% etsy charge to customer
+                    selling_price *= 1.065
+
+                    print(f'${round(selling_price, 2)}')
+                    return
 
         print(f'Could not find SKU in {price_sheet_path}')
 
