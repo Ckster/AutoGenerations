@@ -49,7 +49,7 @@ def fulfill_orders():
                     asset_url = sku_info['asset_url']
                     attributes = sku_info['attributes'] if 'attributes' in sku_info else {}
 
-                    items_to_order.append({
+                    item_dict = {
                         "sku": prodigi_sku,
                         "copies": transaction.quantity,
                         "sizing": "fillPrintArea",
@@ -60,7 +60,14 @@ def fulfill_orders():
                             }
                         ],
                         "attributes": attributes
-                    })
+                    }
+
+                    for listing in transaction.product.listings:
+                        if listing.title is not None:
+                            item_dict['merchantReference'] = listing.title
+                            break
+
+                    items_to_order.append(item_dict)
 
                 if not items_to_order:
                     continue

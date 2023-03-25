@@ -136,7 +136,8 @@ def update_incomplete_orders():
                         charge = ProdigiCharge.get_existing(session, charge_space.prodigi_id)
                         if charge is None:
                             total_cost = ProdigiCost.create(total_cost_space)
-                            charge = ProdigiCharge.create(charge_space, total_cost=total_cost, charge_items=charge_items)
+                            charge = ProdigiCharge.create(charge_space, total_cost=total_cost,
+                                                          charge_items=charge_items)
                             session.add(charge)
                             session.flush()
                         else:
@@ -164,7 +165,8 @@ def update_incomplete_orders():
                                 session.flush()
                             shipment_items.append(shipment_item)
 
-                        fulfillment_location_space = ProdigiFulfillmentLocationSpace(shipment_space.fulfillment_location)
+                        fulfillment_location_space = ProdigiFulfillmentLocationSpace(
+                            shipment_space.fulfillment_location)
 
                         shipment = ProdigiShipment.get_existing(session, shipment_space.prodigi_id)
                         if shipment is None:
@@ -195,34 +197,64 @@ def update_incomplete_orders():
                         receipt_response = etsy_api.get_receipt(receipt_id=etsy_receipt.receipt_id)
                         receipt_space = EtsyReceiptSpace(receipt_response)
                         if not receipt_space.shipments:
-                            # Update the Etsy Receipt with shipment
-                            note_to_buyer = 'Your order has been shipped. Thank you!'
-                            etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
-                                                             carrier=map_prodigi_carrier_to_etsy(shipment.carrier_name),
-                                                             tracking_code=shipment.tracking_number,
-                                                             note_to_buyer=note_to_buyer, send_bcc=True)
+
                             try:
-                                shop_name = etsy_receipt.transactions[0].product.listings[0].shop_section.shop.shop_name
-                                body = f'Your order has shipped. Thank you!'
-                                if shipment.tracking_number is not None:
-                                    body += f'\n The carrier shipping your order is {shipment.carrier_name} and the ' \
-                                            f'tracking number is {shipment.tracking_number}'
-
-                                if shipment.tracking_url is not None:
-                                    body += f' You can use the following link to track your order: ' \
-                                            f'{shipment.tracking_url}'
-
-                                send_mail(f'Your Etsy Order from {shop_name} Has Shipped', body)
+                                shop_name = etsy_receipt.transactions[0].product.listings[0].shop_section.shop. \
+                                    shop_name
+                                subject = f"Your Etsy Order from {shop_name} Has Shipped"
                             except Exception as e:
-                                send_mail('Alert user error', str(traceback.format_exc()))
+                                subject = "Your Etsy Order Has Shipped"
+
+                            if len(received_shipments) > 1:
+                                body = 'Your orders have shipped. Thank you! Your items will be arriving in' \
+                                       ' multiple shipments. Please see below for details and tracking info. \n'
+                            else:
+                                body = 'Your orders have shipped. Thank you! Your items will be arriving in' \
+                                       ' one shipment. Please see below for details and tracking info. \n'
+
+                            for shipment in received_shipments:
+                                # Update the Etsy Receipt with shipment
+                                note_to_buyer = 'Your order has been shipped. Thank you!'
+                                etsy_api.create_receipt_shipment(receipt_id=str(prodigi_order.etsy_receipt.receipt_id),
+                                                                 carrier=map_prodigi_carrier_to_etsy(
+                                                                     shipment.carrier_name),
+                                                                 tracking_code=shipment.tracking_number,
+                                                                 note_to_buyer=note_to_buyer, send_bcc=True)
+                                try:
+                                    shipment_body = '\n\n'
+
+                                    if shipment.tracking_number is not None:
+                                        shipment_body += f'\n The carrier shipping the following items is' \
+                                                         f' {shipment.carrier_name} and the tracking number is ' \
+                                                         f'{shipment.tracking_number}\n'
+
+                                    for shipment_item in shipment.shipment_items:
+                                        for item in prodigi_order.items:
+                                            if item.prodigi_id == shipment_item.prodigi_id and \
+                                                    item.merchant_reference is not None:
+                                                shipment_body += f'{item.merchant_reference} \n'
+
+                                    if shipment.tracking_url is not None:
+                                        shipment_body += f' You can use the following link to track your order: ' \
+                                                         f'{shipment.tracking_url}\n'
+
+                                except Exception as e:
+                                    send_mail('Create body error', str(traceback.format_exc()))
+
+                            try:
+                                send_mail(subject, body)
+
+                            except Exception as e:
+                                send_mail('Create alert error', str(traceback.format_exc()))
 
                     # Update / create items
                     received_items = []
                     for item_dict in order_information_space.items:
                         item_space = ProdigiItemSpace(item_dict)
 
-                        recipient_cost_space = ProdigiCostSpace(item_space.recipient_cost) if item_space.recipient_cost is \
-                                                                                              not None else None
+                        recipient_cost_space = ProdigiCostSpace(
+                            item_space.recipient_cost) if item_space.recipient_cost is \
+                                                          not None else None
 
                         assets = []
                         for asset_dict in item_space.assets:
@@ -236,7 +268,8 @@ def update_incomplete_orders():
 
                         item = ProdigiItem.get_existing(session, item_space.prodigi_id)
                         if item is None:
-                            recipient_cost = ProdigiCost.create(recipient_cost_space) if recipient_cost_space is not None \
+                            recipient_cost = ProdigiCost.create(
+                                recipient_cost_space) if recipient_cost_space is not None \
                                 else None
                             item = ProdigiItem.create(item_space, recipient_cost=recipient_cost, assets=assets)
                             session.add(item)
@@ -264,7 +297,8 @@ def update_incomplete_orders():
                         prodigi_order.packing_slip.update(packing_slip_space)
 
                     # Update order
-                    prodigi_order.update(order_information_space, charges=received_charges, shipments=received_shipments,
+                    prodigi_order.update(order_information_space, charges=received_charges,
+                                         shipments=received_shipments,
                                          items=received_items)
 
                     # Update recipient
