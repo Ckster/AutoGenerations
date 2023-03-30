@@ -82,7 +82,7 @@ app.get("/oauth/redirect", async (req, res) => {
             client_id: clientID,
             redirect_uri: redirectUri,
             code: authCode,
-            code_verifier: clientVerifier,
+            code_verifier: clientVerifier
         }),
         headers: {
             'Content-Type': 'application/json'

@@ -1,2 +1,5 @@
 etsy_secrets.json
 prodigy_secrets.json
+email_secrets.json
+database_secrets.json
+data/product_images/*
