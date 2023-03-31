@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from typing import Dict, Union
+from typing import Dict, Union, Any
 
 from apis.enums import Carrier
 
@@ -74,8 +74,8 @@ class API(Secrets):
         """
         url = 'https://api.etsy.com/v3/application/openapi-ping'
         headers = {
-                'x-api-key': self._keystring,
-            }
+            'x-api-key': self._keystring,
+        }
 
         response = requests.get(url, headers=headers)
 
@@ -98,10 +98,10 @@ class API(Secrets):
             'Content-Type': 'application/json'
         }
         body = {
-                'grant_type': 'refresh_token',
-                'client_id': self._keystring,
-                'refresh_token': self._refresh_token
-            }
+            'grant_type': 'refresh_token',
+            'client_id': self._keystring,
+            'refresh_token': self._refresh_token
+        }
 
         response = requests.post(url, headers=headers, json=body)
         if response.status_code == 200:
@@ -121,6 +121,46 @@ class API(Secrets):
             with open(self._secrets_path, 'w') as f:
                 json.dump(secrets, f)
 
+        else:
+            raise LookupError(response.json())
+
+    def create_draft_listing(self, listing_info: Dict[str, Any], shop_id):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings')
+
+        header = self._signed_header
+        header['Content-Type'] = 'application/json'
+
+        response = requests.post(url, headers=header, data=json.dumps(listing_info))
+
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def update_listing_inventory(self, listing_id, inventory_data):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'listings', listing_id, 'inventory')
+
+        header = self._signed_header
+        header['Content-Type'] = 'application/json'
+
+        response = requests.put(url, headers=header, data=json.dumps(inventory_data))
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def upload_listing_image(self, shop_id, listing_id, image_data):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
+                           'images')
+
+        header = self._signed_header
+        header = {key: header[key] for key in header.keys() if key != 'Content-Type'}
+
+        response = requests.post(url, headers=header, files=image_data)
+
+        if response.status_code == 201:
+            return response.json()
         else:
             raise LookupError(response.json())
 

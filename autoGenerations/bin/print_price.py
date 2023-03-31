@@ -1,3 +1,4 @@
+from typing import Union
 import argparse
 import csv
 import os.path
@@ -5,7 +6,7 @@ import os.path
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
-def calc_price(prodigi_sku: str, price_sheet_path: str = None):
+def calc_price(prodigi_sku: str, price_sheet_path: str = None) -> Union[str, None]:
     if price_sheet_path is not None:
         price_sheet_paths = [price_sheet_path]
     else:
@@ -28,9 +29,10 @@ def calc_price(prodigi_sku: str, price_sheet_path: str = None):
                     selling_price *= 1.065
 
                     print(f'${round(selling_price, 2)}')
-                    return
+                    return str(round(selling_price, 2))
 
-        print(f'Could not find SKU in {price_sheet_path}')
+    print(f'Could not find SKU in {price_sheet_path}')
+    return None
 
 
 if __name__ == '__main__':
