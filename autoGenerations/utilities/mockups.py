@@ -6,6 +6,7 @@ from tqdm.auto import tqdm
 
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
+Image.MAX_IMAGE_PIXELS = 278956970
 
 
 def create_mockups(input_image_path: str, out_dir: str, dimensions: Union[None, List[str]] = None) -> List[str]:
