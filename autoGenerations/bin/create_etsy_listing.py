@@ -10,7 +10,6 @@ from apis.openai import API as OpenaiAPI
 from apis.google_cloud import Storage
 from bin.print_price import calc_price
 from utilities.mockups import create_mockups as generate_mockups
-from gcloud.streaming.exceptions import HttpError
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -142,11 +141,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     # First upload the product image to google cloud storage
     cloud_storage_path = os.path.join(shop_section, os.path.basename(product_image))
-    try:
-        gc_storage.upload_image(image_path=product_image, cloud_storage_path=cloud_storage_path)
-    except HttpError as e:
-        raise FileNotFoundError(f"Do the folders in the path {cloud_storage_path} exist? You will have to do this "
-                                f"manually if not. Can't do it from API")
+    gc_storage.upload_image(image_path=product_image, cloud_storage_path=cloud_storage_path)
 
     # Second create the draft listing
     response = etsy_api.create_draft_listing(listing_data, str(shop_id))
