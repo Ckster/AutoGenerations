@@ -102,7 +102,7 @@ def create_mockups(input_image_path: str, out_dir: str, dimensions: Union[None, 
 
     os.makedirs(out_dir, exist_ok=True)
 
-    product_image = Image.open(input_image_path)
+    product_image = Image.open(input_image_path).convert("RGBA")
 
     print(f'Generating {len(dimensions)} dimensions each for {len(mockup_images)} mockup images')
 
