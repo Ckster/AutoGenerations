@@ -1,14 +1,16 @@
+import json
 import os
 import shutil
-import sys
 from typing import Union, List, Dict
 import argparse
 import tempfile
 
 from apis.etsy import API as EtsyAPI
 from apis.openai import API as OpenaiAPI
+from apis.google_cloud import Storage
 from bin.print_price import calc_price
 from utilities.mockups import create_mockups as generate_mockups
+from gcloud.streaming.exceptions import HttpError
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -17,6 +19,7 @@ PROPERTY_ID_LOOKUP = {
     507: 'Material'
 }
 
+
 # Shop section IDs
 # Porsche: 41699988
 # BMW E30: 41695359
@@ -24,27 +27,27 @@ PROPERTY_ID_LOOKUP = {
 
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
-            'role': 'user',
-            'content': f"Create an Etsy Listing description for a {product} named {title}. Don't include any "
-                       f"information about paper weight or dimensions"
-       }]
+        'role': 'user',
+        'content': f"Create an Etsy Listing description for a {product} named {title}. Don't include any "
+                   f"information about paper weight or dimensions"
+    }]
 
 
 def create_tags_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
-            'role': 'user',
-            'content': f"Create an Etsy Listing indexing tag list with 13 tags for a {product} named {title} in Python"
-                       f" list format. Each tag cannot exceed 20 characters in length"
+        'role': 'user',
+        'content': f"Create an Etsy Listing indexing tag list with 13 tags for a {product} named {title} in Python"
+                   f" list format. Each tag cannot exceed 20 characters in length"
     }]
 
 
 def create_listing(product_image: str, product_title: str, create_mockups: bool, prodigi_sku: str,
                    dimensions: Union[str, List[str]], quantity: Union[int, List[int]], shop_id: int,
                    listing_type: str, shipping_profile_id: int, property_id: int, scale_id: int,
-                   mockups: Union[List[str], None], product: str,
-                   shop_section_id: int = None):
+                   mockups: Union[List[str], None], product: str, shop_section: str):
     etsy_api = EtsyAPI()
     openai_api = OpenaiAPI()
+    gc_storage = Storage()
 
     has_variations = isinstance(dimensions, list)
     if not has_variations:
@@ -57,14 +60,28 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         'should_auto_renew': True,
         'who_made': 'i_did',
         'when_made': 'made_to_order',
-        'taxonomy_id': '2078',
+        'taxonomy_id': '2078',  # TODO: What are these?
         'quantity': '999' if has_variations else quantity,
         'price': '100',  # Dummy price
         'listing_type': listing_type
     }
 
-    if shop_section_id is not None:
-        listing_data['shop_section_id'] = shop_section_id
+    # Resolve shop section ID
+    existing_shop_sections_response = etsy_api.get_shop_sections(str(shop_id))
+    shop_section_id = None
+    for section in existing_shop_sections_response['results']:
+        if section['title'].lower() == shop_section.lower():
+            shop_section_id = section['shop_section_id']
+
+    if shop_section_id is None:
+        create_section_input = input(f'Shop section {shop_section} does not exist. Would you like to create it? (y/n)')
+        if create_section_input == 'y':
+            etsy_api.create_shop_section(shop_id=str(shop_id), title=product_title)
+        else:
+            print('Exiting')
+            return
+
+    listing_data['shop_section_id'] = shop_section_id
 
     # Need to resolve a shipping profile ID for physical items
     if listing_type == 'physical':
@@ -77,7 +94,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         'sku_on_property': [property_id]
     }
 
-    etsy_skus = []
+    skus = []
     for i, dimension in enumerate(dimensions):
         dim_prodigi_sku = prodigi_sku + dimension
         dim_etsy_sku = (product_title.replace(' ', '_').upper() + '_' + dimension).upper()[:32]
@@ -87,7 +104,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
             raise LookupError(f'Could not find price for {dim_prodigi_sku}')
 
         dim_quantity = quantity[i] if isinstance(quantity, list) else quantity
-        etsy_skus.append(dim_etsy_sku)
+        skus.append({'etsy': dim_etsy_sku, 'prodigi': dim_prodigi_sku})
 
         inventory_information['products'].append(
             {
@@ -95,7 +112,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
                 'property_values': [
                     {
                         'property_id': property_id,
-                        'value_ids': [i+1],
+                        'value_ids': [i + 1],
                         'scale_id': scale_id,
                         'property_name': PROPERTY_ID_LOOKUP[property_id] if property_id in PROPERTY_ID_LOOKUP else None,
                         'values': [dimension]
@@ -121,16 +138,24 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     listing_data['tags'] = tags
 
-    print(etsy_skus)
+    print(skus)
 
-    # First create the draft listing
+    # First upload the product image to google cloud storage
+    cloud_storage_path = os.path.join(shop_section, os.path.basename(product_image))
+    try:
+        gc_storage.upload_image(image_path=product_image, cloud_storage_path=cloud_storage_path)
+    except HttpError as e:
+        raise FileNotFoundError(f"Do the folders in the path {cloud_storage_path} exist? You will have to do this "
+                                f"manually if not. Can't do it from API")
+
+    # Second create the draft listing
     response = etsy_api.create_draft_listing(listing_data, str(shop_id))
     listing_id = response['listing_id']
 
-    # Second add the product inventory (variations)
+    # Third add the product inventory (variations)
     etsy_api.update_listing_inventory(str(listing_id), inventory_information)
 
-    # Last upload the product images
+    # Fourth upload the product images
     tempdir = None
     if mockups is not None:
         mockup_images = mockups
@@ -155,13 +180,28 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
         image_data = {
             'image': open(mock_image, 'rb'),
-            'rank': i+1,
+            'rank': i + 1,
             'overwrite': True
         }
         etsy_api.upload_listing_image(shop_id=str(shop_id), listing_id=str(listing_id), image_data=image_data)
 
     if tempdir is not None:
         shutil.rmtree(tempdir)
+
+    # Finally update the SKU map with the new listing info
+    with open(os.path.join(PROJECT_DIR, 'sku_map.json'), 'r') as f:
+        sku_map = json.load(f)
+
+    for sku in skus:
+        sku_map[sku['etsy']] = {
+            'prodigi_sku': sku['prodigi'],
+            'asset_url': cloud_storage_path
+        }
+
+    with open(os.path.join(PROJECT_DIR, 'sku_map.json'), 'w') as f:
+        json.dump(sku_map, f, indent=1)
+
+    print('Added listing and updated sku map')
 
 
 if __name__ == '__main__':
@@ -173,7 +213,7 @@ if __name__ == '__main__':
                              'create_mockups is not flagged and no mockups are provided this will be the only image '
                              'used for the listing')
     parser.add_argument('--title', '-t', type=str, required=True,
-                        help='Title of the listing. Will be used to make description by Chat unless description '\
+                        help='Title of the listing. Will be used to make description by Chat unless description ' \
                              'override is provided')
     parser.add_argument('--create_mockups', '-m', action='store_true',
                         help='If set then mockups are made. Not all product types support auto mocking')
@@ -200,8 +240,8 @@ if __name__ == '__main__':
                              ' 999 for each variation')
     parser.add_argument('--shop_id', type=int, required=False, default=40548296, help='Etsy shop ID. Defaults to '
                                                                                       'AutoGenerations')
-    parser.add_argument('--shop_section_id', type=int, required=False, help='The shop section ID. If not set then no '
-                                                                            'shop section')
+    parser.add_argument('--shop_section', type=str, required=True, help='The shop section ID. If not set then no '
+                                                                        'shop section')
     parser.add_argument('--listing_type', type=str, required=False, default='physical',
                         help='Whether the listing is a physical or digital product. Default is physical.')
     parser.add_argument('--shipping_profile_id', type=int, required=False, default=197559363961,
@@ -226,7 +266,7 @@ if __name__ == '__main__':
         dimensions=args.dimensions,
         quantity=args.quantity,
         shop_id=args.shop_id,
-        shop_section_id=args.shop_section_id,
+        shop_section=args.shop_section,
         listing_type=args.listing_type,
         shipping_profile_id=args.shipping_profile_id,
         property_id=args.property_id,

@@ -334,3 +334,25 @@ class API(Secrets):
             return response.json()
         else:
             raise LookupError(response.json())
+
+    def create_shop_section(self, shop_id: str, title: str):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'sections')
+
+        data = {'title': title}
+
+        response = requests.post(url, headers=self._signed_header, data=data)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_shop_sections(self, shop_id: str):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'sections')
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())

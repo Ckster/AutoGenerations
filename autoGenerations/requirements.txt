@@ -1,5 +1,7 @@
-sqlalchemy
-requests
-pillow
-tqdm
-openai
+sqlalchemy~=2.0.3
+requests~=2.28.2
+pillow~=9.4.0
+tqdm~=4.65.0
+openai~=0.27.2
+google-cloud-storage
+google-api-core
