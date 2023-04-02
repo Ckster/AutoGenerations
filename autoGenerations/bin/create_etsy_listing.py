@@ -25,6 +25,7 @@ PROPERTY_ID_LOOKUP = {
 
 # TODO: Taxonomy ID
 # TODO: Return Policy ID
+# TODO: Link variations to images
 
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
@@ -78,7 +79,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     if shop_section_id is None:
         create_section_input = input(f'Shop section {shop_section} does not exist. Would you like to create it? (y/n)')
         if create_section_input == 'y':
-            etsy_api.create_shop_section(shop_id=str(shop_id), title=product_title)
+            etsy_api.create_shop_section(shop_id=str(shop_id), title=shop_section)
         else:
             print('Exiting')
             return
