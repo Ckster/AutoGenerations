@@ -23,6 +23,8 @@ PROPERTY_ID_LOOKUP = {
 # Porsche: 41699988
 # BMW E30: 41695359
 
+# TODO: Taxonomy ID
+# TODO: Return Policy ID
 
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
@@ -36,7 +38,8 @@ def create_tags_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
         'role': 'user',
         'content': f"Create an Etsy Listing indexing tag list with 13 tags for a {product} named {title} in Python"
-                   f" list format. Each tag cannot exceed 20 characters in length"
+                   f" list format. Each tag cannot exceed 20 characters in length. Only use standard alphabet"
+                   f" characters."
     }]
 
 
@@ -59,7 +62,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         'should_auto_renew': True,
         'who_made': 'i_did',
         'when_made': 'made_to_order',
-        'taxonomy_id': '2078',  # TODO: What are these?
+        'taxonomy_id': '2078',
         'quantity': '999' if has_variations else quantity,
         'price': '100',  # Dummy price
         'listing_type': listing_type
@@ -134,6 +137,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     tags = tags_response['choices'][0]['message']['content'].replace('[', '').replace(']', '').split(',')
     tags = [t for t in tags if len(t) < 20][:13]
+    print(tags)
 
     listing_data['tags'] = tags
 
