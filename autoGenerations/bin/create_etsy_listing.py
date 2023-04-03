@@ -157,8 +157,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     listing_id = response['listing_id']
 
     # Third add the product inventory (variations)
-    response = etsy_api.update_listing_inventory(str(listing_id), inventory_information)
-    print(response)
+    inventory_response = etsy_api.update_listing_inventory(str(listing_id), inventory_information)
 
     # Fourth upload the product images
     tempdir = None
@@ -197,15 +196,18 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     # Assign an image to each variation... this could be more efficient but isn't a huge deal
     variation_image_data = []
-    for variation in inventory_information['products']:
+    for variation in inventory_response['products']:
+        dimensions = variation['values'][0]
+        property_id = variation['property_values']['property_id']
+        value_id = variation['property_values']['value_ids'][0]
+
         for image in image_ids:
-            vals = variation['property_values'][0]
 
             # Use blue background for now
-            if vals['values'][0].lower() in image[0].lower() and 'blue_wall' in image[0].lower():
+            if dimensions.lower() in image[0].lower() and 'blue_wall' in image[0].lower():
                 variation_image_data.append({
-                    'property_id': vals['property_id'],
-                    'value_id': vals['value_ids'][0],
+                    'property_id': property_id,
+                    'value_id': value_id,
                     'image_id': image[1]
                 })
 
