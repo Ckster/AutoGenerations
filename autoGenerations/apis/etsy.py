@@ -1,9 +1,8 @@
 import os
 import json
 import requests
-from typing import Dict, Union, Any
+from typing import Dict, Union, Any, List
 
-from apis.enums import Carrier
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -150,7 +149,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def upload_listing_image(self, shop_id, listing_id, image_data):
+    def upload_listing_image(self, shop_id: str, listing_id: str, image_data):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
                            'images')
 
@@ -160,6 +159,36 @@ class API(Secrets):
         response = requests.post(url, headers=header, files=image_data)
 
         if response.status_code == 201:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def update_variation_images(self, shop_id, listing_id, variation_images: List[Dict[str, Any]]):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
+                           'variation-images')
+
+        header = self._signed_header
+        header['Content-Type'] = 'application/json'
+
+        data = {
+            'variation_images': variation_images
+        }
+
+        print(data)
+
+        response = requests.post(url, headers=header, data=json.dumps(data))
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_shop_return_policies(self, shop_id):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'policies', 'return')
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
             return response.json()
         else:
             raise LookupError(response.json())

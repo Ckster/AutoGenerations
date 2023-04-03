@@ -10,6 +10,7 @@ from apis.openai import API as OpenaiAPI
 from apis.google_cloud import Storage
 from bin.print_price import calc_price
 from utilities.mockups import create_mockups as generate_mockups
+import numpy as np
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -27,6 +28,8 @@ PROPERTY_ID_LOOKUP = {
 # TODO: Return Policy ID
 # TODO: Link variations to images
 
+BASE_TAGS = ['Car wall art', 'Automotive decor', 'vintage design', 'garage poster', 'classic car', 'car enthusiast']
+
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
         'role': 'user',
@@ -35,18 +38,16 @@ def create_description_chat_message(title: str, product: str) -> List[Dict[str, 
     }]
 
 
-def create_tags_chat_message(title: str, product: str) -> List[Dict[str, str]]:
-    return [{
-        'role': 'user',
-        'content': f"Create an Etsy Listing indexing tag list with 13 tags for a {product} named {title} in Python"
-                   f" list format. Each tag cannot exceed 20 characters in length. Only use standard alphabet"
-                   f" characters."
-    }]
+def generate_unique_sku(sku_map: Dict[str, Dict[str, str]]):
+    possible_sku = str(np.random.randint(2**63))
+    if possible_sku in sku_map.keys():
+        return generate_unique_sku(sku_map)
+    return possible_sku
 
 
 def create_listing(product_image: str, product_title: str, create_mockups: bool, prodigi_sku: str,
                    dimensions: Union[str, List[str]], quantity: Union[int, List[int]], shop_id: int,
-                   listing_type: str, shipping_profile_id: int, property_id: int, scale_id: int,
+                   listing_type: str, shipping_profile_id: int, return_policy_id: int, property_id: int, scale_id: int,
                    mockups: Union[List[str], None], product: str, shop_section: str):
     etsy_api = EtsyAPI()
     openai_api = OpenaiAPI()
@@ -90,6 +91,8 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     if listing_type == 'physical':
         listing_data['shipping_profile_id'] = shipping_profile_id
 
+    listing_data['return_policy_id'] = return_policy_id
+
     inventory_information = {
         'products': [],
         'price_on_property': [property_id],
@@ -97,10 +100,13 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         'sku_on_property': [property_id]
     }
 
+    with open(os.path.join(PROJECT_DIR, 'sku_map.json'), 'r') as f:
+        sku_map = json.load(f)
+
     skus = []
     for i, dimension in enumerate(dimensions):
         dim_prodigi_sku = prodigi_sku + dimension
-        dim_etsy_sku = (product_title.replace(' ', '_').upper() + '_' + dimension).upper()[:32]
+        dim_etsy_sku = generate_unique_sku(sku_map)
 
         dim_price = calc_price(dim_prodigi_sku)
         if dim_price is None:
@@ -132,12 +138,10 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         )
 
     description_response = openai_api.chat(create_description_chat_message(title=product_title, product=product))
-    tags_response = openai_api.chat(create_tags_chat_message(title=product_title, product=product))
 
     listing_data['description'] = description_response['choices'][0]['message']['content']
 
-    tags = tags_response['choices'][0]['message']['content'].replace('[', '').replace(']', '').split(',')
-    tags = [t for t in tags if len(t) < 20][:13]
+    tags = BASE_TAGS + [shop_section, product_title]
     print(tags)
 
     listing_data['tags'] = tags
@@ -146,14 +150,15 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     # First upload the product image to google cloud storage
     cloud_storage_path = os.path.join(shop_section, os.path.basename(product_image))
-    gc_storage.upload_image(image_path=product_image, cloud_storage_path=cloud_storage_path)
+    cloud_storage_path = gc_storage.upload_image(image_path=product_image, cloud_storage_path=cloud_storage_path)
 
     # Second create the draft listing
     response = etsy_api.create_draft_listing(listing_data, str(shop_id))
     listing_id = response['listing_id']
 
     # Third add the product inventory (variations)
-    etsy_api.update_listing_inventory(str(listing_id), inventory_information)
+    response = etsy_api.update_listing_inventory(str(listing_id), inventory_information)
+    print(response)
 
     # Fourth upload the product images
     tempdir = None
@@ -165,14 +170,14 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         tempdir = tempfile.mkdtemp(prefix='mockups')
         mockup_images = generate_mockups(product_image, tempdir, dimensions=dimensions)
         try:
-            mockup_images = sorted(mockup_images, key=lambda x: int(x.lower().split('_')[-1].split('x')[0]),
-                                   reverse=True)
+            mockup_images = sorted(mockup_images, key=lambda x: int(x.lower().split('_')[-1].split('x')[0]))
         except Exception as e:
             print('Tried sorting mockups so largest size was thumbnail but it failed, check this manually')
 
     else:
         mockup_images = [product_image]
 
+    image_ids = []
     for i, mock_image in enumerate(mockup_images):
         # Can only have 10 images in listing
         if i > 9:
@@ -183,15 +188,31 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
             'rank': i + 1,
             'overwrite': True
         }
-        etsy_api.upload_listing_image(shop_id=str(shop_id), listing_id=str(listing_id), image_data=image_data)
+        response = etsy_api.upload_listing_image(shop_id=str(shop_id), listing_id=str(listing_id),
+                                                 image_data=image_data)
+        image_ids.append((mock_image, response['listing_image_id']))
 
     if tempdir is not None:
         shutil.rmtree(tempdir)
 
-    # Finally update the SKU map with the new listing info
-    with open(os.path.join(PROJECT_DIR, 'sku_map.json'), 'r') as f:
-        sku_map = json.load(f)
+    # Assign an image to each variation... this could be more efficient but isn't a huge deal
+    variation_image_data = []
+    for variation in inventory_information['products']:
+        for image in image_ids:
+            vals = variation['property_values'][0]
 
+            # Use blue background for now
+            if vals['values'][0].lower() in image[0].lower() and 'blue_wall' in image[0].lower():
+                variation_image_data.append({
+                    'property_id': vals['property_id'],
+                    'value_id': vals['value_ids'][0],
+                    'image_id': image[1]
+                })
+
+    etsy_api.update_variation_images(shop_id=str(shop_id), listing_id=str(listing_id),
+                                     variation_images=variation_image_data)
+
+    # Finally update the SKU map with the new listing info
     for sku in skus:
         sku_map[sku['etsy']] = {
             'prodigi_sku': sku['prodigi'],
@@ -247,6 +268,9 @@ if __name__ == '__main__':
     parser.add_argument('--shipping_profile_id', type=int, required=False, default=197559363961,
                         help='Shipping profile ID defines the shipping time, price, etc. Default is free shipping'
                              ' processing in 5-7 business days')
+    parser.add_argument('--return_policy_id', type=int, required=False, default=1154380155511,
+                        help='Return policy ID defines the return policy for the listing. Default is no returns '
+                             'accepted')
     parser.add_argument('--property_id', type=int, required=False, default=501,
                         help='Defines the type of property to create product variations on. The id is defined by Etsy.'
                              'The default is 501 which is variation by Dimension')
@@ -269,6 +293,7 @@ if __name__ == '__main__':
         shop_section=args.shop_section,
         listing_type=args.listing_type,
         shipping_profile_id=args.shipping_profile_id,
+        return_policy_id=args.return_policy_id,
         property_id=args.property_id,
         scale_id=args.scale_id,
         mockups=args.mockups,

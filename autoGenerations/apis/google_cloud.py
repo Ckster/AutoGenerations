@@ -1,4 +1,5 @@
 import os
+import urllib
 
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
@@ -23,7 +24,7 @@ class Storage(Secrets):
         blob = bucket.blob(cloud_storage_path)
         blob.upload_from_filename(image_path)
 
-        return f'https://storage.googleapis.com/{bucket_name}/{cloud_storage_path}'
+        return urllib.parse.quote(f'https://storage.googleapis.com/{bucket_name}/{cloud_storage_path}')
 
     def get_bucket(self, bucket_name: str):
         try:
