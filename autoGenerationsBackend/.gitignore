@@ -1,0 +1,5 @@
+backend/backend/settings.py
+backend/backend/database/secrets.py
+.idea
+cert.pem
+key.pem
