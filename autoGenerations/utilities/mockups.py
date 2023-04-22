@@ -1,19 +1,23 @@
 import os.path
+from typing import List, Union
 
 from PIL import Image
 from tqdm.auto import tqdm
 
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
+Image.MAX_IMAGE_PIXELS = 278956970
 
 
-def create_mockups(input_image_path: str, out_dir: str) -> None:
+def create_mockups(input_image_path: str, out_dir: str, dimensions: Union[None, List[str]] = None) -> List[str]:
     """
     Generates mock images for an input product image. Specify the output directory where you would like the files
     written to. This directory will be made if it does not already exist.
     Args:
         input_image_path (str): Path to the product image to create mockups for
         out_dir (str): Path to the directory where the output mock images will be written
+        dimensions (list): List of variation dimensions. For now mockup images are scaled in inches only. Default values
+            are 8x12, 16x24, 20x30, 24x36
     """
     mockup_images = [
         # Blue wall
@@ -94,14 +98,15 @@ def create_mockups(input_image_path: str, out_dir: str) -> None:
         '16x24',
         '20x30',
         '24x36'
-    ]
+    ] if dimensions is None else [d.lower() for d in dimensions]
 
     os.makedirs(out_dir, exist_ok=True)
 
-    product_image = Image.open(input_image_path)
+    product_image = Image.open(input_image_path).convert("RGBA")
 
     print(f'Generating {len(dimensions)} dimensions each for {len(mockup_images)} mockup images')
 
+    outpaths = []
     for mockup_info in tqdm(mockup_images):
         for dimension in tqdm(dimensions):
             dim = mockup_info[dimension]['placeholder_dimensions']
@@ -112,6 +117,9 @@ def create_mockups(input_image_path: str, out_dir: str) -> None:
             top_left = (mockup_info[dimension]['position'][0], mockup_info[dimension]['position'][1])
             mockup_image.paste(resized_image, top_left, mask=resized_image)
 
-            mockup_image.save(os.path.join(out_dir, os.path.basename(mock_image_path)))
+            outpath = os.path.join(out_dir, os.path.basename(mock_image_path))
+            mockup_image.save(outpath)
+            outpaths.append(outpath)
 
     print(f'Finished writing {len(mockup_images) * len(dimensions)} images to {out_dir}')
+    return outpaths

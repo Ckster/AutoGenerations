@@ -1,85 +1,178 @@
 {
-  "bmwe30_black_14x14_sticker": {
-    "prodigi_sku": "GLOBAL-STI-14X14-M",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/sticker_black_white_complete_final_v2.png"
-  },
-  "TEST_SKU_BMWe30_20x30": {
-    "prodigi_sku": "EP-GLOBAL-PAP-20X30",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/mysmacias_bMW_e30_poster_watercolor_grayscale_e62e1407-59e4-416e-bee0-283fe3c384ac_upscayl_4x_realesrgan-x4plus_upscayl_4x_realesrgan-x4plus.png"
-  },
-  "TEST_SKU_BMWe30_8x12": {
-    "prodigi_sku": "GLOBAL-PAP-A4",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/mysmacias_bMW_e30_poster_watercolor_grayscale_e62e1407-59e4-416e-bee0-283fe3c384ac_upscayl_4x_realesrgan-x4plus_upscayl_4x_realesrgan-x4plus.png"
-  },
-  "TEST_SKU_porsche911_8x12": {
-    "prodigi_sku": "GLOBAL-BLP-A4",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Black_white_porsche911_watercolor_2x3_high_res_border.png"
-  },
-  "SKU_PORSCHE_GREEN_20x30_CANVAS": {
-    "prodigi_sku": "EP-GLOBAL-CAN-20X30",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
-  },
-  "SKU_PORSCHE_GREEN_20x30_PRINT": {
-    "prodigi_sku": "EP-GLOBAL-PAP-20X30",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
-  },
-  "SKU_PORSCHE_GREEN_8x12_CANVAS": {
-    "prodigi_sku": "ECO-CAN-8X12",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
-  },
-  "SKU_PORSCHE_GREEN_8x12_PRINT": {
-    "prodigi_sku": "GLOBAL-PAP-A4",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
-  },
-
-  "BMW_M3_SNOW_MOUNTAIN_BLUE_8x12": {
-    "prodigi_sku": "EP-GLOBAL-PAP-8X12",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
-  },
-  "BMW_M3_SNOW_MOUNTAIN_BLUE_16x24": {
-    "prodigi_sku": "EP-GLOBAL-PAP-16X24",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
-  },
-  "BMW_M3_SNOW_MOUNTAIN_BLUE_20x30": {
-    "prodigi_sku": "EP-GLOBAL-PAP-20X30",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
-  },
-  "BMW_M3_SNOW_MOUNTAIN_BLUE_24x36": {
-    "prodigi_sku": "EP-GLOBAL-PAP-24X36",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
-  },
-
-  "BMW_M3_SNOWY_SUNSET_8x12": {
-    "prodigi_sku": "EP-GLOBAL-PAP-8X12",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
-  },
-  "BMW_M3_SNOWY_SUNSET_16x24": {
-    "prodigi_sku": "EP-GLOBAL-PAP-16X24",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
-  },
-  "BMW_M3_SNOWY_SUNSET_20x30": {
-    "prodigi_sku": "EP-GLOBAL-PAP-20X30",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
-  },
-  "BMW_M3_SNOWY_SUNSET_24x36": {
-    "prodigi_sku": "EP-GLOBAL-PAP-24X36",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
-  },
-  "PORSCHE_GOLDEN_HOUR_8x12": {
-     "prodigi_sku": "EP-GLOBAL-PAP-8X12",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
-  },
-  "PORSCHE_GOLDEN_HOUR_16x24": {
-     "prodigi_sku": "EP-GLOBAL-PAP-16X24",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
-  },"PORSCHE_GOLDEN_HOUR_20x30": {
-     "prodigi_sku": "EP-GLOBAL-PAP-20X30",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
-  },"PORSCHE_GOLDEN_HOUR_24x36": {
-     "prodigi_sku": "EP-GLOBAL-PAP-24X36",
-    "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
-  }
-
-
-
+ "bmwe30_black_14x14_sticker": {
+  "prodigi_sku": "GLOBAL-STI-14X14-M",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/sticker_black_white_complete_final_v2.png"
+ },
+ "TEST_SKU_BMWe30_20x30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/mysmacias_bMW_e30_poster_watercolor_grayscale_e62e1407-59e4-416e-bee0-283fe3c384ac_upscayl_4x_realesrgan-x4plus_upscayl_4x_realesrgan-x4plus.png"
+ },
+ "TEST_SKU_BMWe30_8x12": {
+  "prodigi_sku": "GLOBAL-PAP-A4",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/mysmacias_bMW_e30_poster_watercolor_grayscale_e62e1407-59e4-416e-bee0-283fe3c384ac_upscayl_4x_realesrgan-x4plus_upscayl_4x_realesrgan-x4plus.png"
+ },
+ "TEST_SKU_porsche911_8x12": {
+  "prodigi_sku": "GLOBAL-BLP-A4",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Black_white_porsche911_watercolor_2x3_high_res_border.png"
+ },
+ "SKU_PORSCHE_GREEN_20x30_CANVAS": {
+  "prodigi_sku": "EP-GLOBAL-CAN-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
+ },
+ "SKU_PORSCHE_GREEN_20x30_PRINT": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
+ },
+ "SKU_PORSCHE_GREEN_8x12_CANVAS": {
+  "prodigi_sku": "ECO-CAN-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
+ },
+ "SKU_PORSCHE_GREEN_8x12_PRINT": {
+  "prodigi_sku": "GLOBAL-PAP-A4",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/Green_white_porsche911_watercolor_2x3_high_res_border.png"
+ },
+ "BMW_M3_SNOW_MOUNTAIN_BLUE_8x12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
+ },
+ "BMW_M3_SNOW_MOUNTAIN_BLUE_16x24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
+ },
+ "BMW_M3_SNOW_MOUNTAIN_BLUE_20x30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
+ },
+ "BMW_M3_SNOW_MOUNTAIN_BLUE_24x36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/BMW_M3_Poster_SNOW_MTN_high_res.png"
+ },
+ "BMW_M3_SNOWY_SUNSET_8x12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
+ },
+ "BMW_M3_SNOWY_SUNSET_16x24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
+ },
+ "BMW_M3_SNOWY_SUNSET_20x30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
+ },
+ "BMW_M3_SNOWY_SUNSET_24x36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/BMW/m3_snowy_sunset_high_res.png"
+ },
+ "PORSCHE_GOLDEN_HOUR_8x12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
+ },
+ "PORSCHE_GOLDEN_HOUR_16x24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
+ },
+ "PORSCHE_GOLDEN_HOUR_20x30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
+ },
+ "PORSCHE_GOLDEN_HOUR_24x36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Porsche/mysmacias_Capture_the_beauty_of_a_Porsche_911_against_a_stunnin_eaca2ee8-0914-48a1-944c-bd50653bce26_upscayl_8x_realesrgan-x4plus.png"
+ },
+ "PORSCHE_911_POSTER_RETRO_8X12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final_green.jpg"
+ },
+ "PORSCHE_911_POSTER_RETRO_16X24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final_green.jpg"
+ },
+ "PORSCHE_911_POSTER_RETRO_20X30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final_green.jpg"
+ },
+ "PORSCHE_911_POSTER_RETRO_24X36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final_green.jpg"
+ },
+ "PORSCHE_911_POSTER_8X12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final.jpg"
+ },
+ "PORSCHE_911_POSTER_16X24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final.jpg"
+ },
+ "PORSCHE_911_POSTER_20X30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final.jpg"
+ },
+ "PORSCHE_911_POSTER_24X36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/porsche_mtn_final.jpg"
+ },
+ "RED_BMW_E30_M3_POSTER_8X12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/minimalist_BMW_mtn_upscayl_8x_realesrgan-x4plus.jpg"
+ },
+ "RED_BMW_E30_M3_POSTER_16X24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/minimalist_BMW_mtn_upscayl_8x_realesrgan-x4plus.jpg"
+ },
+ "RED_BMW_E30_M3_POSTER_20X30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/minimalist_BMW_mtn_upscayl_8x_realesrgan-x4plus.jpg"
+ },
+ "RED_BMW_E30_M3_POSTER_24X36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/porsche/minimalist_BMW_mtn_upscayl_8x_realesrgan-x4plus.jpg"
+ },
+ "BLACK_BMW_E30_M3_POSTER_8X12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/bmw%20e30/minimalist_BMW_blk_final.png"
+ },
+ "BLACK_BMW_E30_M3_POSTER_16X24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/bmw%20e30/minimalist_BMW_blk_final.png"
+ },
+ "BLACK_BMW_E30_M3_POSTER_20X30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/bmw%20e30/minimalist_BMW_blk_final.png"
+ },
+ "BLACK_BMW_E30_M3_POSTER_24X36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/bmw%20e30/minimalist_BMW_blk_final.png"
+ },
+ "LIGHT_BLUE_1967_CORVETTE_8x12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/light_blue_1967_Corvette_427_upscayl_final.jpg"
+ },
+ "LIGHT_BLUE_1967_CORVETTE_16x24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/light_blue_1967_Corvette_427_upscayl_final.jpg"
+ },
+ "LIGHT_BLUE_1967_CORVETTE_20x30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/light_blue_1967_Corvette_427_upscayl_final.jpg"
+ },
+ "LIGHT_BLUE_1967_CORVETTE_24x36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/light_blue_1967_Corvette_427_upscayl_final.jpg"
+ },
+ "GRAY_1967_CORVETTE_POSTER_8X12": {
+  "prodigi_sku": "EP-GLOBAL-PAP-8X12",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/grey_1967_Corvette_final.jpg"
+ },
+ "GRAY_1967_CORVETTE_POSTER_16X24": {
+  "prodigi_sku": "EP-GLOBAL-PAP-16X24",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/grey_1967_Corvette_final.jpg"
+ },
+ "GRAY_1967_CORVETTE_POSTER_20X30": {
+  "prodigi_sku": "EP-GLOBAL-PAP-20X30",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/grey_1967_Corvette_final.jpg"
+ },
+ "GRAY_1967_CORVETTE_POSTER_24X36": {
+  "prodigi_sku": "EP-GLOBAL-PAP-24X36",
+  "asset_url": "https://storage.googleapis.com/auto_generations_shop/Corvette/grey_1967_Corvette_final.jpg"
+ }
 }
