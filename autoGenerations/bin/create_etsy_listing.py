@@ -141,10 +141,10 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     listing_data['description'] = description_response['choices'][0]['message']['content']
 
-    tags = BASE_TAGS + [shop_section, product_title]
+    tags = BASE_TAGS + [shop_section] + product_title.split(' ')
     print(tags)
 
-    listing_data['tags'] = tags
+    listing_data['tags'] = tags[:13]
 
     print(skus)
 
