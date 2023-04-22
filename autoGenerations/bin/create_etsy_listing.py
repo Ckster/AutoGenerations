@@ -198,9 +198,9 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     variation_image_data = []
     print(inventory_response['products'])
     for variation in inventory_response['products']:
-        dimensions = variation['property_values']['values'][0]
-        property_id = variation['property_values']['property_id']
-        value_id = variation['property_values']['value_ids'][0]
+        dimensions = variation['property_values'][0]['values'][0]
+        property_id = variation['property_values'][0]['property_id']
+        value_id = variation['property_values'][0]['value_ids'][0]
 
         for image in image_ids:
 
