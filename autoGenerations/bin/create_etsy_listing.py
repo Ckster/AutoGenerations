@@ -196,6 +196,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     # Assign an image to each variation... this could be more efficient but isn't a huge deal
     variation_image_data = []
+    print(inventory_response['products'])
     for variation in inventory_response['products']:
         dimensions = variation['property_values']['values'][0]
         property_id = variation['property_values']['property_id']
