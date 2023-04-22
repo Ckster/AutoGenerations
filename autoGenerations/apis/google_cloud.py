@@ -11,7 +11,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 class Secrets:
     def __init__(self):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(PROJECT_DIR,
-                                                                    'booming-cairn-380522-09ef51f88409.json')
+                                                                    'booming-cairn-380522-002e5ada4689.json')
 
 
 class Storage(Secrets):
