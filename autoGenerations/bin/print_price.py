@@ -2,6 +2,7 @@ from typing import Union
 import argparse
 import csv
 import os.path
+import math
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -28,8 +29,10 @@ def calc_price(prodigi_sku: str, price_sheet_path: str = None) -> Union[str, Non
                     # pass on 6.5% etsy charge to customer
                     selling_price *= 1.065
 
-                    print(f'${round(selling_price, 2)}')
-                    return str(round(selling_price, 2))
+                    selling_price = math.ceil(selling_price)
+
+                    print(f'${selling_price}.00')
+                    return str(selling_price) + '.00'
 
     print(f'Could not find SKU in {price_sheet_path}')
     return None

@@ -45,7 +45,7 @@ def fulfill_orders():
                 for transaction in receipt.transactions:
 
                     etsy_sku = transaction.product.sku
-                    sku_info = sku_map[etsy_sku]
+                    sku_info = sku_map[str(etsy_sku)]
                     prodigi_sku = sku_info['prodigi_sku']
                     asset_url = sku_info['asset_url']
                     attributes = sku_info['attributes'] if 'attributes' in sku_info else {}
