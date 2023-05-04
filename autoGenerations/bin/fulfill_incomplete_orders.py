@@ -14,6 +14,7 @@ from apis.prodigi import API
 from alerts.email import send_mail
 
 from sqlalchemy.orm import Session
+import traceback
 
 
 PROJECT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)))
@@ -211,7 +212,7 @@ def fulfill_orders():
                 session.commit()
 
             except Exception as e:
-                send_mail(f'Fulfill Orders Error for Receipt {receipt.receipt_id}', str(e))
+                send_mail(f'Fulfill Orders Error for Receipt {receipt.receipt_id}', str(traceback.format_exc()))
 
 
 if __name__ == '__main__':

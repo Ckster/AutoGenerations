@@ -12,6 +12,7 @@ from alerts.email import send_mail
 
 from sqlalchemy.orm import Session
 from datetime import timezone
+import traceback
 
 response = {'count': 1,
             'results': [{
@@ -401,7 +402,8 @@ def get_etsy_orders():
                     session.flush()
 
             except Exception as e:
-                send_mail(f"Get Etsy Orders Error for receipt: {receipt['receipt_id']}", str(e))
+                send_mail(f"Get Etsy Orders Error for receipt: {receipt['receipt_id']}",
+                          str(traceback.format_exc()))
 
         session.commit()
 

@@ -23,7 +23,7 @@ def calc_price(prodigi_sku: str, price_sheet_path: str = None) -> Union[str, Non
                     total_cost = float(row['Shipping price']) + float(row['Product price'])
 
                     # 25% profit
-                    selling_price = total_cost * 1.25
+                    selling_price = total_cost * 1.085 * 1.30
 
                     # pass on 6.5% etsy charge to customer
                     selling_price *= 1.065
