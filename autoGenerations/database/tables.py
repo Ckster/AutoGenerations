@@ -9,7 +9,7 @@ from database.namespaces import EtsyReceiptSpace, EtsyReceiptShipmentSpace, Etsy
     EtsyRefundSpace, ProdigiOrderSpace, ProdigiChargeSpace, ProdigiShipmentSpace, ProdigiShipmentItemSpace,\
     ProdigiFulfillmentLocationSpace, ProdigiRecipientSpace, ProdigiItemSpace, ProdigiCostSpace, ProdigiAssetSpace,\
     ProdigiPackingSlipSpace, ProdigiChargeItemSpace, ProdigiStatusSpace, ProdigiIssueSpace, \
-    ProdigiAuthorizationDetailsSpace, ProdigiShipmentDetailSpace
+    ProdigiAuthorizationDetailsSpace, ProdigiShipmentDetailSpace, ProdigiAddressSpace
 
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, ForeignKey, Enum, Table, DateTime
@@ -542,7 +542,7 @@ class Address(Base):
     def create(cls, address_data: Union[AddressSpace, ProdigiAddressSpace, Dict[str, Any]],
                receipts: List[EtsyReceipt] = None,
                buyers: List[EtsyBuyer] = None) -> Address:
-        if not isinstance(address_data, AddressSpace):
+        if not isinstance(address_data, (AddressSpace, ProdigiAddressSpace)):
             address_data = cls.create_namespace(address_data)
 
         address = Address(
