@@ -63,7 +63,6 @@ class API(Secrets):
             "recipient": {
                 "address": {
                     "line1":  address.first_line,
-                    "line2": address.second_line,
                     "postalOrZipCode": address.zip_code,
                     "countryCode": address.country,
                     "townOrCity": address.city,
@@ -75,6 +74,9 @@ class API(Secrets):
             },
             "items": items
         }
+
+        if address.second_line is not None:
+            body['recipient']['address']['line2'] = address.second_line
 
         response = requests.post(url, headers=headers, json=body)
 
