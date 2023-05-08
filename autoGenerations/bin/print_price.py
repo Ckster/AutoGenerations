@@ -21,18 +21,25 @@ def calc_price(prodigi_sku: str, price_sheet_path: str = None) -> Union[str, Non
             dict_reader = csv.DictReader(f)
             for row in dict_reader:
                 if row['SKU'] == prodigi_sku and row['Shipping method'] == 'Budget':
-                    total_cost = float(row['Shipping price']) + float(row['Product price'])
+                    # Can only have one shipping profile per variation so fix shipping cost to $10 and pass on
+                    # difference
+                    shipping_price = float(row['Shipping price'])
+                    pass_on = shipping_price - 9.95
 
-                    # 25% profit
-                    selling_price = total_cost * 1.085 * 1.30
+                    product_price = float(row['Product price'])
+                    total_cost =  product_price + shipping_price
+
+                    # 30% profit
+                    selling_price = product_price * 1.40 + pass_on
 
                     # pass on 6.5% etsy charge to customer
                     selling_price *= 1.065
 
-                    selling_price = math.ceil(selling_price)
+                    selling_price = math.ceil(selling_price) - 0.05
 
-                    print(f'${selling_price}.00')
-                    return str(selling_price) + '.00'
+                    print(f'Selling price: {selling_price}, shipping price: {9.95},'
+                          f' profit {selling_price + 9.95 - total_cost}')
+                    return str(selling_price)
 
     print(f'Could not find SKU in {price_sheet_path}')
     return None

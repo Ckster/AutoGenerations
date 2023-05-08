@@ -269,7 +269,7 @@ if __name__ == '__main__':
                                                                         'shop section')
     parser.add_argument('--listing_type', type=str, required=False, default='physical',
                         help='Whether the listing is a physical or digital product. Default is physical.')
-    parser.add_argument('--shipping_profile_id', type=int, required=False, default=197559363961,
+    parser.add_argument('--shipping_profile_id', type=int, required=False, default=197777256321,
                         help='Shipping profile ID defines the shipping time, price, etc. Default is free shipping'
                              ' processing in 5-7 business days')
     parser.add_argument('--return_policy_id', type=int, required=False, default=1154380155511,

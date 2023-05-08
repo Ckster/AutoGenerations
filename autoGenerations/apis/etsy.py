@@ -296,6 +296,16 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
+    def get_shipping_profiles(self, shop_id: int):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'shipping-profiles')
+
+        response = requests.get(url, headers=self._signed_header)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
     def get_production_partners(self, shop_id: int):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', str(shop_id), 'production-partners')
 
