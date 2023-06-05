@@ -3,23 +3,61 @@ from typing import List, Union
 
 from PIL import Image
 from tqdm.auto import tqdm
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 Image.MAX_IMAGE_PIXELS = 278956970
 
-
-def create_mockups(input_image_path: str, out_dir: str, dimensions: Union[None, List[str]] = None) -> List[str]:
-    """
-    Generates mock images for an input product image. Specify the output directory where you would like the files
-    written to. This directory will be made if it does not already exist.
-    Args:
-        input_image_path (str): Path to the product image to create mockups for
-        out_dir (str): Path to the directory where the output mock images will be written
-        dimensions (list): List of variation dimensions. For now mockup images are scaled in inches only. Default values
-            are 8x12, 16x24, 20x30, 24x36
-    """
-    mockup_images = [
+IMAGE_POSITIONS = {
+    'simple_2:3': [
+        {
+            'mockup': {
+                'position': (953, 397),
+                'placeholder_dimensions': (1021-953, 2006-397),
+                'path': os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'simplistic_mockup_2:3.png')
+            }
+        },
+        {
+            'top_right': {
+                'zoom': 1,
+                'position_ratios': (5/6, 1/6),
+                'path': 'top_right.png'
+            }
+        },
+        {
+            'bottom_left': {
+                'zoom': 1,
+                'position_ratios': (1/6, 5/6),
+                'path': 'bottom_left.png'
+            }
+        }
+    ],
+    'simple_3:2': [
+        {
+            'mockup': {
+                'position': (620, 608),
+                'placeholder_dimensions': (2384 - 620, 1785 - 608),
+                'path': os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'simplistic_mockup_3:2.png')
+            }
+        },
+        {
+            'top_right': {
+                'zoom': 1,
+                'position_ratios': (5/6, 1/6),
+                'path': 'top_right.png'
+            }
+        },
+        {
+            'bottom_left': {
+                'zoom': 1,
+                'position_ratios': (1/6, 5/6),
+                'path': 'bottom_left.png'
+            }
+        }
+    ],
+    'apartment': [
         # Blue wall
         {
             '8x12': {
@@ -92,34 +130,108 @@ def create_mockups(input_image_path: str, out_dir: str, dimensions: Union[None, 
             }
         }
     ]
+}
 
-    dimensions = [
-        '8x12',
-        '16x24',
-        '20x30',
-        '24x36'
-    ] if dimensions is None else [d.lower() for d in dimensions]
 
+def zoom_at(img, x, y, zoom):
+    w, h = img.size
+    zoom2 = zoom * 2
+    img = img.crop((max(0, x - w / zoom2), max(0, y - h / zoom2),
+                    min(w, x + w / zoom2), min(h, y + h / zoom2)))
+    return img.resize((w, h), Image.LANCZOS)
+
+
+def add_watermark(input_image_path, output_image_path, watermark_text):
+    # Open the input image
+    image = Image.open(input_image_path)
+    # Create a transparent layer for the watermark
+    watermark = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    # Choose a font and font size for the watermark
+    font = ImageFont.truetype(os.path.join(PROJECT_DIR, 'data', 'fonts', "Nunito-Italic-VariableFont_wght.ttf"), 30)
+    # Calculate the position to place the watermark (centered)
+    for x_ratio in np.linspace(0, 1.1, 10):
+        for y_ratio in np.linspace(0, 2, 20):
+            x = int(image.width * x_ratio)
+            y = int(image.height * y_ratio)
+            draw = ImageDraw.Draw(watermark)
+            draw.text((0, 0), watermark_text, font=font, fill=(255, 255, 255, 80))
+            rotated_watermark = watermark.rotate(45, expand=True)
+            image.paste(rotated_watermark, (x, y - image.width), mask=rotated_watermark)
+    # Save the watermarked image
+    image.save(output_image_path)
+    
+def add_copyright(input_image_path, copyright_text: str):
+    input_image = Image.open(input_image_path)
+    copyright = Image.new("RGBA", input_image.size, (0, 0, 0, 0))
+    font = ImageFont.truetype(os.path.join(PROJECT_DIR, 'data', 'fonts', 'IBMPlexMono-Bold.ttf'), 50)
+    draw = ImageDraw.Draw(copyright)
+    draw.text((0, 0), copyright_text, font=font, fill=(0, 0, 0, 255))
+    text_width, text_height = draw.textsize(copyright_text, font)
+    input_image.paste(copyright, ((input_image.width - text_width) // 2, int(input_image.height * 0.95)),
+                      mask=copyright)
+    input_image.save(input_image_path)
+
+
+def create_mockup(mockup_info, dimension: str, product_image: Image, out_dir: str) -> str:
+    dim = mockup_info[dimension]['placeholder_dimensions']
+    resized_image = product_image.resize(dim, Image.LANCZOS)
+
+    mock_image_path = mockup_info[dimension]['path']
+    mockup_image = Image.open(mock_image_path)
+    top_left = (mockup_info[dimension]['position'][0], mockup_info[dimension]['position'][1])
+    mockup_image.paste(resized_image, top_left, mask=resized_image)
+
+    outpath = os.path.join(out_dir, os.path.basename(mock_image_path))
+    mockup_image.save(outpath)
+    return outpath
+
+
+def create_zoomed_image(mockup_info, image_type: str, product_image: Image, out_dir: str) -> str:
+    w = product_image.size[0]
+    h = product_image.size[1]
+    ratios = mockup_info[image_type]['position_ratios']
+    zoom = mockup_info[image_type]['zoom']
+    zoomed_image = zoom_at(product_image, int(w * ratios[0]), int(h * ratios[1]), zoom)
+    nw = 2000 if w < h else int(2000 * (w/h))
+    nh = 2000 if h < w else int(2000 * (h/w))
+    print(f'resizing to {(nw, nh)}')
+    zoomed_image = zoomed_image.resize((nw, nh))
+
+    mock_image_path = mockup_info[image_type]['path']
+    outpath = os.path.join(out_dir, os.path.basename(mock_image_path))
+
+    zoomed_image.save(outpath, ppi=(72, 72))
+    return outpath
+
+def create_listing_images(input_image_path: str, out_dir: str, style: str = 'simple_2:3') -> List[str]:
+    """
+    Generates mock images for an input product image. Specify the output directory where you would like the files
+    written to. This directory will be made if it does not already exist.
+    Args:
+        input_image_path (str): Path to the product image to create mockups for
+        out_dir (str): Path to the directory where the output mock images will be written
+    """
     os.makedirs(out_dir, exist_ok=True)
 
     product_image = Image.open(input_image_path).convert("RGBA")
 
-    print(f'Generating {len(dimensions)} dimensions each for {len(mockup_images)} mockup images')
+    mockup_images = IMAGE_POSITIONS[style]
 
     outpaths = []
     for mockup_info in tqdm(mockup_images):
-        for dimension in tqdm(dimensions):
-            dim = mockup_info[dimension]['placeholder_dimensions']
-            resized_image = product_image.resize(dim, Image.LANCZOS)
+        images = list(mockup_info.keys())
+        for image in tqdm(images):
+            image_info = list(mockup_info[image].keys())
+            if 'placeholder_dimensions' in image_info:
+                outpath = create_mockup(mockup_info, image, product_image, out_dir)
+            elif 'zoom' in image_info:
+                outpath = create_zoomed_image(mockup_info, image, product_image, out_dir)
+            else:
+                continue
 
-            mock_image_path = mockup_info[dimension]['path']
-            mockup_image = Image.open(mock_image_path)
-            top_left = (mockup_info[dimension]['position'][0], mockup_info[dimension]['position'][1])
-            mockup_image.paste(resized_image, top_left, mask=resized_image)
-
-            outpath = os.path.join(out_dir, os.path.basename(mock_image_path))
-            mockup_image.save(outpath)
+            add_watermark(outpath, outpath, 'AutoGenerations')
+            add_copyright(outpath, '\u00A9 2023 AutoGenerations')
             outpaths.append(outpath)
 
-    print(f'Finished writing {len(mockup_images) * len(dimensions)} images to {out_dir}')
+    print(f'Finished writing images to {out_dir}')
     return outpaths
