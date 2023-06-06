@@ -9,7 +9,7 @@ from apis.etsy import API as EtsyAPI
 from apis.openai import API as OpenaiAPI
 from apis.google_cloud import Storage
 from bin.print_price import calc_price
-from utilities.mockups import create_mockups as generate_mockups
+from utilities.mockups import create_listing_images
 import numpy as np
 import urllib
 
@@ -29,7 +29,18 @@ PROPERTY_ID_LOOKUP = {
 # TODO: Return Policy ID
 # TODO: Link variations to images
 
-BASE_TAGS = ['Car wall art', 'Automotive decor', 'vintage design', 'garage poster', 'classic car', 'car enthusiast']
+SHOP_SECTION_TAGS = {
+    'BMW E30': ['bmw e30 print', 'bmw 325i', 'bmw e32', 'bmw m3', 'bmw poster', 'bmw wall art', 'm3', 'bmw garage'],
+    'Porsche': ['retro porsche', 'porsche 911', '911 turbo', 'vintage porsche'],
+    'Corvette': ['corvette', 'corvette art', 'corvette retro'],
+    'Jeep': ['Jeep', 'Jeep poster', 'Jeep art', 'Jeep decor', 'Vintage jeep', 'jeep wall art'],
+    'BMW E92': ['bmw poster', 'bmw e90', 'bmw e92', 'bmw wall art', 'bmw e92 m3', 'e92', 'bmw_garage'],
+    'Motorcycles': ['racing poster', 'motorcycle art', 'isle of man', 'suzuki', 'kawasaki', 'bmw', 'triumph', 'suzuki',
+                    'aprilia']
+}
+
+BASE_TAGS = ['mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art','car art',
+             'car enthusiast']
 
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
@@ -49,7 +60,7 @@ def generate_unique_sku(sku_map: Dict[str, Dict[str, str]]):
 def create_listing(product_image: str, product_title: str, create_mockups: bool, prodigi_sku: str,
                    dimensions: Union[str, List[str]], quantity: Union[int, List[int]], shop_id: int,
                    listing_type: str, shipping_profile_id: int, return_policy_id: int, property_id: int, scale_id: int,
-                   mockups: Union[List[str], None], product: str, shop_section: str):
+                   mockups: Union[List[str], None], product: str, shop_section: str, aspect_ratio: str):
     etsy_api = EtsyAPI()
     openai_api = OpenaiAPI()
     gc_storage = Storage()
@@ -79,7 +90,8 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
             shop_section_id = section['shop_section_id']
 
     if shop_section_id is None:
-        create_section_input = input(f'Shop section {shop_section} does not exist. Would you like to create it? (y/n)')
+        create_section_input = input(f"Shop section {shop_section} does not exist. Would you like to create it? (y/n) "
+                                     f"\n Existing shop sections: {existing_shop_sections_response['results']}")
         if create_section_input == 'y':
             etsy_api.create_shop_section(shop_id=str(shop_id), title=shop_section)
         else:
@@ -142,8 +154,8 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     listing_data['description'] = description_response['choices'][0]['message']['content']
 
-    tags = list(set(BASE_TAGS + [shop_section] + product_title.split(' ')))
-    print(tags)
+    tags = SHOP_SECTION_TAGS[shop_section] if shop_section in SHOP_SECTION_TAGS else []
+    tags += BASE_TAGS
 
     listing_data['tags'] = tags[:13]
 
@@ -169,12 +181,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     elif create_mockups:
         print('Creating mockup images')
         tempdir = tempfile.mkdtemp(prefix='mockups')
-        mockup_images = generate_mockups(product_image, tempdir, dimensions=dimensions)
-        try:
-            mockup_images = sorted(mockup_images, key=lambda x: int(x.lower().split('_')[-1].split('x')[0]))
-        except Exception as e:
-            print('Tried sorting mockups so largest size was thumbnail but it failed, check this manually')
-
+        mockup_images = generate_listing_images(product_image, tempdir, style=f'simple_{aspect_ratio}')
     else:
         mockup_images = [product_image]
 
@@ -195,26 +202,6 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     if tempdir is not None:
         shutil.rmtree(tempdir)
-
-    # Assign an image to each variation... this could be more efficient but isn't a huge deal
-    variation_image_data = []
-    for variation in inventory_response['products']:
-        dimensions = variation['property_values'][0]['values'][0]
-        property_id = variation['property_values'][0]['property_id']
-        value_id = variation['property_values'][0]['value_ids'][0]
-
-        for image in image_ids:
-
-            # Use blue background for now
-            if dimensions.lower() in image[0].lower() and 'blue_wall' in image[0].lower():
-                variation_image_data.append({
-                    'property_id': property_id,
-                    'value_id': value_id,
-                    'image_id': image[1]
-                })
-
-    etsy_api.update_variation_images(shop_id=str(shop_id), listing_id=str(listing_id),
-                                     variation_images=variation_image_data)
 
     # Finally update the SKU map with the new listing info
     for sku in skus:
@@ -269,7 +256,7 @@ if __name__ == '__main__':
                                                                         'shop section')
     parser.add_argument('--listing_type', type=str, required=False, default='physical',
                         help='Whether the listing is a physical or digital product. Default is physical.')
-    parser.add_argument('--shipping_profile_id', type=int, required=False, default=197777256321,
+    parser.add_argument('--shipping_profile_id', type=int, required=False, default=197944947769,
                         help='Shipping profile ID defines the shipping time, price, etc. Default is free shipping'
                              ' processing in 5-7 business days')
     parser.add_argument('--return_policy_id', type=int, required=False, default=1154380155511,
@@ -284,6 +271,8 @@ if __name__ == '__main__':
     parser.add_argument('--product', type=str, required=False, default='poster',
                         help='The product that is going on the listing i.e. poster, sticker sheet, etc. Default is'
                              ' poster')
+    parser.add_argument('--aspect_ratio', type=str, required=False, default='2:3',
+                        help='Aspect ratio of the image. 2:3, 3:2 etc')
 
     args = parser.parse_args()
     create_listing(
@@ -301,5 +290,6 @@ if __name__ == '__main__':
         property_id=args.property_id,
         scale_id=args.scale_id,
         mockups=args.mockups,
-        product=args.product
+        product=args.product,
+        aspect_ratio=args.aspect_ratio
     )

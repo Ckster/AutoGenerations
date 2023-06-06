@@ -15,7 +15,7 @@ IMAGE_POSITIONS = {
         {
             'mockup': {
                 'position': (953, 397),
-                'placeholder_dimensions': (1021-953, 2006-397),
+                'placeholder_dimensions': (2050-953, 2006-397),
                 'path': os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'simplistic_mockup_2:3.png')
             }
         },
@@ -31,6 +31,15 @@ IMAGE_POSITIONS = {
                 'zoom': 1,
                 'position_ratios': (1/6, 5/6),
                 'path': 'bottom_left.png'
+            }
+        },
+        {
+            'gray_logo': {
+                'position': (1860, 125),
+                'placeholder_dimensions': (1220, 1830),
+                # 'frame_position': (1830, 75),
+                # 'frame_dimensions': (1280, 1930),
+                'path': os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'gray_background_2:3.jpeg')
             }
         }
     ],
@@ -54,6 +63,15 @@ IMAGE_POSITIONS = {
                 'zoom': 1,
                 'position_ratios': (1/6, 5/6),
                 'path': 'bottom_left.png'
+            }
+        },
+        {
+            'gray_logo': {
+                'position': (1600, 360),
+                'placeholder_dimensions': (1850, 1233),
+                # 'frame_position': (1570, 310),
+                # 'frame_dimensions': (1910, 1333),
+                'path': os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'gray_background_3:2.jpeg')
             }
         }
     ],
@@ -160,17 +178,39 @@ def add_watermark(input_image_path, output_image_path, watermark_text):
     # Save the watermarked image
     image.save(output_image_path)
     
-def add_copyright(input_image_path, copyright_text: str):
+def add_copyright(input_image_path, copyright_text: str, height_ratio: float  = 0.975):
     input_image = Image.open(input_image_path)
     copyright = Image.new("RGBA", input_image.size, (0, 0, 0, 0))
     font = ImageFont.truetype(os.path.join(PROJECT_DIR, 'data', 'fonts', 'IBMPlexMono-Bold.ttf'), 50)
     draw = ImageDraw.Draw(copyright)
     draw.text((0, 0), copyright_text, font=font, fill=(0, 0, 0, 255))
     text_width, text_height = draw.textsize(copyright_text, font)
-    input_image.paste(copyright, ((input_image.width - text_width) // 2, int(input_image.height * 0.95)),
+    input_image.paste(copyright, ((input_image.width - text_width) // 2, int(input_image.height * height_ratio)),
                       mask=copyright)
     input_image.save(input_image_path)
 
+def add_frame(mockup_info, image_type: str, out_dir: str) -> str:
+    # Define the coordinates of the white rectangle
+    top_left = mockup_info[image_type]['frame_position']
+    frame_dimensions = mockup_info[image_type]['frame_dimensions']
+    placeholder_image = mockup_info[image_type]['path']
+
+    image = Image.open(placeholder_image)
+
+    # Create a draw object
+    draw = ImageDraw.Draw(image)
+
+    bottom_right = (top_left[0] + frame_dimensions[0], top_left[1] + frame_dimensions[1])
+
+    # Draw the white rectangle
+    draw.rectangle([top_left, bottom_right], fill=(255, 255, 255))
+
+    outpath = os.path.join(out_dir, os.path.basename(placeholder_image))
+
+    # Save the image with the white rectangle
+    image.save(outpath)
+
+    return outpath
 
 def create_mockup(mockup_info, dimension: str, product_image: Image, out_dir: str) -> str:
     dim = mockup_info[dimension]['placeholder_dimensions']
@@ -222,15 +262,19 @@ def create_listing_images(input_image_path: str, out_dir: str, style: str = 'sim
         images = list(mockup_info.keys())
         for image in tqdm(images):
             image_info = list(mockup_info[image].keys())
+            # if 'frame_position' in image_info:
+            #     outpath = add_frame(mockup_info, image, out_dir)
+
             if 'placeholder_dimensions' in image_info:
                 outpath = create_mockup(mockup_info, image, product_image, out_dir)
+                add_copyright(outpath, '\u00A9 2023 AutoGenerations')
+
             elif 'zoom' in image_info:
                 outpath = create_zoomed_image(mockup_info, image, product_image, out_dir)
             else:
                 continue
 
             add_watermark(outpath, outpath, 'AutoGenerations')
-            add_copyright(outpath, '\u00A9 2023 AutoGenerations')
             outpaths.append(outpath)
 
     print(f'Finished writing images to {out_dir}')

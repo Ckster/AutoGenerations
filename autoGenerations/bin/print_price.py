@@ -24,21 +24,18 @@ def calc_price(prodigi_sku: str, price_sheet_path: str = None) -> Union[str, Non
                     # Can only have one shipping profile per variation so fix shipping cost to $10 and pass on
                     # difference
                     shipping_price = float(row['Shipping price'])
-                    pass_on = shipping_price - 9.95
-
                     product_price = float(row['Product price'])
                     total_cost =  product_price + shipping_price
 
                     # 30% profit
-                    selling_price = product_price * 1.40 + pass_on
+                    selling_price = total_cost * 1.50
 
                     # pass on 6.5% etsy charge to customer
                     selling_price *= 1.065
 
                     selling_price = math.ceil(selling_price) - 0.05
 
-                    print(f'Selling price: {selling_price}, shipping price: {9.95},'
-                          f' profit {selling_price + 9.95 - total_cost}')
+                    print(f'Selling price: {selling_price}, profit {selling_price - total_cost}')
                     return str(selling_price)
 
     print(f'Could not find SKU in {price_sheet_path}')
