@@ -267,7 +267,7 @@ def create_listing_images(input_image_path: str, out_dir: str, style: str = 'sim
 
             if 'placeholder_dimensions' in image_info:
                 outpath = create_mockup(mockup_info, image, product_image, out_dir)
-                if style != 'simple_3:2' and image != 'gray_logo':
+                if not (style == 'simple_3:2' and image == 'gray_logo'):
                     add_copyright(outpath, '\u00A9 2023 AutoGenerations')
 
             elif 'zoom' in image_info:
