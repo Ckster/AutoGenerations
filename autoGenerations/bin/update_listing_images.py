@@ -45,12 +45,12 @@ def update_listing_images(listing_id: str, product_image_path: str, aspect_ratio
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--listing_id', type=int, required=True, help='ID of the listing to update the images for')
+    parser.add_argument('--listing_id', type=str, required=True, help='ID of the listing to update the images for')
     parser.add_argument('--product_image', type=str, required=True, help='Path to the image to use for the product')
     parser.add_argument('--aspect_ratio', type=str, required=True, help='Aspect ratio of the new mockup images, 2:3, '
                                                                         '3:2 etc')
 
-    parser.add_argument('--shop_id', type=int, required=False, default=40548296, help='Etsy shop ID. Defaults to '
+    parser.add_argument('--shop_id', type=str, required=False, default=40548296, help='Etsy shop ID. Defaults to '
                                                                                       'AutoGenerations')
     args = parser.parse_args()
     update_listing_images(args.listing_id, args.product_image, args.aspect_ratio, args.shop_id)
