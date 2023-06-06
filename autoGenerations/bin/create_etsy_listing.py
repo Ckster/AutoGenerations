@@ -181,7 +181,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     elif create_mockups:
         print('Creating mockup images')
         tempdir = tempfile.mkdtemp(prefix='mockups')
-        mockup_images = generate_listing_images(product_image, tempdir, style=f'simple_{aspect_ratio}')
+        mockup_images = create_listing_images(product_image, tempdir, style=f'simple_{aspect_ratio}')
     else:
         mockup_images = [product_image]
 
