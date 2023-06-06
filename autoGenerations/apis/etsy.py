@@ -163,6 +163,32 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
+    def delete_listing_image(self, shop_id: str, listing_id: str, image_id: str):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
+                           'images', image_id)
+
+        header = self._signed_header
+
+        response = requests.delete(url, headers=header)
+
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def get_listing_images(self, shop_id: str, listing_id: str):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
+                           'images')
+
+        header = self._signed_header
+
+        response = requests.get(url, headers=header)
+
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
     def update_variation_images(self, shop_id, listing_id, variation_images: List[Dict[str, Any]]):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
                            'variation-images')
