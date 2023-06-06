@@ -16,12 +16,16 @@ import urllib
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
-def update_listing_images(listing_id: str, product_image_path: str, aspect_ratio: str, shop_id: str):
+def update_listing_images(listing_id: str, product_image_path: str, aspect_ratio: str, shop_id: str,
+                          new_image_dir: str):
     etsy_api = EtsyAPI()
 
-    tempdir = tempfile.mkdtemp(prefix='mockups')
-    mockup_images = create_listing_images(product_image_path, tempdir, style=f'simple_{aspect_ratio}')
-    mockup_images.reverse()
+    if new_image_dir is None:
+        tempdir = tempfile.mkdtemp(prefix='mockups')
+        mockup_images = create_listing_images(product_image_path, tempdir, style=f'simple_{aspect_ratio}')
+        mockup_images.reverse()
+    else:
+        mockup_images = [os.path.join(new_image_dir, file) for file in os.listdir(new_image_dir)]
 
     existing_images_response = etsy_api.get_listing_images(shop_id, listing_id)
 
@@ -52,5 +56,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--shop_id', type=str, required=False, default='40548296', help='Etsy shop ID. Defaults to '
                                                                                       'AutoGenerations')
+    parser.add_argument('--new_image_dir', type=str, required=False, help='Path to new images to use instead of '
+                                                                          'generating new mockups')
     args = parser.parse_args()
-    update_listing_images(args.listing_id, args.product_image, args.aspect_ratio, args.shop_id)
+    update_listing_images(args.listing_id, args.product_image, args.aspect_ratio, args.shop_id, args.new_image_dir)

@@ -171,7 +171,7 @@ class API(Secrets):
 
         response = requests.delete(url, headers=header)
 
-        if response.status_code == 201:
+        if response.status_code == 204:
             return response.json()
         else:
             raise LookupError(response.json())
@@ -184,7 +184,7 @@ class API(Secrets):
 
         response = requests.get(url, headers=header)
 
-        if response.status_code == 201:
+        if response.status_code == 200:
             return response.json()
         else:
             raise LookupError(response.json())
