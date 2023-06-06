@@ -157,7 +157,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     tags = SHOP_SECTION_TAGS[shop_section] if shop_section in SHOP_SECTION_TAGS else []
     tags += BASE_TAGS
 
-    listing_data['tags'] = tags[:13]
+    listing_data['tags'] = list(set(tags))[:13]
 
     print(skus)
 
