@@ -30,7 +30,7 @@ def update_listing_images(listing_id: str, product_image_path: str, aspect_ratio
     existing_images_response = etsy_api.get_listing_images(shop_id, listing_id)
 
     for image in existing_images_response['results']:
-        image_id = image['listing_image_id']
+        image_id = str(image['listing_image_id'])
         etsy_api.delete_listing_image(shop_id, listing_id, image_id)
 
     for i, mock_image in enumerate(mockup_images):
