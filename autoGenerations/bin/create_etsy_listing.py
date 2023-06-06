@@ -185,6 +185,8 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     else:
         mockup_images = [product_image]
 
+    mockup_images.reverse()
+
     image_ids = []
     for i, mock_image in enumerate(mockup_images):
         # Can only have 10 images in listing
