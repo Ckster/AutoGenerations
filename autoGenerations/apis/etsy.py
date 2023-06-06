@@ -172,7 +172,7 @@ class API(Secrets):
         response = requests.delete(url, headers=header)
 
         if response.status_code == 204:
-            return response.json()
+            return 'success'
         else:
             raise LookupError(response.json())
 
