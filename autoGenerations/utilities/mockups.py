@@ -178,7 +178,7 @@ def add_watermark(input_image_path, output_image_path, watermark_text):
     # Save the watermarked image
     image.save(output_image_path)
     
-def add_copyright(input_image_path, copyright_text: str, height_ratio: float  = 0.975):
+def add_copyright(input_image_path, copyright_text: str, height_ratio: float  = 0.965):
     input_image = Image.open(input_image_path)
     copyright = Image.new("RGBA", input_image.size, (0, 0, 0, 0))
     font = ImageFont.truetype(os.path.join(PROJECT_DIR, 'data', 'fonts', 'IBMPlexMono-Bold.ttf'), 50)
