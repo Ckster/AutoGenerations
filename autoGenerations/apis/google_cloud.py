@@ -26,6 +26,11 @@ class Storage(Secrets):
 
         return urllib.parse.quote(f'https://storage.googleapis.com/{bucket_name}/{cloud_storage_path}')
 
+    def download_image(self, cloud_storage_path: str, out_dir: str, bucket_name: str = 'auto_generations_shop'):
+        bucket = self.get_bucket(bucket_name)
+        blob = bucket.blob(cloud_storage_path)
+        blob.download_to_filename(os.path.join(out_dir, os.path.basename(cloud_storage_path)))
+
     def get_bucket(self, bucket_name: str):
         try:
             bucket = self.client.get_bucket(bucket_name)
