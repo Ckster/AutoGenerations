@@ -206,7 +206,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     if tempdir is not None:
         shutil.rmtree(tempdir)
 
-    # Finally update the SKU map with the new listing info
+    # Fifth update the SKU map with the new listing info
     for sku in skus:
         sku_map[sku['etsy']] = {
             'prodigi_sku': sku['prodigi'],
@@ -217,6 +217,11 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
         json.dump(sku_map, f, indent=1)
 
     print('Added listing and updated sku map')
+
+    # Finally create an instagram post for the listing. The mockups must be uploaded to google cloud storage so
+    # Instagram can retrieve them
+    # TODO: Make sure captions are formatted correctly for https url params
+
 
 
 if __name__ == '__main__':
