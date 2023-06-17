@@ -36,7 +36,8 @@ SHOP_SECTION_TAGS = {
     'Jeep': ['Jeep', 'Jeep poster', 'Jeep art', 'Jeep decor', 'Vintage jeep', 'jeep wall art'],
     'BMW E92': ['bmw poster', 'bmw e90', 'bmw e92', 'bmw wall art', 'bmw e92 m3', 'e92', 'bmw_garage'],
     'Motorcycles': ['racing poster', 'motorcycle art', 'isle of man', 'suzuki', 'kawasaki', 'bmw', 'triumph', 'suzuki',
-                    'aprilia']
+                    'aprilia'],
+    'Formula 1': ['formula 1', 'racing', 'drag racing']
 }
 
 BASE_TAGS = ['boys nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art',
