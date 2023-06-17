@@ -39,8 +39,8 @@ SHOP_SECTION_TAGS = {
                     'aprilia']
 }
 
-BASE_TAGS = ['mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art','car art',
-             'car enthusiast']
+BASE_TAGS = ['boys_nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art',
+             'car art', 'car enthusiast']
 
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
