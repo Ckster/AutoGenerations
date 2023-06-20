@@ -21,14 +21,6 @@ PROPERTY_ID_LOOKUP = {
 }
 
 
-# Shop section IDs
-# Porsche: 41699988
-# BMW E30: 41695359
-
-# TODO: Taxonomy ID
-# TODO: Return Policy ID
-# TODO: Link variations to images
-
 SHOP_SECTION_TAGS = {
     'BMW E30': ['bmw e30 print', 'bmw 325i', 'bmw e32', 'bmw m3', 'bmw poster', 'bmw wall art', 'm3', 'bmw garage'],
     'Porsche': ['retro porsche', 'porsche 911', '911 turbo', 'vintage porsche'],
@@ -37,7 +29,8 @@ SHOP_SECTION_TAGS = {
     'BMW E92': ['bmw poster', 'bmw e90', 'bmw e92', 'bmw wall art', 'bmw e92 m3', 'e92', 'bmw_garage'],
     'Motorcycles': ['racing poster', 'motorcycle art', 'isle of man', 'suzuki', 'kawasaki', 'bmw', 'triumph', 'suzuki',
                     'aprilia'],
-    'Formula 1': ['formula 1', 'racing', 'drag racing']
+    'Formula 1': ['formula 1', 'racing', 'drag racing'],
+    'Tesla': ['tesla', 'tesla art', 'tesla poster', 'tesla decor']
 }
 
 BASE_TAGS = ['boys nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art',
