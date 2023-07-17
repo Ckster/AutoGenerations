@@ -91,7 +91,7 @@ class API(Secrets):
         url = os.path.join(self.BASE_URL, "orders", order_id)
 
         headers = {
-            "X-API-Key": self.access_key,
+            "X-API-Key": self.access_key
         }
 
         response = requests.get(url, headers=headers)
