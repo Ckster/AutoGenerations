@@ -106,7 +106,7 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
         'title': product_title,
         'should_auto_renew': True,
         'who_made': 'i_did',
-        'when_made': 'made_to_order',
+        'when_made': '2020_2023',
         'taxonomy_id': '2078',
         'quantity': quantity,
         'price': '4.95',  # Dummy price
