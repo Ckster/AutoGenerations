@@ -261,18 +261,20 @@ def get_etsy_orders():
                         return_policy.update(return_policy_space, listings=[listing], shop=shop)
                         session.flush()
 
-                    shipping_profile_response = etsy_api.get_shipping_profile(listing_space.shop_id,
-                                                                              listing_space.shipping_profile_id)
-                    shipping_profile_space = EtsyShippingProfileSpace(shipping_profile_response)
-                    shipping_profile = EtsyShippingProfile.get_existing(session, shipping_profile_space.shipping_profile_id)
-                    if shipping_profile is None:
-                        shipping_profile = EtsyShippingProfile.create(shipping_profile_space, seller=seller,
-                                                                      listings=[listing])
-                        session.add(shipping_profile)
-                        session.flush()
-                    else:
-                        shipping_profile.update(shipping_profile_response, listings=[listing], seller=seller)
-                        session.flush()
+                    if listing_space.listing_type == Etsy.ListingType.PHYSICAL:
+                        shipping_profile_response = etsy_api.get_shipping_profile(listing_space.shop_id,
+                                                                                  listing_space.shipping_profile_id)
+                        shipping_profile_space = EtsyShippingProfileSpace(shipping_profile_response)
+                        shipping_profile = EtsyShippingProfile.get_existing(session,
+                                                                            shipping_profile_space.shipping_profile_id)
+                        if shipping_profile is None:
+                            shipping_profile = EtsyShippingProfile.create(shipping_profile_space, seller=seller,
+                                                                          listings=[listing])
+                            session.add(shipping_profile)
+                            session.flush()
+                        else:
+                            shipping_profile.update(shipping_profile_response, listings=[listing], seller=seller)
+                            session.flush()
 
                     production_partners = []
                     production_partners_response = etsy_api.get_production_partners(listing_space.shop_id)
