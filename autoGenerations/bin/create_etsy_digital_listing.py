@@ -27,8 +27,8 @@ BASE_TAGS = ['boys nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
         'role': 'user',
-        'content': f"Create an Etsy Listing description for a {product} named {title}. Don't include any "
-                   f"information about paper weight or dimensions"
+        'content': f"Create an Etsy Listing description for a digital product {product} named {title}. Don't include "
+                   f"any information about paper weight or dimensions"
     }]
 
 
@@ -76,7 +76,8 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
 
     listing_data['return_policy_id'] = return_policy_id
 
-    description_response = openai_api.chat(create_description_chat_message(title=product_title, product=product))
+    description_response = openai_api.chat(create_description_chat_message(title=product_title, product=product,
+                                                                           is_digital=True))
 
     listing_data['description'] = description_response['choices'][0]['message']['content']
 
