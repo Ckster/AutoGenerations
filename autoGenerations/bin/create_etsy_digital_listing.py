@@ -120,7 +120,7 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
     response = etsy_api.create_draft_listing(listing_data, str(shop_id))
     listing_id = response['listing_id']
 
-    # Third upload the digital image asset
+    # Third upload the listing image and digital image asset
 
     # Resize the image to the maximum of 20 MB
     tempdir = tempfile.mkdtemp()
@@ -128,16 +128,23 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
     resize_and_compress_image(product_image, resized_image_path)
 
     file_data = {
-        'file': open(resized_image_path, 'rb'),
+        'file': (os.path.basename(product_image), open(resized_image_path, 'rb'), 'multipart/form-data'),
         'rank': 1
     }
 
     etsy_api.upload_listing_file(shop_id=str(shop_id), listing_id=str(listing_id), file_data=file_data,
                                  name=os.path.basename(product_image))
 
+    image_data = {
+        'image': open(resized_image_path, 'rb'),
+        'rank': 1,
+        'overwrite': True
+    }
+    etsy_api.upload_listing_image(shop_id=str(shop_id), listing_id=str(listing_id), image_data=image_data)
+
     # Finally update the listing fields
-    etsy_api.update_listing(shop_id=str(shop_id), listing_id=str(listing_id), listing_data={'is_digital': True,
-                                                                                            'type': 'download'})
+    etsy_api.update_listing(shop_id=str(shop_id), listing_id=listing_id, listing_data={'is_digital': True,
+                                                                                       'type': 'download'})
 
     shutil.rmtree(tempdir)
 

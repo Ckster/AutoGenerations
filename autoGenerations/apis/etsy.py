@@ -181,7 +181,7 @@ class API(Secrets):
     def update_listing(self, shop_id: str, listing_id: str, listing_data: Dict[str, Any]):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id)
 
-        url += urlencode(listing_data)
+        url += '&' + urlencode(listing_data)
 
         header = self._signed_header
 
