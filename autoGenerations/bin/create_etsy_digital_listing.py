@@ -5,6 +5,8 @@ import argparse
 from apis.etsy import API as EtsyAPI
 from apis.openai import API as OpenaiAPI
 import numpy as np
+from PIL import Image
+import tempfile
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -39,6 +41,31 @@ def generate_unique_sku(sku_map: Dict[str, Dict[str, str]]):
     return possible_sku
 
 
+def resize_and_compress_image(input_path, output_path, max_size_mb=20):
+    # Load the image
+    img = Image.open(input_path)
+
+    # Calculate the maximum size in bytes
+    max_size_bytes = max_size_mb * 1024 * 1024
+
+    # Get the current image size in bytes
+    current_size_bytes = os.path.getsize(input_path)
+
+    # If the image is already smaller than the desired size, no need to resize or compress
+    if current_size_bytes <= max_size_bytes:
+        img.save(output_path)
+        return
+
+    # Calculate the compression quality
+    quality = int(100 * max_size_bytes / current_size_bytes)
+
+    # Resize the image while maintaining its aspect ratio
+    img.thumbnail((img.width, img.height))
+
+    # Save the resized and compressed image
+    img.save(output_path, optimize=True, quality=quality)
+
+
 def create_listing(product_image: str, product_title: str, quantity: Union[int, List[int]], shop_id: int,
                    return_policy_id: int, product: str, shop_section: str):
     etsy_api = EtsyAPI()
@@ -53,7 +80,8 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
         'taxonomy_id': '2078',
         'quantity': quantity,
         'price': '100',  # Dummy price
-        'listing_type': 'digital'
+        'listing_type': 'digital',
+        'shipping_profile_id': 197944947769
     }
 
     # Resolve shop section ID
@@ -89,12 +117,20 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
     response = etsy_api.create_draft_listing(listing_data, str(shop_id))
     listing_id = response['listing_id']
 
+    # Third upload the digital image asset
+
+    # Resize the image to the maximum of 20 MB
+    tempdir = tempfile.mkdtemp()
+    resized_image_path = os.path.join(tempdir, os.path.basename(product_image))
+    resize_and_compress_image(product_image, resized_image_path)
+
     file_data = {
-        'image': open(product_image, 'rb'),
+        'image': open(resized_image_path, 'rb'),
         'rank': 1
     }
 
-    etsy_api.upload_listing_file(shop_id=str(shop_id), listing_id=str(listing_id), file_data=file_data)
+    etsy_api.upload_listing_file(shop_id=str(shop_id), listing_id=str(listing_id), file_data=file_data,
+                                 name=os.path.basename(product_image))
 
     # Finally update the listing fields
     etsy_api.update_listing(shop_id=str(shop_id), listing_id=str(listing_id), listing_data={'is_digital': True,

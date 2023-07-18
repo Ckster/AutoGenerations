@@ -164,14 +164,14 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def upload_listing_file(self, shop_id: str, listing_id: str, file_data: Dict[str, str]):
+    def upload_listing_file(self, shop_id: str, listing_id: str, file_data: Dict[str, str], name: str):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
                            'files')
 
         header = self._signed_header
         header = {key: header[key] for key in header.keys() if key != 'Content-Type'}
 
-        response = requests.post(url, headers=header, files=file_data)
+        response = requests.post(url, headers=header, files=file_data, data={'name': name})
 
         if response.status_code == 201:
             return response.json()
