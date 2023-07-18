@@ -164,7 +164,7 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
 
     listing_tempdir = tempfile.mkdtemp()
     resized_image_path = os.path.join(listing_tempdir, os.path.basename(product_image))
-    resize_and_compress_image(smaller_image_path, resized_image_path)
+    resize_with_max_constraint(smaller_image_path, resized_image_path)
 
     image_data = {
         'image': open(resized_image_path, 'rb'),
