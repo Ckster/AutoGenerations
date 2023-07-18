@@ -2,6 +2,7 @@ import os
 import json
 import requests
 from typing import Dict, Union, Any, List
+from urllib.parse import urlencode
 
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -149,7 +150,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def upload_listing_image(self, shop_id: str, listing_id: str, image_data):
+    def upload_listing_image(self, shop_id: str, listing_id: str, image_data: Dict[str]):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
                            'images')
 
@@ -159,6 +160,34 @@ class API(Secrets):
         response = requests.post(url, headers=header, files=image_data)
 
         if response.status_code == 201:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def upload_listing_file(self, shop_id: str, listing_id: str, file_data: Dict[str]):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
+                           'files')
+
+        header = self._signed_header
+        header = {key: header[key] for key in header.keys() if key != 'Content-Type'}
+
+        response = requests.post(url, headers=header, files=file_data)
+
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise LookupError(response.json())
+
+    def update_listing(self, shop_id: str, listing_id: str, listing_data: Dict[str, Any]):
+        url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id)
+
+        url += urlencode(listing_data)
+
+        header = self._signed_header
+
+        response = requests.patch(url, headers=header)
+
+        if response.status_code == 200:
             return response.json()
         else:
             raise LookupError(response.json())
@@ -199,8 +228,6 @@ class API(Secrets):
         data = {
             'variation_images': variation_images
         }
-
-        print(data)
 
         response = requests.post(url, headers=header, data=json.dumps(data))
 
