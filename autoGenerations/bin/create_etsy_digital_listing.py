@@ -76,8 +76,7 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
 
     listing_data['return_policy_id'] = return_policy_id
 
-    description_response = openai_api.chat(create_description_chat_message(title=product_title, product=product,
-                                                                           is_digital=True))
+    description_response = openai_api.chat(create_description_chat_message(title=product_title, product=product))
 
     listing_data['description'] = description_response['choices'][0]['message']['content']
 
