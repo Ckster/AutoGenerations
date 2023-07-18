@@ -150,7 +150,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def upload_listing_image(self, shop_id: str, listing_id: str, image_data: Dict[str]):
+    def upload_listing_image(self, shop_id: str, listing_id: str, image_data: Dict[str, str]):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
                            'images')
 
@@ -164,7 +164,7 @@ class API(Secrets):
         else:
             raise LookupError(response.json())
 
-    def upload_listing_file(self, shop_id: str, listing_id: str, file_data: Dict[str]):
+    def upload_listing_file(self, shop_id: str, listing_id: str, file_data: Dict[str, str]):
         url = os.path.join(self.BASE_ETSY_URL, 'application', 'shops', shop_id, 'listings', listing_id,
                            'files')
 
