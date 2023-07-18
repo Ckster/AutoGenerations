@@ -93,7 +93,7 @@ def resize_with_max_constraint(input_path, output_path, max_constraint=2000):
     img = img.resize((new_width, new_height), Image.ANTIALIAS)
 
     # Save the resized image
-    img.save(output_path)
+    img.save(output_path, ppi=(72, 72))
 
 
 def create_listing(product_image: str, product_title: str, quantity: Union[int, List[int]], shop_id: int,
@@ -109,7 +109,7 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
         'when_made': 'made_to_order',
         'taxonomy_id': '2078',
         'quantity': quantity,
-        'price': '100',  # Dummy price
+        'price': '4.95',  # Dummy price
         'listing_type': 'digital',
         'shipping_profile_id': 197944947769
     }
