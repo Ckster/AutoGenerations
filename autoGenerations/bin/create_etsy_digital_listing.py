@@ -27,7 +27,7 @@ SHOP_SECTION_TAGS = {
 BASE_TAGS = ['boys nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art',
              'car art', 'car enthusiast']
 
-Image.MAX_IMAGE_PIXELS = 278956970
+Image.MAX_IMAGE_PIXELS = 1278956970
 
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
