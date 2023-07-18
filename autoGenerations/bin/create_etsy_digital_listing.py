@@ -175,8 +175,8 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
     etsy_api.upload_listing_image(shop_id=str(shop_id), listing_id=str(listing_id), image_data=image_data)
 
     # Finally update the listing fields
-    etsy_api.update_listing(shop_id=str(shop_id), listing_id=listing_id, listing_data={'is_digital': True,
-                                                                                       'type': 'download'})
+    etsy_api.update_listing(shop_id=str(shop_id), listing_id=str(listing_id), listing_data={'is_digital': True,
+                                                                                            'type': 'download'})
 
     shutil.rmtree(asset_tempdir)
     shutil.rmtree(listing_tempdir)
