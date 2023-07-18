@@ -128,7 +128,7 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
     resize_and_compress_image(product_image, resized_image_path)
 
     file_data = {
-        'image': open(resized_image_path, 'rb'),
+        'file': open(resized_image_path, 'rb'),
         'rank': 1
     }
 
