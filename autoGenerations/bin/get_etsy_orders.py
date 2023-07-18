@@ -295,41 +295,42 @@ def get_etsy_orders():
                     # overwrite_list=True will solve the problem of removed production partners
                     listing.update(production_partners=production_partners, overwrite_list=True)
 
-                    shipping_upgrades = []
-                    shipping_upgrades_response = etsy_api.get_shop_shipping_profile_upgrades(
-                        listing_space.shop_id, listing_space.shipping_profile_id)
-                    for shipping_upgrade in shipping_upgrades_response['results']:
-                        shipping_upgrade_space = EtsyShippingProfileUpgradeSpace(shipping_upgrade)
-                        shipping_upgrade = EtsyShippingProfileUpgrade.get_existing(session,
-                                                                                   shipping_upgrade_space.upgrade_id)
-                        if shipping_upgrade is None:
-                            shipping_upgrade = EtsyShippingProfileUpgrade.create(shipping_upgrade_space)
-                            session.add(shipping_upgrade)
-                            session.flush()
-                        else:
-                            shipping_upgrade.update(shipping_upgrade_space)
-                            session.flush()
-                        shipping_upgrades.append(shipping_upgrade)
+                    if listing_space.listing_type == Etsy.ListingType.PHYSICAL:
+                        shipping_upgrades = []
+                        shipping_upgrades_response = etsy_api.get_shop_shipping_profile_upgrades(
+                            listing_space.shop_id, listing_space.shipping_profile_id)
+                        for shipping_upgrade in shipping_upgrades_response['results']:
+                            shipping_upgrade_space = EtsyShippingProfileUpgradeSpace(shipping_upgrade)
+                            shipping_upgrade = EtsyShippingProfileUpgrade.get_existing(session,
+                                                                                       shipping_upgrade_space.upgrade_id)
+                            if shipping_upgrade is None:
+                                shipping_upgrade = EtsyShippingProfileUpgrade.create(shipping_upgrade_space)
+                                session.add(shipping_upgrade)
+                                session.flush()
+                            else:
+                                shipping_upgrade.update(shipping_upgrade_space)
+                                session.flush()
+                            shipping_upgrades.append(shipping_upgrade)
 
-                    shipping_destinations = []
-                    shipping_destinations_requests = etsy_api.get_shop_shipping_profile_destinations(
-                        listing_space.shop_id, listing_space.shipping_profile_id)
-                    for shipping_destination in shipping_destinations_requests['results']:
-                        shipping_destination_space = EtsyShippingProfileDestinationSpace(shipping_destination)
-                        shipping_destination = EtsyShippingProfileDestination.get_existing(
-                            session, shipping_destination_space.shipping_profile_destination_id)
-                        if shipping_destination is None:
-                            shipping_destination = EtsyShippingProfileDestination.create(shipping_destination_space)
-                            session.add(shipping_destination)
-                            session.flush()
-                        else:
-                            shipping_destination.update(shipping_destination_space)
-                            session.flush()
-                        shipping_destinations.append(shipping_destination)
+                        shipping_destinations = []
+                        shipping_destinations_requests = etsy_api.get_shop_shipping_profile_destinations(
+                            listing_space.shop_id, listing_space.shipping_profile_id)
+                        for shipping_destination in shipping_destinations_requests['results']:
+                            shipping_destination_space = EtsyShippingProfileDestinationSpace(shipping_destination)
+                            shipping_destination = EtsyShippingProfileDestination.get_existing(
+                                session, shipping_destination_space.shipping_profile_destination_id)
+                            if shipping_destination is None:
+                                shipping_destination = EtsyShippingProfileDestination.create(shipping_destination_space)
+                                session.add(shipping_destination)
+                                session.flush()
+                            else:
+                                shipping_destination.update(shipping_destination_space)
+                                session.flush()
+                            shipping_destinations.append(shipping_destination)
 
-                    # overwrite_lists=True solves the problem of removed shipping upgrades or destinations
-                    shipping_profile.update(upgrades=shipping_upgrades, destinations=shipping_destinations,
-                                            overwrite_lists=True)
+                        # overwrite_lists=True solves the problem of removed shipping upgrades or destinations
+                        shipping_profile.update(upgrades=shipping_upgrades, destinations=shipping_destinations,
+                                                overwrite_lists=True)
 
                     # Call endpoint to get more info about the product, then update / create a product record
                     product_response = etsy_api.get_listing_product(transaction_space.listing_id,
