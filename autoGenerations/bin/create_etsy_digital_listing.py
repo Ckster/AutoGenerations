@@ -69,6 +69,33 @@ def resize_and_compress_image(input_path, output_path, max_size_mb=20):
     img.save(output_path, optimize=True, quality=quality)
 
 
+def resize_with_max_constraint(input_path, output_path, max_constraint=2000):
+    # Load the image
+    img = Image.open(input_path)
+
+    # Get the original width and height
+    original_width, original_height = img.size
+
+    # Calculate the aspect ratio
+    aspect_ratio = original_width / original_height
+
+    # Determine whether the constraint should be applied to width or height
+    if original_width >= original_height:
+        # Constraint is applied to width
+        new_width = min(max_constraint, original_width)
+        new_height = int(new_width / aspect_ratio)
+    else:
+        # Constraint is applied to height
+        new_height = min(max_constraint, original_height)
+        new_width = int(new_height * aspect_ratio)
+
+    # Resize the image while maintaining aspect ratio
+    img = img.resize((new_width, new_height), Image.ANTIALIAS)
+
+    # Save the resized image
+    img.save(output_path)
+
+
 def create_listing(product_image: str, product_title: str, quantity: Union[int, List[int]], shop_id: int,
                    return_policy_id: int, product: str, shop_section: str):
     etsy_api = EtsyAPI()
@@ -123,30 +150,36 @@ def create_listing(product_image: str, product_title: str, quantity: Union[int, 
     # Third upload the listing image and digital image asset
 
     # Resize the image to the maximum of 20 MB
-    tempdir = tempfile.mkdtemp()
-    resized_image_path = os.path.join(tempdir, os.path.basename(product_image))
-    resize_and_compress_image(product_image, resized_image_path)
+    asset_tempdir = tempfile.mkdtemp()
+    smaller_image_path = os.path.join(asset_tempdir, os.path.basename(product_image))
+    resize_and_compress_image(product_image, smaller_image_path)
 
     file_data = {
-        'file': (os.path.basename(product_image), open(resized_image_path, 'rb'), 'multipart/form-data'),
+        'file': (os.path.basename(product_image), open(smaller_image_path, 'rb'), 'multipart/form-data'),
         'rank': 1
     }
 
     etsy_api.upload_listing_file(shop_id=str(shop_id), listing_id=str(listing_id), file_data=file_data,
                                  name=os.path.basename(product_image))
 
+    listing_tempdir = tempfile.mkdtemp()
+    resized_image_path = os.path.join(listing_tempdir, os.path.basename(product_image))
+    resize_and_compress_image(smaller_image_path, resized_image_path)
+
     image_data = {
         'image': open(resized_image_path, 'rb'),
         'rank': 1,
         'overwrite': True
     }
+
     etsy_api.upload_listing_image(shop_id=str(shop_id), listing_id=str(listing_id), image_data=image_data)
 
     # Finally update the listing fields
     etsy_api.update_listing(shop_id=str(shop_id), listing_id=listing_id, listing_data={'is_digital': True,
                                                                                        'type': 'download'})
 
-    shutil.rmtree(tempdir)
+    shutil.rmtree(asset_tempdir)
+    shutil.rmtree(listing_tempdir)
 
 
 if __name__ == '__main__':
