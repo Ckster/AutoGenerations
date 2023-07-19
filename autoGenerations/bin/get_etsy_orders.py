@@ -261,6 +261,7 @@ def get_etsy_orders():
                         return_policy.update(return_policy_space, listings=[listing], shop=shop)
                         session.flush()
 
+                    shipping_profile = None
                     if listing_space.listing_type == Etsy.ListingType.PHYSICAL:
                         shipping_profile_response = etsy_api.get_shipping_profile(listing_space.shop_id,
                                                                                   listing_space.shipping_profile_id)
