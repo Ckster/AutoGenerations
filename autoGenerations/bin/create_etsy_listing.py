@@ -9,7 +9,8 @@ from apis.etsy import API as EtsyAPI
 from apis.openai import API as OpenaiAPI
 from apis.google_cloud import Storage
 from bin.print_price import calc_price
-from utilities.mockups import create_listing_images
+from bin.create_etsy_digital_listing import create_digital_listing
+from utilities.mockups import create_mockup_images
 import numpy as np
 import urllib
 
@@ -36,6 +37,8 @@ SHOP_SECTION_TAGS = {
 BASE_TAGS = ['boys nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art',
              'car art', 'car enthusiast']
 
+TITLE_APPENDIX = ' on natural white fine art paper, gift, illustrations, poster, car print, fathers day, wall print'
+
 def create_description_chat_message(title: str, product: str) -> List[Dict[str, str]]:
     return [{
         'role': 'user',
@@ -51,13 +54,25 @@ def generate_unique_sku(sku_map: Dict[str, Dict[str, str]]):
     return possible_sku
 
 
-def create_listing(product_image: str, product_title: str, create_mockups: bool, prodigi_sku: str,
+def create_listing(pipeline: bool, product_image: str, product_title: str, create_mockups: bool, prodigi_sku: str,
                    dimensions: Union[str, List[str]], quantity: Union[int, List[int]], shop_id: int,
                    listing_type: str, shipping_profile_id: int, return_policy_id: int, property_id: int, scale_id: int,
                    mockups: Union[List[str], None], product: str, shop_section: str, aspect_ratio: str):
     etsy_api = EtsyAPI()
     openai_api = OpenaiAPI()
     gc_storage = Storage()
+    if pipeline:
+        # Pull down the first image from the google cloud folder
+        product_image = gc_storage.download_most_recent_pipeline_image()
+        if product_image is None:
+            print('No files in pipeline folder')
+            return
+
+        # Parse the necessary variables from the file name
+        name_split = product_image.split('|')
+        shop_section = name_split[0].capitalize()
+        product_title = ''.join([s.capitalize() for s in name_split[1].replace('_', ' ')])
+        aspect_ratio = name_split[2].split('.')[0]
 
     has_variations = isinstance(dimensions, list)
     if not has_variations:
@@ -65,7 +80,7 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     # These are all required
     listing_data = {
-        'title': product_title,
+        'title': product_title + TITLE_APPENDIX,
         'has_variations': has_variations,
         'should_auto_renew': True,
         'who_made': 'i_did',
@@ -165,17 +180,18 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
     listing_id = response['listing_id']
 
     # Third add the product inventory (variations)
-    inventory_response = etsy_api.update_listing_inventory(str(listing_id), inventory_information)
+    _ = etsy_api.update_listing_inventory(str(listing_id), inventory_information)
 
     # Fourth upload the product images
     tempdir = None
     if mockups is not None:
         mockup_images = mockups
 
-    elif create_mockups:
+    elif create_mockups or pipeline:
         print('Creating mockup images')
         tempdir = tempfile.mkdtemp(prefix='mockups')
-        mockup_images = create_listing_images(product_image, tempdir, style=f'simple_{aspect_ratio}')
+        mockup_images = create_mockup_images(product_image, tempdir, style=f'simple_{aspect_ratio}')
+
     else:
         mockup_images = [product_image]
 
@@ -196,9 +212,6 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
                                                  image_data=image_data)
         image_ids.append((mock_image, response['listing_image_id']))
 
-    if tempdir is not None:
-        shutil.rmtree(tempdir)
-
     # Fifth update the SKU map with the new listing info
     for sku in skus:
         sku_map[sku['etsy']] = {
@@ -211,27 +224,39 @@ def create_listing(product_image: str, product_title: str, create_mockups: bool,
 
     print('Added listing and updated sku map')
 
+    # Sixth create the digital listing
+    create_digital_listing(product_image=product_image, product_title=product_title, quantity=quantity, shop_id=shop_id,
+                           return_policy_id=return_policy_id, product=product, shop_section=shop_section,
+                           mockup_images=mockup_images)
+
     # Finally create an instagram post for the listing. The mockups must be uploaded to google cloud storage so
     # Instagram can retrieve them
     # TODO: Make sure captions are formatted correctly for https url params
 
+    # Remove mockups
+    if tempdir is not None:
+        shutil.rmtree(tempdir)
 
+    # If generated from the pipeline, delete the image from the bucket
+    if pipeline:
+        gc_storage.delete_file(os.path.join('pipeline', os.path.basename(product_image)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # Required
-    parser.add_argument('--product_image', '-p', type=str, required=True,
+    # Optionals
+    parser.add_argument('--pipeline', type=bool, action='store_true', required=False,
+                        help='If true, an image from the pipeline google cloud folder will be pulled down and used to'
+                             ' create the listing')
+    parser.add_argument('--product_image', '-p', type=str, required=False, default=None,
                         help='Path to the image used for the product that will be used to make the mockups. If '
                              'create_mockups is not flagged and no mockups are provided this will be the only image '
                              'used for the listing')
-    parser.add_argument('--title', '-t', type=str, required=True,
+    parser.add_argument('--title', '-t', type=str, required=False, default=None,
                         help='Title of the listing. Will be used to make description by Chat unless description ' \
                              'override is provided')
-    parser.add_argument('--create_mockups', '-m', action='store_true',
+    parser.add_argument('--create_mockups', '-m', action='store_true', required=False,
                         help='If set then mockups are made. Not all product types support auto mocking')
-
-    # Optionals
     parser.add_argument('--prodigi_sku', '-sku',
                         type=str, help='Base Prodigi SKU to be used in conjunction with dimensions.'
                                        ' Default is EP-GLOBAL-PAP-', required=False, default='EP-GLOBAL-PAP-')
@@ -253,8 +278,8 @@ if __name__ == '__main__':
                              ' 999 for each variation')
     parser.add_argument('--shop_id', type=int, required=False, default=40548296, help='Etsy shop ID. Defaults to '
                                                                                       'AutoGenerations')
-    parser.add_argument('--shop_section', type=str, required=True, help='The shop section ID. If not set then no '
-                                                                        'shop section')
+    parser.add_argument('--shop_section', type=str, required=False, default=None,
+                        help='The shop section ID. If not set then no shop section')
     parser.add_argument('--listing_type', type=str, required=False, default='physical',
                         help='Whether the listing is a physical or digital product. Default is physical.')
     parser.add_argument('--shipping_profile_id', type=int, required=False, default=197944947769,
@@ -277,6 +302,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     create_listing(
+        pipeline=args.pipeline,
         product_image=args.product_image,
         product_title=args.title,
         create_mockups=args.create_mockups,

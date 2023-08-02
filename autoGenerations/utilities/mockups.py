@@ -243,7 +243,7 @@ def create_zoomed_image(mockup_info, image_type: str, product_image: Image, out_
     zoomed_image.save(outpath, ppi=(72, 72))
     return outpath
 
-def create_listing_images(input_image_path: str, out_dir: str, style: str = 'simple_2:3') -> List[str]:
+def create_mockup_images(input_image_path: str, out_dir: str, style: str = 'simple_2:3') -> List[str]:
     """
     Generates mock images for an input product image. Specify the output directory where you would like the files
     written to. This directory will be made if it does not already exist.

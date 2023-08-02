@@ -1,5 +1,6 @@
 import os
 import urllib
+from typing import Union
 
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
@@ -30,6 +31,32 @@ class Storage(Secrets):
         bucket = self.get_bucket(bucket_name)
         blob = bucket.blob(cloud_storage_path)
         blob.download_to_filename(os.path.join(out_dir, os.path.basename(cloud_storage_path)))
+
+    def download_most_recent_pipeline_image(self, bucket_name: str = 'auto_generations_shop') -> Union[None, str]:
+        bucket = self.get_bucket(bucket_name)
+        blobs = list(bucket.list_blobs(prefix='pipeline'))
+
+        if not blobs:
+            print(f"No images found in the folder 'pipeline'.")
+            return
+
+            # Sort the blobs by their last modification time in descending order
+        blobs.sort(key=lambda x: x.updated, reverse=True)
+
+        # Get the most recent blob (file)
+        most_recent_blob = blobs[0]
+
+        output_path = os.path.join(PROJECT_DIR, 'data', 'product_images', most_recent_blob.name.split('/')[-1])
+
+        most_recent_blob.download_to_filename(output_path)
+
+        return output_path
+
+    def delete_file(self, file_path: str, bucket_name: str = 'auto_generations_shop'):
+        bucket = self.get_bucket(bucket_name)
+        blob = bucket.blob(file_path)
+        if blob.exists():
+            blob.delete()
 
     def get_bucket(self, bucket_name: str):
         try:
