@@ -8,8 +8,8 @@ import tempfile
 from apis.etsy import API as EtsyAPI
 from apis.openai import API as OpenaiAPI
 from apis.google_cloud import Storage
-from bin.print_price import calc_price
-from bin.create_etsy_digital_listing import create_digital_listing
+from print_price import calc_price
+from create_etsy_digital_listing import create_digital_listing
 from utilities.mockups import create_mockup_images
 import numpy as np
 import urllib
@@ -69,9 +69,9 @@ def create_listing(pipeline: bool, product_image: str, product_title: str, creat
             return
 
         # Parse the necessary variables from the file name
-        name_split = product_image.split('|')
+        name_split = os.path.basename(product_image).split('|')
         shop_section = name_split[0].capitalize()
-        product_title = ''.join([s.capitalize() for s in name_split[1].replace('_', ' ')])
+        product_title = ' '.join([s.capitalize() for s in name_split[1].split('_')])
         aspect_ratio = name_split[2].split('.')[0]
 
     has_variations = isinstance(dimensions, list)
@@ -99,13 +99,16 @@ def create_listing(pipeline: bool, product_image: str, product_title: str, creat
             shop_section_id = section['shop_section_id']
 
     if shop_section_id is None:
-        create_section_input = input(f"Shop section {shop_section} does not exist. Would you like to create it? (y/n) "
-                                     f"\n Existing shop sections: {existing_shop_sections_response['results']}")
-        if create_section_input == 'y':
+        if pipeline:
             etsy_api.create_shop_section(shop_id=str(shop_id), title=shop_section)
         else:
-            print('Exiting')
-            return
+            create_section_input = input(f"Shop section {shop_section} does not exist. Would you like to create it? "
+                                         f"(y/n) \n Existing shop sections: {existing_shop_sections_response['results']}")
+            if create_section_input == 'y':
+                etsy_api.create_shop_section(shop_id=str(shop_id), title=shop_section)
+            else:
+                print('Exiting')
+                return
 
     listing_data['shop_section_id'] = shop_section_id
 
@@ -245,7 +248,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Optionals
-    parser.add_argument('--pipeline', type=bool, action='store_true', required=False,
+    parser.add_argument('--pipeline', action='store_true', required=False,
                         help='If true, an image from the pipeline google cloud folder will be pulled down and used to'
                              ' create the listing')
     parser.add_argument('--product_image', '-p', type=str, required=False, default=None,

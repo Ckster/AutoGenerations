@@ -28,6 +28,7 @@ SHOP_SECTION_TAGS = {
 BASE_TAGS = ['boys nursery', 'mens gift', 'boys gift', 'vintage car', 'retro car', 'classic car', 'garage art',
              'car art', 'car enthusiast']
 
+TITLE_PREFIX = 'Digital Download | '
 TITLE_APPENDIX = ' gift, illustrations, poster, car print, fathers day, wall print'
 
 PRODUCT_DESCRIPTION_APPENDIX = 'After purchasing a digital product from my shop you will immediately receive 5 files in ' \
@@ -175,7 +176,7 @@ def create_digital_listing(product_image: str, product_title: str, quantity: Uni
 
     # These are all required
     listing_data = {
-        'title': product_title + TITLE_APPENDIX,
+        'title': TITLE_PREFIX + product_title + TITLE_APPENDIX,
         'should_auto_renew': True,
         'who_made': 'i_did',
         'when_made': '2020_2023',
@@ -237,8 +238,10 @@ def create_digital_listing(product_image: str, product_title: str, quantity: Uni
             'rank': i + 1
         }
 
+        digital_download_file_name = os.path.basename(file_path).split('|')[1] + f'_{aspect_ratio}.jpg'
+
         etsy_api.upload_listing_file(shop_id=str(shop_id), listing_id=str(listing_id), file_data=file_data,
-                                     name=os.path.basename(product_image))
+                                     name=digital_download_file_name)
 
     # Upload the mockups and the sizing info image
     if mockup_images is None:
@@ -249,7 +252,7 @@ def create_digital_listing(product_image: str, product_title: str, quantity: Uni
         mockup_images.reverse()
 
     # Add the product description mockup to the end
-    mockup_images.append(os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'digital_mockup.png'))
+    mockup_images.insert(0, os.path.join(PROJECT_DIR, 'data', 'mockup_images', 'digital_mockup.png'))
 
     for i, image_path in enumerate(mockup_images):
         image_data = {
