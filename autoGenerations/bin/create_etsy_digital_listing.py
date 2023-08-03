@@ -238,7 +238,8 @@ def create_digital_listing(product_image: str, product_title: str, quantity: Uni
             'rank': i + 1
         }
 
-        digital_download_file_name = os.path.basename(file_path).split('|')[1] + f'_{aspect_ratio}.jpg'
+        digital_download_file_name = os.path.basename(file_path).split('|')[1] + f'_{aspect_ratio}.jpg' if '|' in\
+                                                                            file_path else os.path.basename(file_path)
 
         etsy_api.upload_listing_file(shop_id=str(shop_id), listing_id=str(listing_id), file_data=file_data,
                                      name=digital_download_file_name)
@@ -282,6 +283,8 @@ if __name__ == '__main__':
     parser.add_argument('--title', '-t', type=str, required=True,
                         help='Title of the listing. Will be used to make description by Chat unless description ' \
                              'override is provided')
+    parser.add_argument('--shop_section', type=str, required=True, help='The shop section ID. If not set then no '
+                                                                        'shop section')
 
     # Optionals
     parser.add_argument('--tags', required=False, type=str, help='Tags to be used for listing indexing. Will be '
@@ -291,14 +294,15 @@ if __name__ == '__main__':
                              ' 999 for each variation')
     parser.add_argument('--shop_id', type=int, required=False, default=40548296, help='Etsy shop ID. Defaults to '
                                                                                       'AutoGenerations')
-    parser.add_argument('--shop_section', type=str, required=True, help='The shop section ID. If not set then no '
-                                                                        'shop section')
     parser.add_argument('--return_policy_id', type=int, required=False, default=1154380155511,
                         help='Return policy ID defines the return policy for the listing. Default is no returns '
                              'accepted')
     parser.add_argument('--product', type=str, required=False, default='poster',
                         help='The product that is going on the listing i.e. poster, sticker sheet, etc. Default is'
                              ' poster')
+    parser.add_argument('--mockup_images', type=str, required=False, help='Directory containing mockup images to use'
+                                                                          ' for listing')
+    parser.add_argument('--mockup_style', type=str, required=False, help='The mockup style, 2:3, 3:2, etc')
 
     args = parser.parse_args()
     create_digital_listing(
@@ -308,5 +312,7 @@ if __name__ == '__main__':
         shop_id=args.shop_id,
         shop_section=args.shop_section,
         return_policy_id=args.return_policy_id,
-        product=args.product
+        product=args.product,
+        mockup_images=args.mockup_images,
+        mockup_style=args.mockup_style
     )
